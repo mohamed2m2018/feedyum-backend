@@ -1,0 +1,32 @@
+{
+  "name": "makeit-be",
+  "version": "1.0.0",
+  "description": "makeit-be",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "server": "nodemon server.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "aws-sdk": "^2.411.0",
+    "bcryptjs": "^2.4.3",
+    "body-parser": "^1.20.0",
+    "expo-server-sdk": "^3.2.0",
+    "express": "^4.18.1",
+    "json-web-token": "^2.1.3",
+    "jsonwebtoken": "^8.4.0",
+    "mongoose": "^5.3.4",
+    "multer": "^1.4.1",
+    "multer-s3": "^2.9.0",
+    "passport": "^0.4.0",
+    "passport-jwt": "^4.0.0",
+    "socket.io": "^2.2.0",
+    "stripe": "^6.25.1",
+    "validator": "^10.11.0"
+  },
+  "devDependencies": {
+    "nodemon": "^1.18.9"
+  }
+}

@@ -16,7 +16,7 @@ module.exports = signupUser = (req, res) => {
   let { errors, isValid } = validateUser(req.body);
 
   if (!isValid) {
-    return res.status(400).json(errors);
+    throw res.status(400).json(errors);
   }
 
   // Check if there is a user with the same email

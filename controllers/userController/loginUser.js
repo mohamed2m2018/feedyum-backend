@@ -15,7 +15,7 @@ module.exports = loginUser = (req, res) => {
   // Validate
   const { errors, isValid } = validateLoginUser(req.body);
   if (!isValid) {
-    return res.status(400).json(errors);
+    throw res.status(400).json(errors);
   }
 
   const email = req.body.email;

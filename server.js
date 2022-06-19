@@ -37,6 +37,7 @@ app.use(function(req, res, next) {
 app.use('/api/user', require('./routes/user'));
 
 const port = process.env.PORT || 4800;
+console.log('p ',port)
 
 app.listen(port, () =>
   console.log(`Server started on port ${port}`)

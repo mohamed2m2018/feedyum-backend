@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const mongoURI = require('./keys.ignore').mongoURI;
+const mongoURI = require('./keys').mongoURI;
 
 mongoose
   .connect(mongoURI, { useCreateIndex: true, useNewUrlParser: true })

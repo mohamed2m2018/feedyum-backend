@@ -1,1 +1,1 @@
-require('./User');
+require('../models/user');

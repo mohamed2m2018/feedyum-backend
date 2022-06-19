@@ -2,34 +2,47 @@ const isEmpty = require('./assets/is-empty');
 const Validator = require('validator');
 
 module.exports = validateSignupUser = (data) => {
-  let errors = [];
+  let errors = {};
 
   // For required fields
 
   data.email = !isEmpty(data.email) ? data.email : '';
   data.password = !isEmpty(data.password) ? data.password : '';
- 
+  data.username = !isEmpty(data.username) ? data.username : '';
+  data.type = !isEmpty(data.type) ? data.type : '';
+
+
 
 
 
   // email
   if (Validator.isEmpty(data.email)) {
-    errors.push('Email field is required') ;
+    errors.email = 'Email field is required';
   }
   if (!Validator.isEmail(data.email)) {
-    errors.push('Email is invalid') ;
+    errors.email = 'Email is invalid' ;
 
   }
 
   // password
   if (Validator.isEmpty(data.password)) {
-    errors.push('Password field is required') ;
-
+    errors.password = 'Password field is required' ;
   }
 
   if (!Validator.isLength(data.password, { min: 6, max: 30 })) {
-    errors.push('Password must be at least 6 characters') ;
+    errors.password = 'Password must be at least 6 characters' ;
 
+  }
+
+  // user name
+
+  if (Validator.isEmpty(data.username)) {
+    errors.username = 'username is required'
+  }
+
+  // user type
+  if (Validator.isEmpty(data.type)) {
+    errors.type = 'user type is required'
   }
 
   return {

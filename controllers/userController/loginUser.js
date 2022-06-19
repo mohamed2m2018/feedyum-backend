@@ -18,20 +18,20 @@ module.exports = loginUser = (req, res) => {
     throw res.status(400).json(errors);
   }
 
-  const email = req.body.email;
+  const username = req.body.username;
   const password = req.body.password;
 
   // Check for the user email
-  User.findOne({ email }).then((user) => {
+  User.findOne({ username }).then((user) => {
     if (!user) {
-      errors.incorrectinfo = 'Incorrect email or password';
+      errors.incorrectinfo = 'Incorrect username or password';
       return res.status(400).json(errors);
     }
 
     // Check Password
     bcrypt.compare(password, user.password).then((isMatch) => {
       if (!isMatch) {
-        errors.incorrectinfo = 'Incorrect email or password';
+        errors.incorrectinfo = 'Incorrect username or password';
         return res.status(400).json(errors);
       }
 

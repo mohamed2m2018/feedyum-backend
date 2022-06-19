@@ -26,10 +26,18 @@ module.exports = signupUser = (req, res) => {
         errors.email = 'Email already exists';
         return res.status(400).json(errors);
       }
+      User.findOne({username: req.body.username}).then((user=>{
+        if (user) {
+          errors.username = 'username already exists';
+          return res.status(400).json(errors);
+        }
+      }))
 
       // Create new user
       const newUser = new User({
         email: req.body.email,
+        username: req.body.username,
+        type: req.body.type,
         password: req.body.password,
       });
 

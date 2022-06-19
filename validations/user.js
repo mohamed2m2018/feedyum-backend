@@ -10,6 +10,7 @@ module.exports = validateSignupUser = (data) => {
   data.password = !isEmpty(data.password) ? data.password : '';
   data.username = !isEmpty(data.username) ? data.username : '';
   data.type = !isEmpty(data.type) ? data.type : '';
+  data.phone = !isEmpty(data.phone) ? data.phone : '';
 
 
 
@@ -43,6 +44,11 @@ module.exports = validateSignupUser = (data) => {
   // user type
   if (Validator.isEmpty(data.type)) {
     errors.type = 'user type is required'
+  }
+
+  // phone number
+  if(Validator.isEmpty(data.phone)){
+    errors.phone = 'Phone number is required'
   }
 
   return {

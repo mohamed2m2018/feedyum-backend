@@ -10,6 +10,7 @@ const UserSchema = new Schema({
   type: String,
   location: String,
   avatar: String,
+  phone: String,
   date: {
     type: Date,
     default: Date.now

@@ -1,14 +1,21 @@
-const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
-const jwt = require('jsonwebtoken');
-const keys = require('../../config/keys');
+// Validations
+const validateStory = require('../../validations/AddStory');
 
 
 // Models
 const Story = mongoose.model('story');
 
+
 module.exports = addStory = (req, res) => {
-    // Create new user
+
+    // Validate
+    const { errors, isValid } = validateStory(req.body);
+    if (!isValid) {
+        return res.status(400).json(errors);
+    }
+
+    // Create new story
     const newStory = new Story({
         title: req.body?.title,
         description: req.body?.description,

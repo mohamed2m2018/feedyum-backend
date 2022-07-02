@@ -2,14 +2,14 @@ const express = require('express');
 
 const router = express.Router();
 
-const storyController = require('../controllers/storyController/addStory');
+const storyController = require('../controllers/storyController');
 
 
 // @route  POST api/user/addStory
 // @desc   User Signup - Create new story
 // @access Public
 // @body   isFacebookEntry(optional) facebookId(optional)
-router.post('/addStory',storyController.addStory );
+router.post('/addStory',storyController.addStory);
 
 
 

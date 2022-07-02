@@ -15,9 +15,6 @@ module.exports = validateAddStory = (data) => {
     errors.title = 'Title fiels is required';
   }
 
-
-  console.log(data.description)
-
    if (Validator.isEmpty(data.description)) {
     errors.description = 'Description field is required';
   }

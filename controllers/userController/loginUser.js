@@ -43,7 +43,7 @@ module.exports = loginUser = (req, res) => {
         email: user.email,
       };
 
-      const {password, ...userData} = user;
+      const {password, ...userData}  = user?._doc
 
       // Make JWT
       jwt.sign(
@@ -51,7 +51,7 @@ module.exports = loginUser = (req, res) => {
         keys.secretOrKey,
         // { expiresIn: 604800 },
         (err, token) => {
-          return res.json({ user: user?._doc, success: true, token: 'Bearer ' + token });
+          return res.json({ user: userData, success: true, token: 'Bearer ' + token });
         }
       );
     });

@@ -13,7 +13,7 @@ module.exports = getAllUsers = (req, res) => {
         return res.status(404).json(errors);
       }
       users = users.map((user) => {
-        const {password, ...userData} = user;
+        const {password, ...userData}  = user?._doc
         return userData;
       });
       return res.json(users);

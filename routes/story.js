@@ -24,18 +24,19 @@ router.post('/addStory',
 router.get('/stories', storyController.getStories );
 
 
-// @route  GET api/user/story/:id
+// @route  GET api/story/author
+// @desc   Get story by User ID
+// @access Public
+
+router.get('/author', storyController.getStoriesByUserId);
+
+
+// @route  GET api/story/:id
 // @desc   Get story by ID
 // @access Public
 
-router.get('/story/:id', storyController.getStoryById);
+router.get('/:id', storyController.getStoryById);
 
-
-// @route  GET api/stories/:userid
-// @desc   Get story by User ID
-// @access Public
-// @errors
-// router.get('/stories/:userid', userController.getUserById);
 
 
 module.exports = router;

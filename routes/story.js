@@ -27,8 +27,8 @@ router.get('/stories', storyController.getStories );
 // @route  GET api/user/story/:id
 // @desc   Get story by ID
 // @access Public
-// @errors
-// router.get('/story/:id', userController.getUserById);
+
+router.get('/story/:id', storyController.getStoryById);
 
 
 // @route  GET api/stories/:userid

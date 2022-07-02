@@ -41,7 +41,7 @@ router.get('/:id', storyController.getStoryById);
 // @desc   Update logged in user
 // @access Private
 // @errors first_name last_name email password password2 location error
-router.post(
+router.patch(
     '/update_story',
     passport.authenticate('jwt', { session: false }),
     storyController.updateStory,

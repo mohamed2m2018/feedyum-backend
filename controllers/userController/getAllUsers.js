@@ -12,10 +12,7 @@ module.exports = getAllUsers = (req, res) => {
         errors.nousers = 'No users found';
         return res.status(404).json(errors);
       }
-      users = users.map((user) => {
-        user.password = null;
-        return user;
-      });
+      const {password, ...user} = user;
       return res.json(users);
     })
     .catch((err) => {

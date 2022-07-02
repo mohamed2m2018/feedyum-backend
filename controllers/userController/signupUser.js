@@ -54,7 +54,7 @@ module.exports = signupUser = (req, res) => {
                   _id: user._id,
                   email: user.email,
                 };
-                user.password = null;
+                const {password, ...user} = user;
 
               // Make JWT
               jwt.sign(

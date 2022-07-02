@@ -16,7 +16,7 @@ module.exports = signupUser = (req, res) => {
   let { errors, isValid } = validateUser(req.body);
 
   if (!isValid) {
-    throw res.status(400).json(errors);
+    throw res.status(200).json(errors);
   }
 
   // Check if there is a user with the same email
@@ -24,12 +24,12 @@ module.exports = signupUser = (req, res) => {
     .then((user) => {
       if (user) {
         errors.email = 'Email already exists';
-        return res.status(400).json(errors);
+        return res.status(200).json(errors);
       }
       User.findOne({username: req.body.username}).then((user=>{
         if (user) {
           errors.username = 'username already exists';
-          return res.status(400).json(errors);
+          return res.status(200).json(errors);
         }
       }))
 

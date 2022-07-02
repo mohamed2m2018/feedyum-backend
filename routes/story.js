@@ -6,11 +6,11 @@ const router = express.Router();
 const storyController = require('../controllers/storyController');
 
 
-// @route  POST api/user/addStory
+// @route  POST api/user/add_story
 // @desc   User Signup - Create new story
 // @access Public
 // @body   isFacebookEntry(optional) facebookId(optional)
-router.post('/addStory',
+router.post('/add_story',
     passport.authenticate('jwt', { session: false }),
     storyController.addStory);
 
@@ -37,6 +37,15 @@ router.get('/author', storyController.getStoriesByUserId);
 
 router.get('/:id', storyController.getStoryById);
 
+// @route  PATCH api/story
+// @desc   Update logged in user
+// @access Private
+// @errors first_name last_name email password password2 location error
+router.post(
+    '/update_story',
+    passport.authenticate('jwt', { session: false }),
+    storyController.updateStory,
+  );
 
 
 module.exports = router;

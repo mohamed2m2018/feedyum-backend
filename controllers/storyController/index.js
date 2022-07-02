@@ -2,11 +2,12 @@ const addStory = require('./addStory');
 const getStories = require('./getStories');
 const getStoryById = require('./getStoryById');
 const getStoriesByUserId = require('./getStoriesByUserId');
-
+const updateStory = require('./updateStory');
 
 module.exports = {
     addStory,
     getStories,
     getStoryById,
     getStoriesByUserId,
+    updateStory,
 };

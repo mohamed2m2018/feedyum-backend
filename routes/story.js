@@ -1,4 +1,5 @@
 const express = require('express');
+const passport = require('passport');
 
 const router = express.Router();
 
@@ -9,16 +10,18 @@ const storyController = require('../controllers/storyController');
 // @desc   User Signup - Create new story
 // @access Public
 // @body   isFacebookEntry(optional) facebookId(optional)
-router.post('/addStory',storyController.addStory);
+router.post('/addStory',
+    passport.authenticate('jwt', { session: false }),
+    storyController.addStory);
 
 
 
 
-// @route  GET api/user/stories
+// @route  GET api/story/stories
 // @desc   Get all stories
 // @access Public
 
-// router.get('/stories', userController.getAllStories);
+router.get('/stories', storyController.getStories );
 
 
 // @route  GET api/user/story/:id

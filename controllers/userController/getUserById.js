@@ -7,9 +7,9 @@ module.exports = getUserById = (req, res) => {
   const errors = {};
   User.findById(req.params.id)
     .then((user) => {
-      user.password = null;
+      const {password, ...userData}  = user
       res.json({
-        user,
+        userData,
         success: true
       });
     })

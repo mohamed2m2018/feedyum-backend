@@ -7,9 +7,9 @@ module.exports = getUser = (req, res) => {
   const errors = {};
   User.findById(req.user._id)
     .then((user) => {
-      user.password = null;
+      const {password, ...userData}  = user?._doc
       res.json({
-        user,
+        user: userData,
         success: true
       });
     })

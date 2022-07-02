@@ -9,7 +9,7 @@ module.exports = getUserById = (req, res) => {
     .then((user) => {
       const {password, ...userData}  = user
       res.json({
-        userData,
+        user: userData?._doc,
         success: true
       });
     })

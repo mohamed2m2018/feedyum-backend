@@ -43,13 +43,15 @@ module.exports = loginUser = (req, res) => {
         email: user.email,
       };
 
+      const {password, ...userData} = user;
+
       // Make JWT
       jwt.sign(
         TokenPayload,
         keys.secretOrKey,
         // { expiresIn: 604800 },
         (err, token) => {
-          return res.json({ success: true, token: 'Bearer ' + token });
+          return res.json({ user: user?._doc, success: true, token: 'Bearer ' + token });
         }
       );
     });

@@ -23,6 +23,12 @@ router.post('/add_story',
 
 router.get('/stories', storyController.getStories );
 
+// @route  delete api/story/stories
+// @desc   delete all stories
+// @access Public
+
+router.delete('/stories/', storyController.deleteStories );
+
 
 // @route  GET api/story/author
 // @desc   Get story by User ID

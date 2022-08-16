@@ -27,7 +27,7 @@ router.get('/stories', storyController.getStories );
 // @desc   delete all stories
 // @access Public
 
-router.delete('/stories/', storyController.deleteStories );
+router.delete('/stories', storyController.deleteStories );
 
 
 // @route  GET api/story/author

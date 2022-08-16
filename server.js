@@ -39,6 +39,10 @@ app.use('/api/user', require('./routes/user'));
 app.use('/api/story', require('./routes/story'));
 
 
+app.use('/api/story', require('./routes/cart'));
+
+
+
 const port = process.env.PORT || 4800;
 
 app.listen(port, () =>

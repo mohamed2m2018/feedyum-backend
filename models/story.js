@@ -8,6 +8,7 @@ const StorySchema = new Schema({
     title: String,
     description: String,
     image: String,
+    price: Number,
     author: { type: mongoose.Schema.Types.ObjectId, ref: 'user', required: true },
     stories: [
       {

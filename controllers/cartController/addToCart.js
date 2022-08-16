@@ -19,7 +19,7 @@ module.exports = addToCart = (req, res) => {
     .then((cart) => {
       if (cart) {
         errors.error = "You already have item in cart";
-        res.status(500).json({ ...errors });
+        res.status(400).json({ ...errors });
       } else {
         // Create new story
         const newCart = new Cart({

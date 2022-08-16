@@ -1,16 +1,18 @@
-const isEmpty = require('./assets/is-empty');
+const isEmpty = require("./assets/is-empty");
 
 module.exports = validateAddToCart = (data) => {
   let errors = {};
 
-    // For required fields
-    data.quantity = !isEmpty(data.quantity) ? data.quantity : '';
-    data.storyId = !isEmpty(data.description) ? data.description : '';
-    data.owner = !isEmpty(data.image) ? data.image : '';
-  
+
+  if (!data?.quantity) {
+    errors.message = "Quantity is required";
+  } else if(!data?.storyId){
+    errors.message = "Story id is required";
+
+  }
 
   return {
     errors,
-    isValid: isEmpty(errors)
+    isValid: isEmpty(errors),
   };
 };

@@ -20,4 +20,15 @@ router.post('/add_to_cart',
 
 router.get('/', passport.authenticate('jwt', { session: false }), cartController.getCartItems );
 
+// @route  DELETE api/cart/
+// @desc   DELETE cart
+// @access Public
+
+router.delete(
+    '/',
+    passport.authenticate('jwt', { session: false }),
+    cartController.removeCart
+  );
+  
+
 module.exports = router;

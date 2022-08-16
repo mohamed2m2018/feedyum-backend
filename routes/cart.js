@@ -14,8 +14,6 @@ router.post('/add_to_cart',
     cartController.addToCart);
 
 
-
-
 // @route  GET api/cart/
 // @desc   Get cart
 // @access Public

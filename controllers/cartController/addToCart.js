@@ -17,7 +17,7 @@ module.exports = addToCart = (req, res) => {
 
     // Create new story
     const newCart = new Cart({
-        storyId: req.body?.storyId,
+        storyId: mongoose.Types.ObjectId(req.body?.storyId),
         quantity: req.body?.quantity,
         owner: req.user._id,
     });

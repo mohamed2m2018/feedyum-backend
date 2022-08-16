@@ -12,7 +12,7 @@ const cartController = require('../controllers/cartController');
 // @body   isFacebookEntry(optional) facebookId(optional)
 router.post('/add_to_cart',
     passport.authenticate('jwt', { session: false }),
-    cartController.getCartItems);
+    cartController.addToCart);
 
 
 

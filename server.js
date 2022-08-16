@@ -34,11 +34,14 @@ app.use(function(req, res, next) {
 });
 
 // Routes
+
 app.use('/api/user', require('./routes/user'));
+
+app.use('/api/cart', require('./routes/cart'));
+
 
 app.use('/api/story', require('./routes/story'));
 
-app.use('/api/cart', require('./routes/cart'));
 
 
 

@@ -8,7 +8,7 @@ module.exports = removeCart = (req, res) => {
   Cart.findOneAndDelete({ owner: req.user._id })
     .then((cart) => {
       if (cart) {
-        res.status(200).json({ success: true, ...cart });
+        res.status(200).json({ success: true, cart: [] });
       } else {
         errors.error = "No records found";
         res.status(400).json({ ...errors });

@@ -4,7 +4,7 @@ const validateAddToCart = require('../../validations/AddToCart');
 
 
 // Models
-const Cart = mongoose.model('story');
+const Cart = mongoose.model('cart');
 
 
 module.exports = addToCart = (req, res) => {

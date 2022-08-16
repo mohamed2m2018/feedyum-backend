@@ -7,9 +7,8 @@ const cartController = require('../controllers/cartController');
 
 
 // @route  POST api/cart/add_to_cart
-// @desc   User Signup - Create new story
+// @desc   add to cart
 // @access Public
-// @body   isFacebookEntry(optional) facebookId(optional)
 router.post('/add_to_cart',
     passport.authenticate('jwt', { session: false }),
     cartController.addToCart);

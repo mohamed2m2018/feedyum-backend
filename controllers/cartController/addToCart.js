@@ -23,7 +23,7 @@ module.exports = addToCart = (req, res) => {
       } else {
         // Create new story
         const newCart = new Cart({
-          storyId,
+          story: storyId,
           quantity: req.body?.quantity,
           owner: req.user._id,
         });

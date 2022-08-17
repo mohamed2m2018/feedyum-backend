@@ -1,28 +1,22 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 // Models
-const Story = mongoose.model('story');
-const Cart = mongoose.model('cart');
+const Cart = mongoose.model("cart");
 
 module.exports = getCartItems = (req, res) => {
   const errors = {};
-  Cart.findOne({owner: req.user._id}).then((cart)=>{
-      if(!cart) return res.status(200).json({
-          cart: [],
-      })
-    const cartContent = cart?._doc
-    Story.findOne({storyId: req.params.storyId})
-    .then((story) => {
-      res.json({
-        ...cartContent,
-        story,
-        success: true,
+  Cart.findOne({ owner: req.user._id }).populate('story').exec((err, cart) => {
+    if (err) {
+      errors.error = "Error checking for the cart in the database";
+      return res.status(500).json({ ...errors, ...err });
+    }
+    if (!cart)
+      return res.status(200).json({
+        cart: [],
       });
-    })
-    .catch((err) => {
-      errors.error = 'Error checking for the story in the database';
-      res.status(500).json({ ...errors, ...err });
+    res.json({
+      ...cart,
+      success: true,
     });
-  })
-  
+  });
 };

@@ -9,6 +9,7 @@ const AdminJSMongoose = require("@adminjs/mongoose");
 
 AdminJS.registerAdapter(AdminJSMongoose);
 
+
 //connecting to db
 mongoose
   .connect(mongoURI, { useCreateIndex: true, useNewUrlParser: true })

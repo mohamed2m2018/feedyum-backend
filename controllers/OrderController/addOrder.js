@@ -4,14 +4,11 @@ const validateAddToCart = require("../../validations/AddToCart");
 
 // Models
 const Order = mongoose.model("order");
+const Cart = mongoose.model("cart");
+
 
 module.exports = addOrder = (req, res) => {
-  // const { errors, isValid } = validateAddToCart(req.body);
   errors = {};
-
-  // if (!isValid) {
-  //   return res.status(400).json(errors);
-  // }
 
   Cart.findOne({ owner: req.user._id })
     .lean()
@@ -32,19 +29,11 @@ module.exports = addOrder = (req, res) => {
           .save()
           .then((order) => {
             Cart.findOneAndDelete({ owner: req.user._id })
-              .then((cart) => {
-                if (cart) {
-                  res.status(200).json({ success: true, cart: [] });
-                } else {
-                  errors.error = "No records found";
-                  res.status(400).json({ ...errors });
-                }
-              })
               .catch((err) => {
                 errors.error = "Error checking for the user in database";
                 return res.status(500).json({ ...errors, ...err });
               });
-            return res.json({ ...order, success: true });
+            return res.json({ ...order._doc, success: true });
           })
           .catch((err) => {
             errors.error = "Error saving user to database";

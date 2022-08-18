@@ -59,6 +59,9 @@ app.use("/api/cart", require("./routes/cart"));
 
 app.use("/api/story", require("./routes/story"));
 
+app.use("/api/orders", require("./routes/orders"));
+
+
 const port = process.env.PORT || 4800;
 
 app.listen(port, () => console.log(`Server started on port ${port}`));

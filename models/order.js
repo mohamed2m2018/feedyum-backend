@@ -2,13 +2,15 @@ const mongoose = require('mongoose');
 
 const Schema = mongoose.Schema;
 
- const Cart = mongoose.model("cart");
-
 
 // order schema
 
 const OrderSchema = new Schema({
-    cart: Cart,
+    cart: new Schema({
+        story: { type: mongoose.Schema.Types.ObjectId, ref: 'story', required: true },
+        owner: { type: mongoose.Schema.Types.ObjectId, ref: 'user', required: true },
+        quantity: String
+    }),
     owner: { type: mongoose.Schema.Types.ObjectId, ref: 'user', required: true },
     cancellable: Boolean,
     status: String,

@@ -1,6 +1,4 @@
 const mongoose = require("mongoose");
-// Validations
-const validateAddToCart = require("../../validations/AddToCart");
 
 // Models
 const Order = mongoose.model("order");

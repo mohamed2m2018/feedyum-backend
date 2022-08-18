@@ -16,10 +16,8 @@ module.exports = addOrder = (req, res) => {
         return res.status(500).json({ ...errors, ...err });
       }
       if (cart) {
-        // Create new story
-        const {_id, OrderCart} = cart;
         const newOrder = new Order({
-          cart: {...OrderCart},
+          cart,
           status: "Pending",
           cancellable: true,
           owner: req.user._id,

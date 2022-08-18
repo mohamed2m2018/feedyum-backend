@@ -7,6 +7,7 @@ const Order = mongoose.model("order");
 
 module.exports = addOrder = (req, res) => {
   // const { errors, isValid } = validateAddToCart(req.body);
+  errors = {};
 
   // if (!isValid) {
   //   return res.status(400).json(errors);

@@ -8,7 +8,7 @@ module.exports = getStories = (req, res) => {
     const errors = {};
     Story.find()
         .limit(limit * 1)
-        .skip((page - 1) * limit)
+        .skip((page - 1) * limit).sort({ _id: -1 })
         .exec().then(async (stories) => {
             if (stories.length === 0) {
                 errors.nousers = 'No stories found';

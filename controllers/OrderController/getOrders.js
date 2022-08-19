@@ -4,21 +4,54 @@ const mongoose = require("mongoose");
 const Order = mongoose.model("order");
 
 module.exports = getOrders = (req, res) => {
+  const { page = 1, limit = 10 } = req.query;
+
   const errors = {};
-  //lean() make you able to get rid of _doc
-  //populate() make you able to populate all fields for story given its id
-  Order.find({ owner: req.user._id }).exec((err, orders) => {
-    if (err) {
-      errors.error = "Error checking for orders in the database";
-      return res.status(500).json({ ...errors, ...err });
-    }
-    if (!orders)
-      return res.status(200).json({
-        orders: [],
+  if (req.user?.type === "chef") {
+    Order.find({ "cart.author": req.user?._id })
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
+      .sort({ _id: -1 })
+      .exec(async (err, orders) => {
+        if (err) {
+          errors.error = "Error checking for orders in the database";
+          return res.status(500).json({ ...errors, ...err });
+        }
+        if (!orders)
+          return res.status(200).json({
+            orders: [],
+          });
+         // get total documents in the stories collection 
+         const count = await Story.countDocuments();
+
+        res.json({
+          orders,
+          success: true,
+          totalPages: Math.ceil(count / limit),
+          currentPage: page
+        });
       });
-    res.json({
-      orders,
-      success: true,
+  } else {
+    Order.find({ owner: req.user._id }) .limit(limit * 1)
+    .skip((page - 1) * limit)
+    .sort({ _id: -1 })
+    .exec(async (err, orders) => {
+      if (err) {
+        errors.error = "Error checking for orders in the database";
+        return res.status(500).json({ ...errors, ...err });
+      }
+      if (!orders)
+        return res.status(200).json({
+          orders: [],
+        });
+         // get total documents in the stories collection 
+         const count = await Story.countDocuments();
+      res.json({
+        orders,
+        success: true,
+        totalPages: Math.ceil(count / limit),
+        currentPage: page
+      });
     });
-  });
+  }
 };

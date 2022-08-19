@@ -16,7 +16,12 @@ const OrderSchema = new Schema({
       ref: "user",
       required: true,
     },
-    quantity: String,
+    author: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "user",
+      required: true,
+    },
+    quantity: String
   }),
   owner: { type: mongoose.Schema.Types.ObjectId, ref: "user", required: true },
   cancellable: Boolean,

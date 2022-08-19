@@ -7,6 +7,7 @@ const Schema = mongoose.Schema;
 const CartSchema = new Schema({
     story: { type: mongoose.Schema.Types.ObjectId, ref: 'story', required: true },
     owner: { type: mongoose.Schema.Types.ObjectId, ref: 'user', required: true },
+    author: { type: mongoose.Schema.Types.ObjectId, ref: 'user', required: true },
     quantity: String
 });
 

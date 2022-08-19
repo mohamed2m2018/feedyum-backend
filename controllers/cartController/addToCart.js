@@ -14,6 +14,8 @@ module.exports = addToCart = (req, res) => {
   }
 
   const storyId = mongoose.Types.ObjectId(req.body?.storyId);
+  const authorId = mongoose.Types.ObjectId(req.body?.author);
+
 
   Cart.findOne({ owner: req.user._id }).exec((err,cart)=>{
     if(err){
@@ -27,12 +29,13 @@ module.exports = addToCart = (req, res) => {
       // Create new story
       const newCart = new Cart({
         story: storyId,
+        author: authorId,
         quantity: req.body?.quantity,
         owner: req.user._id,
       });
       newCart
         .save()
-        .then((story) => res.json({ ...story?._doc, success: true }))
+        .then((cart) => res.json({ ...cart?._doc, success: true }))
         .catch((err) => {
           errors.error = "Error saving user to database";
           res.status(500).json({ ...errors, ...err });

@@ -1,19 +1,37 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const Schema = mongoose.Schema;
 
 // order schema
 
 const OrderSchema = new Schema({
-    cart: new Schema({
-        story: { type: mongoose.Schema.Types.ObjectId, ref: 'story', required: true },
-        owner: { type: mongoose.Schema.Types.ObjectId, ref: 'user', required: true },
-        quantity: String
-    }),
-    owner: { type: mongoose.Schema.Types.ObjectId, ref: 'user', required: true },
-    cancellable: Boolean,
-    status: String,
+  cart: new Schema({
+    story: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "story",
+      required: true,
+    },
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "user",
+      required: true,
+    },
+    quantity: String,
+  }),
+  owner: { type: mongoose.Schema.Types.ObjectId, ref: "user", required: true },
+  cancellable: Boolean,
+  status: {
+    type: String,
+    enum: [
+      "Pending",
+      "In Progress",
+      "Rejected",
+      "Delivered",
+      "Cancelled",
+      "Refunded",
+      'Delivered',
+    ],
+  },
 });
 
-
-module.exports = Cart = mongoose.model('order', OrderSchema);
+module.exports = Cart = mongoose.model("order", OrderSchema);

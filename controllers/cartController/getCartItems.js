@@ -17,7 +17,7 @@ module.exports = getCartItems = (req, res) => {
         cart: [],
       });
     res.json({
-      ...cart,
+      cart:[{...cart}],
       success: true,
     });
   });

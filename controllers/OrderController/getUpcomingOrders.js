@@ -9,13 +9,15 @@ module.exports = getUpcomingOrders = (req, res) => {
   const errors = {};
   if (req.user?.type === "chef") {
     Order.find({
-      "cart.author": req.user?._id,
+      author: req.user?._id,
       status: ["Pending", "In Progress"],
-    }).populate('cart.story').select('items status cancellable')
+    }).populate('items.story').select('items status cancellable')
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .sort({ _id: -1 })
       .exec(async (err, orders) => {
+        console.log('oo ',orders)
+
         if (err) {
           errors.error = "Error checking for orders in the database";
           return res.status(500).json({ ...errors, ...err });
@@ -38,7 +40,7 @@ module.exports = getUpcomingOrders = (req, res) => {
     Order.find({
       owner: req.user._id,
       status: ["Pending", "In Progress"],
-    }).populate('cart.story').select('items status cancellable')
+    }).populate('items.story').select('items status cancellable')
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .sort({ _id: -1 })

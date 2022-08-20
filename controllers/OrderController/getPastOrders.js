@@ -9,9 +9,9 @@ module.exports = getPastOrders = (req, res) => {
   const errors = {};
   if (req.user?.type === "chef") {
     Order.find({
-      "cart.author": req.user?._id,
+      author: req.user?._id,
       status: ["Delivered", "Refunded", "Rejected"],
-    }).populate('cart.story').select('items status cancellable')
+    }).populate('items.story').select('items status cancellable')
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .sort({ _id: -1 })
@@ -38,7 +38,7 @@ module.exports = getPastOrders = (req, res) => {
     Order.find({
       owner: req.user._id,
       status: ["Delivered", "Refunded", "Rejected"],
-    }).populate('cart.story').select('items status cancellable')
+    }).populate('items.story').select('items status cancellable')
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .sort({ _id: -1 })

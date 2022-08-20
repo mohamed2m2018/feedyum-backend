@@ -61,6 +61,8 @@ app.use("/api/story", require("./routes/story"));
 
 app.use("/api/orders", require("./routes/orders"));
 
+app.use("/api/categories", require("./routes/categories"));
+
 
 const port = process.env.PORT || 4800;
 

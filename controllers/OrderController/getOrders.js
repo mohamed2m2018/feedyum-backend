@@ -21,37 +21,41 @@ module.exports = getOrders = (req, res) => {
           return res.status(200).json({
             orders: [],
           });
-         // get total documents in the stories collection 
-         const count = await Story.countDocuments();
+        // get total documents in the stories collection
+        const count = await Story.countDocuments();
 
         res.json({
           orders,
           success: true,
           totalPages: Math.ceil(count / limit),
-          currentPage: page
+          currentPage: page,
         });
       });
   } else {
-    Order.find({ owner: req.user._id }) .limit(limit * 1)
-    .skip((page - 1) * limit)
-    .sort({ _id: -1 })
-    .exec(async (err, orders) => {
-      if (err) {
-        errors.error = "Error checking for orders in the database";
-        return res.status(500).json({ ...errors, ...err });
-      }
-      if (!orders)
-        return res.status(200).json({
-          orders: [],
+    Order.find({
+      owner: req.user._id,
+      status: "Pending" || "In Progress" || "Rejected" || "Delivered",
+    })
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
+      .sort({ _id: -1 })
+      .exec(async (err, orders) => {
+        if (err) {
+          errors.error = "Error checking for orders in the database";
+          return res.status(500).json({ ...errors, ...err });
+        }
+        if (!orders)
+          return res.status(200).json({
+            orders: [],
+          });
+        // get total documents in the stories collection
+        const count = await Story.countDocuments();
+        res.json({
+          orders,
+          success: true,
+          totalPages: Math.ceil(count / limit),
+          currentPage: page,
         });
-         // get total documents in the stories collection 
-         const count = await Story.countDocuments();
-      res.json({
-        orders,
-        success: true,
-        totalPages: Math.ceil(count / limit),
-        currentPage: page
       });
-    });
   }
 };

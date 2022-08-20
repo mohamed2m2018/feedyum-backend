@@ -4,11 +4,11 @@ const mongoose = require("mongoose");
 const Order = mongoose.model("order");
 
 module.exports = getOrders = (req, res) => {
-  const { page = 1, limit = 10 } = req.query;
+  const { page = 1, limit = 10, ...rest } = req.query;
 
   const errors = {};
   if (req.user?.type === "chef") {
-    Order.find({ "cart.author": req.user?._id })
+    Order.find({ "cart.author": req.user?._id, ...rest })
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .sort({ _id: -1 })

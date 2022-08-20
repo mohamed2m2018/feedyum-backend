@@ -4,6 +4,8 @@ const getStoryById = require('./getStoryById');
 const getStoriesByUserId = require('./getStoriesByUserId');
 const updateStory = require('./updateStory');
 const deleteStories = require('./deleteStories');
+const searchStories = require('./searchStories');
+
 
 module.exports = {
     addStory,
@@ -12,4 +14,5 @@ module.exports = {
     getStoriesByUserId,
     updateStory,
     deleteStories,
+    searchStories,
 };

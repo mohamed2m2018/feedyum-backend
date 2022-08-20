@@ -11,7 +11,7 @@ module.exports = getUpcomingOrders = (req, res) => {
     Order.find({
       "cart.author": req.user?._id,
       status: ["Pending", "In Progress"],
-    })
+    }).populate('cart.story')
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .sort({ _id: -1 })
@@ -38,7 +38,7 @@ module.exports = getUpcomingOrders = (req, res) => {
     Order.find({
       owner: req.user._id,
       status: ["Pending", "In Progress"],
-    })
+    }).populate('cart.story')
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .sort({ _id: -1 })

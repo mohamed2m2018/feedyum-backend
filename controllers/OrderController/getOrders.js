@@ -8,7 +8,7 @@ module.exports = getOrders = (req, res) => {
 
   const errors = {};
   if (req.user?.type === "chef") {
-    Order.find({ "cart.author": req.user?._id, ...rest })
+    Order.find({ "cart.author": req.user?._id, ...rest }).populate('cart.story')
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .sort({ _id: -1 })
@@ -35,7 +35,7 @@ module.exports = getOrders = (req, res) => {
     Order.find({
       owner: req.user._id,
        ...rest 
-    })
+    }).populate('cart.story')
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .sort({ _id: -1 })

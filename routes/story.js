@@ -25,18 +25,12 @@ router.get('/stories', storyController.getStories );
 
 
 
-// @route  GET api/story/search_by_content
+// @route  GET api/story/search
 // @desc   Get all stories
 // @access Public
 
-router.get('/search_by_content', storyController.searchStoriesByContent );
+router.get('/search', storyController.searchStories );
 
-
-// @route  GET api/story/search_by_cateogry
-// @desc   Get story by User ID
-// @access Public
-
-router.get('/search_by_cateogry', storyController.getStoriesByCategoryId);
 
 
 // @route  delete api/story/stories

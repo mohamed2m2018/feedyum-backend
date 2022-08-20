@@ -8,7 +8,7 @@ module.exports = getOrders = (req, res) => {
 
   const errors = {};
   if (req.user?.type === "chef") {
-    Order.find({ "author": req.user?._id, ...rest }).populate('items.story').select('story quantity')
+    Order.find({ "author": req.user?._id, ...rest }).populate('items.story').select('items status cancellable')
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .sort({ _id: -1 })

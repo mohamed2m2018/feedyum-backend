@@ -8,11 +8,16 @@ module.exports = validateAddStory = (data) => {
 
     data.title = !isEmpty(data.title) ? data.title : '';
     data.description = !isEmpty(data.description) ? data.description : '';
+    data.category = !isEmpty(data.category) ? data.category : '';
     data.image = !isEmpty(data.image) ? data.image : '';
 
 
   if (Validator.isEmpty(data.title)) {
-    errors.title = 'Title fiels is required';
+    errors.title = 'Title field is required';
+  }
+
+  if (Validator.isEmpty(data.category)) {
+    errors.title = 'Category field is required';
   }
 
    if (Validator.isEmpty(data.description)) {

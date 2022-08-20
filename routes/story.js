@@ -29,7 +29,7 @@ router.get('/stories', storyController.getStories );
 // @desc   Get all stories
 // @access Public
 
-router.get('/stories/search', storyController.searchStories );
+router.get('/stories/search_by_content', storyController.searchStories );
 
 
 // @route  delete api/story/stories

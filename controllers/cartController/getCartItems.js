@@ -7,7 +7,7 @@ module.exports = getCartItems = (req, res) => {
   const errors = {};
   //lean() make you able to get rid of _doc
   //populate() make you able to populate all fields for story given its id
-  Cart.findOne({ owner: req.user._id }).populate('story').lean().exec((err, cart) => {
+  Cart.find({ owner: req.user._id }).populate('story').select('story quantity').lean().exec((err, cart) => {
     if (err) {
       errors.error = "Error checking for the cart in the database";
       return res.status(500).json({ ...errors, ...err });
@@ -17,7 +17,7 @@ module.exports = getCartItems = (req, res) => {
         cart: [],
       });
     res.json({
-      cart:[{...cart}],
+      cart,
       success: true,
     });
   });

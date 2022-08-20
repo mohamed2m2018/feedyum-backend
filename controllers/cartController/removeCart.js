@@ -5,7 +5,7 @@ const Cart = mongoose.model("cart");
 
 module.exports = removeCart = (req, res) => {
   const errors = {};
-  Cart.findOneAndDelete({ owner: req.user._id })
+  Cart.remove({ owner: req.user._id })
     .then((cart) => {
       if (cart) {
         res.status(200).json({ success: true, cart: [] });

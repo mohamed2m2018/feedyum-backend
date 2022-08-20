@@ -5,7 +5,7 @@ const Schema = mongoose.Schema;
 // order schema
 
 const OrderSchema = new Schema({
-  cart: new Schema({
+  items: [new Schema({
     story: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "story",
@@ -22,9 +22,14 @@ const OrderSchema = new Schema({
       required: true,
     },
     quantity: String
-  }),
+  })],
   owner: { type: mongoose.Schema.Types.ObjectId, ref: "user", required: true },
   cancellable: Boolean,
+  author: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "user",
+    required: true,
+  },
   status: {
     type: String,
     enum: [

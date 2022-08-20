@@ -8,27 +8,25 @@ const Cart = mongoose.model("cart");
 module.exports = addOrder = (req, res) => {
   errors = {};
 
-  Cart.findOne({ owner: req.user._id })
+  Cart.find({ owner: req.user._id })
     .lean()
     .exec((err, cart) => {
       if (err) {
         errors.error = "Error checking for the cart in the database";
         return res.status(500).json({ ...errors, ...err });
       }
-      if (cart) {
-        const {_id, ...rest} = cart 
+      if (cart.length !== 0) {
         const newOrder = new Order({
-          cart: {
-            ...rest
-          },
+          items: cart,
           status: "Pending",
           cancellable: true,
           owner: req.user._id,
+          author: cart?.[0]?.author
         });
         newOrder
           .save()
           .then((order) => {
-            Cart.findOneAndDelete({ owner: req.user._id })
+            Cart.remove({ owner: req.user._id })
               .catch((err) => {
                 errors.error = "Error checking for the user in database";
                 return res.status(500).json({ ...errors, ...err });

@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 // Models
 const Story = mongoose.model('story');
 
-module.exports = searchStories = (req, res) => {
+module.exports = searchStoriesByContent = (req, res) => {
     const { page = 1, limit = 10, searchString } = req.query;
     const errors = {};
     Story.find({$text: {$search: searchString}})

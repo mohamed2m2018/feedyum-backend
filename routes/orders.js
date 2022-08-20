@@ -29,4 +29,18 @@ router.get('/', passport.authenticate('jwt', { session: false }), orderControlle
 
 
 
+// @route  GET api/order/past
+// @desc   Get orders
+// @access Private
+
+router.get('/past', passport.authenticate('jwt', { session: false }), orderController.getPastOrders );
+
+
+// @route  GET api/order/upcoming
+// @desc   Get orders
+// @access Private
+
+router.get('/upcoming', passport.authenticate('jwt', { session: false }), orderController.getUpcomingOrders );
+
+
 module.exports = router;

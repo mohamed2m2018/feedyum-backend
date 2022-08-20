@@ -34,7 +34,7 @@ module.exports = getOrders = (req, res) => {
   } else {
     Order.find({
       owner: req.user._id,
-      status: "Pending" || "In Progress" || "Rejected" || "Delivered",
+       ...rest 
     })
       .limit(limit * 1)
       .skip((page - 1) * limit)

@@ -34,7 +34,6 @@ const OrderSchema = new Schema({
       "Delivered",
       "Cancelled",
       "Refunded",
-      'Delivered',
     ],
   },
 });

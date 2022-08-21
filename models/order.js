@@ -11,11 +11,6 @@ const OrderSchema = new Schema({
       ref: "story",
       required: true,
     },
-    owner: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "user",
-      required: true,
-    },
     author: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "user",

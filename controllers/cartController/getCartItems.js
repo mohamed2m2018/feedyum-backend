@@ -1,23 +1,23 @@
 const mongoose = require("mongoose");
 
 // Models
-const Cart = mongoose.model("cart");
+const User = mongoose.model("user");
 
 module.exports = getCartItems = (req, res) => {
   const errors = {};
   //lean() make you able to get rid of _doc
   //populate() make you able to populate all fields for story given its id
-  Cart.find({ owner: req.user._id }).populate('story').select('story quantity').lean().exec((err, cart) => {
+  User.findOne({ _id: req.user._id }).populate('cart.story').lean().exec((err, user) => {
     if (err) {
       errors.error = "Error checking for the cart in the database";
       return res.status(500).json({ ...errors, ...err });
     }
-    if (!cart)
+    if (!user.cart)
       return res.status(200).json({
         cart: [],
       });
     res.json({
-      cart,
+      cart: user.cart,
       success: true,
     });
   });

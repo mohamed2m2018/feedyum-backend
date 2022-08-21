@@ -5,17 +5,21 @@ const Cart = mongoose.model("cart");
 
 module.exports = removeCart = (req, res) => {
   const errors = {};
-  Cart.remove({ owner: req.user._id })
-    .then((cart) => {
-      if (cart) {
-        res.status(200).json({ success: true, cart: [] });
-      } else {
-        errors.error = "No records found";
-        res.status(400).json({ ...errors });
-      }
-    })
+  User.findByIdAndUpdate(
+    { _id: req.user._id.toString() },
+    {
+      cart: [],
+    },
+    { new: true }
+  )
+    .then((user) =>
+      res.json({
+        cart: user.cart,
+        success: true,
+      })
+    )
     .catch((err) => {
-      errors.error = "Error checking for the user in database";
-      return res.status(500).json({ ...errors, ...err });
+      errors.error = "Error checking for the user in the database";
+      res.status(500).json({ ...errors, ...err });
     });
 };

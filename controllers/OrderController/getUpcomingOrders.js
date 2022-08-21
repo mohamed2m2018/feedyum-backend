@@ -16,8 +16,6 @@ module.exports = getUpcomingOrders = (req, res) => {
       .skip((page - 1) * limit)
       .sort({ _id: -1 })
       .exec(async (err, orders) => {
-        console.log('oo ',orders)
-
         if (err) {
           errors.error = "Error checking for orders in the database";
           return res.status(500).json({ ...errors, ...err });

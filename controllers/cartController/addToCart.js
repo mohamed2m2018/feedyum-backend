@@ -44,7 +44,6 @@ module.exports = addToCart = (req, res) => {
         });
         return;
       }
-
       user.cart[index] = { ...user.cart?.[index]?._doc, ...rest };
       user.save();
       res.json({

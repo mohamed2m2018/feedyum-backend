@@ -2,16 +2,26 @@ const mongoose = require("mongoose");
 
 // Models
 const Story = mongoose.model("story");
+var ObjectId = require("mongoose").Types.ObjectId;
 
 module.exports = searchStories = (req, res) => {
   const { page = 1, limit = 10, searchString, ...rest } = req.query;
+  const string = new RegExp(searchString, 'i')
   const errors = {};
-  Story.find(searchString ? {
-    $text: { $search: searchString },
-    ...rest
-  } : {
-  ...rest
-  })
+  if (rest.category && !ObjectId.isValid(rest.category)) {
+    errors.error = "Category id is invalid";
+    return res.status(500).json(errors);
+  }
+  Story.find(
+    searchString
+      ? {
+          $or: [{title: string },{description: string}],
+          ...rest,
+        }
+      : {
+          ...rest,
+        }
+  )
     .limit(limit * 1)
     .skip((page - 1) * limit)
     .sort({ _id: -1 })
@@ -32,7 +42,7 @@ module.exports = searchStories = (req, res) => {
       });
     })
     .catch((err) => {
-      console.log("ee ", err);
+      console.log('e ',err)
       errors.error = "Error fetching stories from database";
       res.status(500).json({ ...errors, ...err });
     });

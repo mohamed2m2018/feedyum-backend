@@ -19,6 +19,8 @@ const StorySchema = new Schema({
   category: { type: mongoose.Schema.Types.ObjectId, ref: "category", required: true },
 });
 
-StorySchema.index({ title: "text", description: "text" });
+//commented becuase we don't use search now, instead we use regex
+
+// StorySchema.index({ title: "text", description: "text" });
 
 module.exports = Story = mongoose.model("story", StorySchema);

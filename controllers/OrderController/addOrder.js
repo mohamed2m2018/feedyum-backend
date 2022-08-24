@@ -14,7 +14,6 @@ module.exports = addOrder = (req, res) => {
     }
     if (user.cart.length !== 0) {
       const dishes = user.cart?.map((element) => {
-        console.log(element)
         return ({
         title: element.story?.title ,
         description: element.story?.description,

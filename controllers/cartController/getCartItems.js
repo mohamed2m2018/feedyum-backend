@@ -16,8 +16,20 @@ module.exports = getCartItems = (req, res) => {
       return res.status(200).json({
         cart: [],
       });
+    const dishes = user.cart?.map((element) => {
+        return ({
+        title: element.story?.title ,
+        description: element.story?.description,
+        image: element.story?.image,
+        price: element.story?.price * element.quantity,
+        quantity: element.quantity,
+        storyId: element.story?._id,
+      })});
     res.json({
-      cart: user.cart,
+      cart: dishes,
+      tax: 0,
+      serive: 0,
+      totalPrice: dishes.reduce((partialSum, element) => partialSum + element.price, 0),
       success: true,
     });
   });

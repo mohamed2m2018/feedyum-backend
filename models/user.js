@@ -18,6 +18,7 @@ const UserSchema = new Schema({
     default: Date.now
   },
   pushNotificationToken: String,
+  wallet: Number,
   cart: [new Schema({
     story: { type: mongoose.Schema.Types.ObjectId, ref: 'story', required: true, unique: true,dropDups: true },
     author: { type: mongoose.Schema.Types.ObjectId, ref: 'user', required: true },

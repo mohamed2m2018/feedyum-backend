@@ -19,6 +19,7 @@ module.exports = addOrder = (req, res) => {
         description: element.story?.description,
         image: element.story?.image,
         price: element.story?.price * element.quantity,
+        quantity: element.quantity,
       })});
       const newOrder = new Order({
         dishes,
@@ -27,7 +28,7 @@ module.exports = addOrder = (req, res) => {
         author: user.cart?.[0]?.author,
         owner: req.user._id,
         tax: 0,
-        serive: 0,
+        service: 0,
         totalPrice: dishes.reduce((partialSum, element) => partialSum + element.price, 0)
       });
       newOrder

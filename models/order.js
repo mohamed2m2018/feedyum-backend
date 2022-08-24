@@ -11,6 +11,7 @@ const OrderSchema = new Schema({
       description: String,
       image: String,
       price: Number,
+      quantity: Number,
     }),
   ],
   owner: { type: mongoose.Schema.Types.ObjectId, ref: "user", required: true },

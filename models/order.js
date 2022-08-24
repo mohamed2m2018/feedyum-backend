@@ -5,19 +5,14 @@ const Schema = mongoose.Schema;
 // order schema
 
 const OrderSchema = new Schema({
-  items: [new Schema({
-    story: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "story",
-      required: true,
-    },
-    author: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "user",
-      required: true,
-    },
-    quantity: String
-  })],
+  dishes: [
+    new Schema({
+      title: String,
+      description: String,
+      image: String,
+      price: Number,
+    }),
+  ],
   owner: { type: mongoose.Schema.Types.ObjectId, ref: "user", required: true },
   cancellable: Boolean,
   author: {
@@ -25,6 +20,8 @@ const OrderSchema = new Schema({
     ref: "user",
     required: true,
   },
+  totalPrice: Number,
+  date : { type : Date, default: Date.now },
   status: {
     type: String,
     enum: [

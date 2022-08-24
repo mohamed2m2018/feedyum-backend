@@ -11,7 +11,7 @@ module.exports = getPastOrders = (req, res) => {
     Order.find({
       author: req.user?._id,
       status: ["Delivered", "Refunded", "Rejected"],
-    }).populate('items.story').select('items status cancellable')
+    }).populate('dishes')
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .sort({ _id: -1 })
@@ -38,7 +38,7 @@ module.exports = getPastOrders = (req, res) => {
     Order.find({
       owner: req.user._id,
       status: ["Delivered", "Refunded", "Rejected"],
-    }).populate('items.story').select('items status cancellable')
+    }).populate('dishes')
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .sort({ _id: -1 })

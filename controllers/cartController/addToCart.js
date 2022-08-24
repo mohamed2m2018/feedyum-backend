@@ -33,7 +33,7 @@ module.exports = addToCart = (req, res) => {
               {
                 story: storyId,
                 quantity: req.body?.quantity,
-                author: story.author,
+                author: story?.author,
               },
             ];
             user.save();

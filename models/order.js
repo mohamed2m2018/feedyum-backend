@@ -22,7 +22,7 @@ const OrderSchema = new Schema({
   },
   totalPrice: Number,
   service: String,
-  tax: string,
+  tax: String,
   date : { type : Date, default: Date.now },
   status: {
     type: String,

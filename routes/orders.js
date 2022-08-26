@@ -43,4 +43,11 @@ router.get('/past', passport.authenticate('jwt', { session: false }), orderContr
 router.get('/upcoming', passport.authenticate('jwt', { session: false }), orderController.getUpcomingOrders );
 
 
+// @route  delete api/order
+// @desc   delete order
+// @access Private
+
+router.delete('/', passport.authenticate('jwt', { session: false }), orderController.deleteOrder);
+
+
 module.exports = router;

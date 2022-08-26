@@ -3,6 +3,8 @@ const getOrders = require('./getOrders');
 const getPastOrders = require('./getPastOrders');
 const getUpcomingOrders = require('./getUpcomingOrders');
 const editOrder = require('./editOrder');
+const deleteOrder = require('./deleteOrder');
+
 
 module.exports = {
   addOrder,
@@ -10,4 +12,5 @@ module.exports = {
   getPastOrders,
   getUpcomingOrders,
   editOrder,
+  deleteOrder,
 };

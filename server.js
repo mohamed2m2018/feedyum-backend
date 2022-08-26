@@ -63,6 +63,7 @@ app.use("/api/orders", require("./routes/orders"));
 
 app.use("/api/categories", require("./routes/categories"));
 
+app.use("/api/address", require("./routes/address"));
 
 const port = process.env.PORT || 4800;
 

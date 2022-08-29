@@ -14,6 +14,7 @@ module.exports = removeItem = (req, res) => {
       const index = user.cart?.findIndex((element) => {
         return element?.story?.toString() === storyId?.toString();
       });
+      
       user.cart.splice(index,1)
       user.save();
       res.json({

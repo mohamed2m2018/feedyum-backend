@@ -9,12 +9,11 @@ module.exports = removeItem = (req, res) => {
 
   User.findById(req.user._id)
     .then((user) => {
-        console.log(user.cart)
 
       const index = user.cart?.findIndex((element) => {
         return element?.story?.toString() === storyId?.toString();
       });
-      
+    
       user.cart.splice(index,1)
       user.save();
       res.json({

@@ -29,6 +29,17 @@ router.delete(
     passport.authenticate('jwt', { session: false }),
     cartController.removeCart
   );
+
+// @route  DELETE api/cart/remove_item
+// @desc   DELETE cart
+// @access Public
+
+
+ router.delete(
+    '/remove_item',
+    passport.authenticate('jwt', { session: false }),
+    cartController.removeItem
+  );
   
 
 module.exports = router;

@@ -7,6 +7,17 @@ module.exports = editAddress = (req, res) => {
   const errors = {};
   const {addressId, ...rest} = req.body;
 
+  if (rest?.isPrimary === true) {
+    Address.findOneAndUpdate(
+      {
+        isPrimary: true,
+      },
+      {
+        isPrimary: false,
+      },
+    );
+  } 
+
   Address.findByIdAndUpdate(addressId,{
      ...rest,
   }, {

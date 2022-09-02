@@ -14,24 +14,43 @@ module.exports = editAddress = (req, res) => {
       },
       {
         isPrimary: false,
-      },
-    );
-  } 
-
-  Address.findByIdAndUpdate(addressId,{
-     ...rest,
-  }, {
-      new: true,
-  })
-    .lean()
-    .exec((err, address) => {
-      if (err) {
-        errors.error = "Error checking for address in the database";
-        return res.status(500).json({ ...errors, ...err });
+      }, ()=>{
+        Address.findByIdAndUpdate(addressId,{
+          ...rest,
+       }, {
+           new: true,
+       })
+         .lean()
+         .exec((err, address) => {
+           if (err) {
+             errors.error = "Error checking for address in the database";
+             return res.status(500).json({ ...errors, ...err });
+           }
+           res.json({
+             address,
+             success: true,
+           });
+         });
       }
-      res.json({
-        address,
-        success: true,
-      });
-    });
+    );
+  } else {
+    Address.findByIdAndUpdate(addressId,{
+      ...rest,
+   }, {
+       new: true,
+   })
+     .lean()
+     .exec((err, address) => {
+       if (err) {
+         errors.error = "Error checking for address in the database";
+         return res.status(500).json({ ...errors, ...err });
+       }
+       res.json({
+         address,
+         success: true,
+       });
+     });
+  }
+
+
 };

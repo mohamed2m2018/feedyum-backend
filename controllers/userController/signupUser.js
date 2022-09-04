@@ -40,8 +40,8 @@ module.exports = signupUser = (req, res) => {
         type: req.body.type,
         password: req.body.password,
         phone: req.body.phone,
-        first_name: null,
-        last_name: null,
+        first_name: req.body?.first_name,
+        last_name: req.body?.last_name,
         avatar: null,
       });
 

@@ -72,4 +72,8 @@ app.use("/api/address", require("./routes/address"));
 
 const port = process.env.PORT || 4800;
 
-https.createServer({    key: fs.readFileSync('./key.pem'),    cert: fs.readFileSync('./cert.pem'),    passphrase: '123456'}, app).listen(port);
+app.listen(port, ()=>{
+  console.log('listening on required port')
+})
+
+// https.createServer({    key: fs.readFileSync('./key.pem'),    cert: fs.readFileSync('./cert.pem'),    passphrase: '123456'}, app).listen(port);

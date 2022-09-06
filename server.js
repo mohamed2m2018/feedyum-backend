@@ -69,6 +69,8 @@ app.use("/api/orders", require("./routes/orders"));
 app.use("/api/categories", require("./routes/categories"));
 
 app.use("/api/address", require("./routes/address"));
+app.use(express.static(__dirname + '/static', { dotfiles: 'allow' }))
+
 
 const port = process.env.PORT || 80;
 

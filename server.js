@@ -73,8 +73,15 @@ app.use(express.static(__dirname + '/public', { dotfiles: 'allow' }))
 
 const port = process.env.PORT || 80;
 
-app.listen(port, ()=>{
-  console.log('listening on required port')
+https
+  .createServer(
+    {
+      key: fs.readFileSync('/etc/letsencrypt/live/foodhub.tech/privkey.pem'),
+      cert: fs.readFileSync('/etc/letsencrypt/live/foodhub.tech/fullchain.pem'),
+    },
+    app
+  ).listen(port, ()=>{
+  console.log('listening on ', port)
 })
 
 // https.createServer({    key: fs.readFileSync('./key.pem'),    cert: fs.readFileSync('./cert.pem'),    passphrase: '123456'}, app).listen(port);

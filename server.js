@@ -71,7 +71,7 @@ app.use("/api/address", require("./routes/address"));
 app.use(express.static(__dirname + '/public', { dotfiles: 'allow' }))
 
 
-const port = process.env.PORT || 80;
+const port = process.env.PORT || 443;
 
 https
   .createServer(

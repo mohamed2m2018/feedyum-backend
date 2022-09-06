@@ -6,7 +6,8 @@ const mongoose = require("mongoose");
 const mongoURI = require("./config/keys").mongoURI;
 const AdminJSExpress = require("@adminjs/express");
 const AdminJSMongoose = require("@adminjs/mongoose");
-const https = require('https')
+const https = require('https');
+const fs  = require('fs');
 
 AdminJS.registerAdapter(AdminJSMongoose);
 
@@ -67,6 +68,5 @@ app.use("/api/categories", require("./routes/categories"));
 app.use("/api/address", require("./routes/address"));
 
 const port = process.env.PORT || 4800;
-
 
 https.createServer({    key: fs.readFileSync('./key.pem'),    cert: fs.readFileSync('./cert.pem'),    passphrase: '123456'}, app).listen(port);

@@ -70,7 +70,7 @@ app.use("/api/categories", require("./routes/categories"));
 
 app.use("/api/address", require("./routes/address"));
 
-const port = process.env.PORT || 4800;
+const port = process.env.PORT || 8080;
 
 app.listen(port, ()=>{
   console.log('listening on required port')

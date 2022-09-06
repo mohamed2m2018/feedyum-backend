@@ -29,8 +29,6 @@ mongoose
 
 const app = express();
 
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-
 
 // Models
 require("./models/loadModels");
@@ -69,7 +67,8 @@ app.use("/api/orders", require("./routes/orders"));
 app.use("/api/categories", require("./routes/categories"));
 
 app.use("/api/address", require("./routes/address"));
-app.use(express.static(__dirname + '/static', { dotfiles: 'allow' }))
+
+app.use(express.static(__dirname + '/public', { dotfiles: 'allow' }))
 
 
 const port = process.env.PORT || 80;

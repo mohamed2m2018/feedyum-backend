@@ -17,7 +17,6 @@ module.exports = updateUser = (req, res) => {
   };
 
   User.findOne({username: req.body.userName}).then((user=>{
-    console.log('user', user, req.body.userName)
     if (user) {
       errors.userName = 'username already exists';
       return res.status(400).json(errors);

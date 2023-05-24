@@ -4,12 +4,12 @@ const Validator = require('validator');
 module.exports = function validateLoginInput(data) {
   let errors = {};
 
-  data.username = !isEmpty(data.username) ? data.username : '';
+  data.email = !isEmpty(data.email) ? data.email : '';
   data.password = !isEmpty(data.password) ? data.password : '';
 
 
-  if (Validator.isEmpty(data.username)) {
-    errors.username = 'username is required';
+  if (Validator.isEmpty(data.email)) {
+    errors.email = 'Email is required';
   }
 
 

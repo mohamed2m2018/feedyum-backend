@@ -17,12 +17,11 @@ module.exports = addStory = (req, res) => {
 
     // Create new story
     const newStory = new Story({
-        title: req.body?.title,
-        description: req.body?.description,
-        image: req.body?.image,
-        stories: req.body?.stories,
+        caption: req.body?.caption,
+        uri: req.body?.uri,
         author: req.user._id,
         price: req.body?.price,
+        avatarUri: req.body?.avatarUri,
         category: req.body.category,
     });
     newStory.save().then(story => res.json({ story, success: true })).catch((err) => {

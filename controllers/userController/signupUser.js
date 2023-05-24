@@ -26,23 +26,12 @@ module.exports = signupUser = (req, res) => {
         errors.email = 'Email already exists';
         return res.status(400).json(errors);
       }
-      User.findOne({username: req.body.username}).then((user=>{
-        if (user) {
-          errors.username = 'username already exists';
-          return res.status(400).json(errors);
-        }
-      }))
 
       // Create new user
       const newUser = new User({
         email: req.body.email,
-        username: req.body.username,
         type: req.body.type,
         password: req.body.password,
-        phone: req.body.phone,
-        first_name: req.body?.first_name,
-        last_name: req.body?.last_name,
-        avatar: null,
       });
 
       bcrypt.genSalt(10, (err, salt) => {
@@ -65,11 +54,13 @@ module.exports = signupUser = (req, res) => {
                 keys.secretOrKey,
                 // { expiresIn: 604800 },
                 (err, token) => {
+                  console.log('uu ', userData)
                   return res.json({ user: userData, success: true, token: 'Bearer ' + token });
                 }
               );
             })
             .catch((err) => {
+              console.log(err);
               errors.error = 'Error saving user to database';
               res.status(500).json({ ...errors, ...err });
             });

@@ -8,9 +8,9 @@ module.exports = validateSignupUser = (data) => {
 
   data.email = !isEmpty(data.email) ? data.email : '';
   data.password = !isEmpty(data.password) ? data.password : '';
-  data.username = !isEmpty(data.username) ? data.username : '';
+  // data.username = !isEmpty(data.username) ? data.username : '';
   data.type = !isEmpty(data.type) ? data.type : '';
-  data.phone = !isEmpty(data.phone) ? data.phone : '';
+  // data.phone = !isEmpty(data.phone) ? data.phone : '';
 
 
 
@@ -35,11 +35,11 @@ module.exports = validateSignupUser = (data) => {
 
   }
 
-  // user name
+  // // user name
 
-  if (Validator.isEmpty(data.username)) {
-    errors.username = 'username is required'
-  }
+  // if (Validator.isEmpty(data.username)) {
+  //   errors.username = 'username is required'
+  // }
 
   // user type
   if (Validator.isEmpty(data.type)) {
@@ -47,9 +47,9 @@ module.exports = validateSignupUser = (data) => {
   }
 
   // phone number
-  if(Validator.isEmpty(data.phone)){
-    errors.phone = 'Phone number is required'
-  }
+  // if(Validator.isEmpty(data.phone)){
+  //   errors.phone = 'Phone number is required'
+  // }
 
   return {
     errors,

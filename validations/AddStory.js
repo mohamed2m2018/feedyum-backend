@@ -6,13 +6,12 @@ module.exports = validateAddStory = (data) => {
 
     // For required fields
 
-    data.title = !isEmpty(data.title) ? data.title : '';
-    data.description = !isEmpty(data.description) ? data.description : '';
+    data.caption = !isEmpty(data.caption) ? data.caption : '';
     data.category = !isEmpty(data.category) ? data.category : '';
-    data.image = !isEmpty(data.image) ? data.image : '';
+    data.uri = !isEmpty(data.uri) ? data.uri : '';
 
 
-  if (Validator.isEmpty(data.title)) {
+  if (Validator.isEmpty(data.caption)) {
     errors.title = 'Title field is required';
   }
 
@@ -20,32 +19,12 @@ module.exports = validateAddStory = (data) => {
     errors.title = 'Category field is required';
   }
 
-   if (Validator.isEmpty(data.description)) {
-    errors.description = 'Description field is required';
+   if (Validator.isEmpty(data.uri)) {
+    errors.uri = 'Uri field is required';
   }
 
-   if (Validator.isEmpty(data.image)) {
-    errors.image = 'Image field is required';
-  }
-
-  if (data?.title && data?.title?.length< 5) {
-    errors.title = 'Title is too short' ;
-  }
-
-  if (data?.description && data?.description?.length< 2) {
-    errors.description = 'Description is too short' ;
-  }
-
-  if (data?.stories?.length === 0 ) {
-    errors.stories = 'Empty stories are not acceptable' ;
-  }
-
-  if(data?.stories){
-      data?.stories?.forEach(element => {
-          if(!element?.media || !(element?.mediaType === 'image' ||element?.mediaType === 'video' )){
-              errors.stories = 'Please send stories in the right format'
-          }
-      });
+  if (data?.caption && data?.caption?.length< 5) {
+    errors.caption = 'caption is too short' ;
   }
   
 

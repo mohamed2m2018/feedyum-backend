@@ -16,19 +16,33 @@ module.exports = updateUser = (req, res) => {
     ...req?.body
   };
 
-  User.findByIdAndUpdate(
-    { _id: req.user._id.toString() },
-    { $set: newUserInfo },
-    { new: true }
-  )
-    .then((user) =>
-      res.json({
-        user,
-        success: true
-      })
-    )
-    .catch((err) => {
-      errors.error = 'Error checking for the user in the database';
-      res.status(500).json({ ...errors, ...err });
-    });
+  User.findOne({username: req.body.userName}).then((user=>{
+    console.log('user', user, req.body.userName)
+    if (user) {
+      errors.userName = 'username already exists';
+      return res.status(400).json(errors);
+    } else {
+      User.findByIdAndUpdate(
+        { _id: req.user._id.toString() },
+        { $set: newUserInfo },
+        { new: true }
+      )
+        .then((user) =>{
+          console.log('uu2u ',user)
+          res.json({
+            user,
+            success: true
+          })
+        }
+       
+        )
+        .catch((err) => {
+          console.log('ee ',err)
+          errors.error = 'Error checking for the user in the database';
+          res.status(500).json({ ...errors, ...err });
+        });
+    }
+  }))
+
+
 };

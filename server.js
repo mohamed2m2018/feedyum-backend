@@ -6,15 +6,14 @@ const mongoose = require("mongoose");
 const mongoURI = require("./config/keys").mongoURI;
 const AdminJSExpress = require("@adminjs/express");
 const AdminJSMongoose = require("@adminjs/mongoose");
-const https = require('https');
-const fs  = require('fs');
+const http = require('http');
 
 AdminJS.registerAdapter(AdminJSMongoose);
 
 
 //connecting to db
 mongoose
-  .connect(mongoURI, { useCreateIndex: true, useNewUrlParser: true })
+  .connect(mongoURI, {  useNewUrlParser: true })
   .then((mongooseDb) => {
     console.log("MongoDB Connected");
     // init adminJS
@@ -58,11 +57,7 @@ app.use(function (req, res, next) {
 
 app.use("/api/user", require("./routes/user"));
 
-app.use("/api/cart", require("./routes/cart"));
-
 app.use("/api/story", require("./routes/story"));
-
-app.use("/api/orders", require("./routes/orders"));
 
 app.use("/api/categories", require("./routes/categories"));
 
@@ -71,16 +66,11 @@ app.use("/api/address", require("./routes/address"));
 app.use(express.static(__dirname + '/public', { dotfiles: 'allow' }))
 
 
-const port = process.env.PORT || 443;
 
-https
-  .createServer(
-    {
-      key: fs.readFileSync('/etc/letsencrypt/live/foodhub.tech/privkey.pem'),
-      cert: fs.readFileSync('/etc/letsencrypt/live/foodhub.tech/fullchain.pem'),
-    },
-    app
-  ).listen(port, ()=>{
+const port = process.env.PORT || 4800;
+
+http
+  .createServer( app ).listen(port, ()=>{
   console.log('listening on ', port)
 })
 

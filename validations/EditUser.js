@@ -8,12 +8,8 @@ module.exports = validateEditUser = (data) => {
     errors.email = 'Email is invalid' ;
   }
 
-  if (data?.first_name && data?.first_name?.length< 2) {
-    errors.firstName = 'first name is invalid' ;
-  }
-
-  if (data?.last_name && data?.last_name?.length< 2) {
-    errors.lastName = 'last name is invalid' ;
+  if (data?.fullName && data?.fullName?.length< 2) {
+    errors.fullName = 'Full name is invalid' ;
   }
 
   if (data?.password) {

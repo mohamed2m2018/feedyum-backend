@@ -4,19 +4,44 @@ const Schema = mongoose.Schema;
 
 // story schema
 
+
 const StorySchema = new Schema({
-  title: String,
-  description: String,
-  image: String,
-  price: Number,
   author: { type: mongoose.Schema.Types.ObjectId, ref: "user", required: true },
-  stories: [
-    {
-      media: String,
-      mediaType: "image" | "video",
-    },
-  ],
   category: { type: mongoose.Schema.Types.ObjectId, ref: "category", required: true },
+  uri: {
+    type: "String",
+    required: true
+  },
+  caption: {
+    type: "String"
+  },
+  musicName: {
+    type: "Date"
+  },
+  likes: {
+    type: "String"
+  },
+  comments: {
+    type: "String"
+  },
+  bookmark: {
+    type: "String"
+  },
+  share: {
+    type: "String"
+  },
+  category: {
+    type: "String"
+  },
+  avatarUri: {
+    type: "String"
+  },
+  poster: {
+    type: "String"
+  },
+  views: {
+    type: "String"
+  }
 });
 
 //commented becuase we don't use search now, instead we use regex

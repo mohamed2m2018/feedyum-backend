@@ -19,7 +19,7 @@ const StorySchema = new Schema({
     type: "Date"
   },
   likes: {
-    type: "String"
+    type: "Number"
   },
   comments: {
     type: "String"
@@ -40,7 +40,7 @@ const StorySchema = new Schema({
     type: "String"
   },
   views: {
-    type: "String"
+    type: "Number"
   }
 });
 

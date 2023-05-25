@@ -6,7 +6,7 @@ const Address = mongoose.model("address");
 module.exports = addAddress = (req, res) => {
   const errors = {};
   if (!req.body?.nameLine) {
-    errors.error = "Name line is required";
+    errors.error = "Name line is required ";
     return res.status(400).json({ ...errors });
   }
   if (!req.body?.lat) {

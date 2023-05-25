@@ -10,10 +10,6 @@ module.exports = getStories = (req, res) => {
         .limit(limit * 1)
         .skip((page - 1) * limit).sort({ _id: -1 })
         .exec().then(async (stories) => {
-            if (stories.length === 0) {
-                errors.noStories = 'No stories found';
-                return res.status(404).json(errors);
-            }
             // get total documents in the stories collection 
             const count = await Story.countDocuments({author: new mongoose.Types.ObjectId(id)});
 

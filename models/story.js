@@ -44,7 +44,6 @@ const StorySchema = new Schema({
   }
 });
 
-//commented becuase we don't use search now, instead we use regex
 
 // StorySchema.index({ title: "text", description: "text" });
 

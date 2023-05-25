@@ -13,7 +13,10 @@ module.exports = updateUser = (req, res) => {
     return res.status(400).json(errors);
   }
   const newUserInfo = {
-    ...req?.body
+    ...req?.body,
+    ...req.body?.username && {
+      profileCompleted: true,
+    }
   };
 
   User.findOne({username: req.body.userName}).then((user=>{
@@ -27,7 +30,6 @@ module.exports = updateUser = (req, res) => {
         { new: true }
       )
         .then((user) =>{
-          console.log('uu2u ',user)
           res.json({
             user,
             success: true

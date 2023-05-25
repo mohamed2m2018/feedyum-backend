@@ -18,6 +18,7 @@ const UserSchema = new Schema({
   },
   pushNotificationToken: String,
   wallet: Number,
+  profileCompleted: Boolean
 
 });
 

@@ -32,6 +32,7 @@ module.exports = signupUser = (req, res) => {
         email: req.body.email,
         type: req.body.type,
         password: req.body.password,
+        profileCompleted: false,
       });
 
       bcrypt.genSalt(10, (err, salt) => {

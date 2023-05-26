@@ -11,6 +11,13 @@ const userController = require('../controllers/userController/index.js');
 // @errors nousers error
 router.get('/all', userController.getAllUsers);
 
+
+// @route  GET api/user/search
+// @desc   search users
+// @access Public
+// @errors nousers error
+router.get('/search', userController.searchUser);
+
 // @route  POST api/user
 // @desc   User Signup - Create new user
 // @access Public

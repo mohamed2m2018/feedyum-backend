@@ -33,6 +33,9 @@ module.exports = signupUser = (req, res) => {
         type: req.body.type,
         password: req.body.password,
         profileCompleted: false,
+        fullName: req.body.fullName,
+        username: req.body.username,
+        phone: req.body.phone,
       });
 
       bcrypt.genSalt(10, (err, salt) => {
@@ -55,7 +58,6 @@ module.exports = signupUser = (req, res) => {
                 keys.secretOrKey,
                 // { expiresIn: 604800 },
                 (err, token) => {
-                  console.log('uu ', userData)
                   return res.json({ user: userData, success: true, token: 'Bearer ' + token });
                 }
               );

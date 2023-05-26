@@ -23,6 +23,8 @@ module.exports = addStory = (req, res) => {
         price: req.body?.price,
         avatarUri: req.body?.avatarUri,
         category: req.body.category,
+        title: req.body?.title,
+        phone: req.body?.phone,
     });
     newStory.save().then(story => res.json({ story, success: true })).catch((err) => {
         errors.error = 'Error saving user to database';

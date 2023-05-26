@@ -11,6 +11,7 @@ module.exports = getStories = (req, res) => {
         .skip((page - 1) * limit).sort({ _id: -1 })
         .exec().then(async (stories) => {
             // get total documents in the stories collection 
+            console.log('lll ',stories)
             const count = await Story.countDocuments({author: new mongoose.Types.ObjectId(id)});
 
             // return response with stories, total pages, and current page

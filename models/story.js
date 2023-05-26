@@ -41,6 +41,18 @@ const StorySchema = new Schema({
   },
   views: {
     type: "Number"
+},
+  title: {
+    type: "String"
+  },
+  price: {
+    type: "Number"
+  },
+  phone: {
+  type: "String",
+  },
+  linkToGo: {
+    type: "String",
   }
 });
 

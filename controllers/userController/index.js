@@ -5,6 +5,7 @@ const updateUser = require('./updateUser');
 const deleteUser = require('./deleteUser');
 const getUser = require('./getUser');
 const getUserById = require('./getUserById');
+const searchUser = require('./searchUser');
 
 module.exports = {
   getAllUsers,
@@ -14,4 +15,5 @@ module.exports = {
   deleteUser,
   getUser,
   getUserById,
+  searchUser,
 };

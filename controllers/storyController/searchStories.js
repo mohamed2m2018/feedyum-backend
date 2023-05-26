@@ -15,7 +15,7 @@ module.exports = searchStories = (req, res) => {
   Story.find(
     searchString
       ? {
-          $or: [{title: string },{description: string}],
+          $or: [{caption: string },{description: string}],
           ...rest,
         }
       : {
@@ -27,6 +27,7 @@ module.exports = searchStories = (req, res) => {
     .sort({ _id: -1 })
     .exec()
     .then(async (stories) => {
+      console.log('ll ', stories)
       if (stories.length === 0) {
         errors.nousers = "No stories found";
         return res.status(404).json(errors);

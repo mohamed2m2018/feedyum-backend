@@ -15,14 +15,8 @@ const StorySchema = new Schema({
   caption: {
     type: "String"
   },
-  musicName: {
-    type: "Date"
-  },
   likes: {
     type: "Number"
-  },
-  comments: {
-    type: "String"
   },
   bookmark: {
     type: "String"
@@ -53,6 +47,13 @@ const StorySchema = new Schema({
   },
   linkToGo: {
     type: "String",
+  },
+  likesNo: {
+    type: Number, // Ensure likesNo is of number type
+    default: 0, // Set a default value if needed
+  },
+  commentsNo: {
+    type: "Number"
   }
 });
 

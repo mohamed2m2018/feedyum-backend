@@ -1,11 +1,13 @@
 const mongoose = require("mongoose");
 
 // Models
-const Story = mongoose.model("user");
+const User = mongoose.model("user");
+const Follow = mongoose.model("follow");
+
 var ObjectId = require("mongoose").Types.ObjectId;
 
-module.exports = searchUser = (req, res) => {
-  const { page = 1, limit = 10, searchString, ...rest } = req.query;
+const searchUser = (req, res) => {
+  const { page = 1, limit = 10, searchString, currentUserId, ...rest } = req.query;
   const string = new RegExp(searchString, 'i')
   const errors = {};
   if (rest.category && !ObjectId.isValid(rest.category)) {
@@ -34,9 +36,20 @@ module.exports = searchUser = (req, res) => {
       // get total documents in the stories collection
       const count = await User.countDocuments();
 
+      const populatedUsers = await Promise.all(
+        users.map(async (user) => {
+        // Check if the current user has liked the story
+        const currentUserFollowed = await Follow.exists({ follower_id: currentUserId, following_id: user?._doc._id });
+        return {
+            ...user?._doc,
+            currentUserFollowed: Boolean(currentUserFollowed),
+        };
+        })
+    );
+
       // return response with stories, total pages, and current page
       res.json({
-        users,
+        users: populatedUsers,
         totalPages: Math.ceil(count / limit),
         currentPage: page,
       });
@@ -46,3 +59,5 @@ module.exports = searchUser = (req, res) => {
       res.status(500).json({ ...errors, ...err });
     });
 };
+
+module.exports = searchUser;

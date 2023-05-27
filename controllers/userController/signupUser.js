@@ -63,7 +63,6 @@ module.exports = signupUser = (req, res) => {
               );
             })
             .catch((err) => {
-              console.log(err);
               errors.error = 'Error saving user to database';
               res.status(500).json({ ...errors, ...err });
             });

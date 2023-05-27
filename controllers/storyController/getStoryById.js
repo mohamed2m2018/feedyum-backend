@@ -3,9 +3,9 @@ const mongoose = require('mongoose');
 // Models
 const Story = mongoose.model('story');
 
-module.exports = getStoryById = (req, res) => {
+const getStoryById = (req, res) => {
   const errors = {};
-  Story.findById(req.params.id)
+  Story.findById(req.params.id).populate('author')
     .then((story) => {
       res.json({
         story,
@@ -17,3 +17,5 @@ module.exports = getStoryById = (req, res) => {
       res.status(500).json({ ...errors, ...err });
     });
 };
+
+module.exports = getStoryById;

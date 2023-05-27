@@ -27,7 +27,6 @@ module.exports = searchStories = (req, res) => {
     .sort({ _id: -1 })
     .exec()
     .then(async (stories) => {
-      console.log('ll ', stories)
       if (stories.length === 0) {
         errors.nousers = "No stories found";
         return res.status(404).json(errors);
@@ -43,7 +42,6 @@ module.exports = searchStories = (req, res) => {
       });
     })
     .catch((err) => {
-      console.log('e ',err)
       errors.error = "Error fetching stories from database";
       res.status(500).json({ ...errors, ...err });
     });

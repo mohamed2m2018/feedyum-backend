@@ -63,6 +63,13 @@ app.use("/api/categories", require("./routes/categories"));
 
 app.use("/api/address", require("./routes/address"));
 
+app.use("/api/like", require("./routes/like"));
+
+
+app.use("/api/comment", require("./routes/comment"));
+
+app.use("/api/follow", require("./routes/follow"));
+
 app.use(express.static(__dirname + '/public', { dotfiles: 'allow' }))
 
 

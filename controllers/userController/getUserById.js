@@ -2,14 +2,19 @@ const mongoose = require('mongoose');
 
 // Models
 const User = mongoose.model('user');
+const Follow = mongoose.model('follow');
 
-module.exports = getUserById = (req, res) => {
+
+
+const getUserById = async (req, res) => {
   const errors = {};
   User.findById(req.params.id)
-    .then((user) => {
-      const {password, ...userData}  = user?._doc
+    .then(async (user) => {
+      const {password, ...userData}  = user._doc
+      const currentUserFollowed = await Follow.exists({ follower_id: req.query?.currentUser?._id, following_id: userData?._id });
       res.json({
         user: userData,
+        currentUserFollowed: Boolean(currentUserFollowed),
         success: true
       });
     })
@@ -18,3 +23,5 @@ module.exports = getUserById = (req, res) => {
       res.status(500).json({ ...errors, ...err });
     });
 };
+
+module.exports = getUserById;

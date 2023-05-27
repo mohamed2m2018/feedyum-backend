@@ -18,8 +18,8 @@ const UserSchema = new Schema({
   },
   pushNotificationToken: String,
   wallet: Number,
-  profileCompleted: Boolean
-
+  profileCompleted: Boolean,
+  currentUserFollowed: Boolean,
 });
 
 module.exports = User = mongoose.model('user', UserSchema);

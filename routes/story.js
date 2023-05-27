@@ -47,7 +47,18 @@ router.delete('/stories', storyController.deleteStories );
 router.get('/author', storyController.getStoriesByUserId);
 
 
+// @route  GET api/story/following
+// @desc   Get story for following
+// @access Public
 
+router.get('/following', storyController.getFollowingStories);
+
+
+// @route  GET api/story/categories
+// @desc   Get stories based on category
+// @access Public
+
+router.get('/categories', storyController.getSubscribedCategoriesStories);
 
 // @route  GET api/story/:id
 // @desc   Get story by ID

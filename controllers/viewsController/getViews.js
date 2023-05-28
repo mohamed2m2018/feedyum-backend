@@ -1,7 +1,6 @@
 // controllers/viewController.js
 
 const mongoose = require('mongoose');
-require('../../models/views');
 
 const View = mongoose.model('view');
 

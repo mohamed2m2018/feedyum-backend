@@ -6,7 +6,7 @@ const View = mongoose.model('view');
 
 const updateViews = async (req, res) => {
   try {
-    const { storyId } = req.params;
+    const { storyId } = req.body;
 
     // Find the view entry for the story
     let view = await View.findOne({ story: storyId });

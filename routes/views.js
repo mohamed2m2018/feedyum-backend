@@ -1,25 +1,24 @@
 const express = require('express');
-const passport = require('passport');
 
 const router = express.Router();
 
 const viewController = require('../controllers/viewsController');
 
-// @route  POST api/like/:postId
-// @desc   Like a story
+router.get('/user/:userId',
+  viewController.getViewsByUser,
+);
+// @route  POST api/views/:postId
+// @desc   uodate view
 // @access Private
-router.post('/views/:storyId',
-  passport.authenticate('jwt', { session: false }),
+router.post('/',
   viewController.updateViews
 );
 
-// @route  DELETE api/like/:postId
-// @desc   Unlike a story
-// @access Private
-router.delete('/views/:storyId',
-  passport.authenticate('jwt', { session: false }),
+router.get('/',
   viewController.getViews
 );
+
+
 
 
 module.exports = router;

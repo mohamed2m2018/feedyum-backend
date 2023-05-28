@@ -10,7 +10,7 @@ const User = mongoose.model('user');
 // Validations
 const validateUser = require('../../validations/user');
 
-module.exports = signupUser = (req, res) => {
+const signupUser = (req, res) => {
 
   // Validate
   let { errors, isValid } = validateUser(req.body);
@@ -36,6 +36,8 @@ module.exports = signupUser = (req, res) => {
         fullName: req.body.fullName,
         username: req.body.username,
         phone: req.body.phone,
+        postsNo: 0,
+        likesNo: 0,
       });
 
       bcrypt.genSalt(10, (err, salt) => {
@@ -75,3 +77,5 @@ module.exports = signupUser = (req, res) => {
       res.status(500).json({ ...errors, ...err });
     });
 };
+
+module.exports = signupUser;

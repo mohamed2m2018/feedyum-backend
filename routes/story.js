@@ -60,6 +60,12 @@ router.get('/following', storyController.getFollowingStories);
 
 router.get('/categories', storyController.getSubscribedCategoriesStories);
 
+// @route  GET api/story/reviews
+// @desc   Get stories based on revies
+// @access Public
+
+router.get('/reviews', storyController.getReviewsStories);
+
 // @route  GET api/story/:id
 // @desc   Get story by ID
 // @access Public

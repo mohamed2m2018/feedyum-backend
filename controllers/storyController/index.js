@@ -7,7 +7,7 @@ const deleteStories = require('./deleteStories');
 const searchStories = require('./searchStories');
 const getFollowingStories = require('./getFollowingStories');
 const getSubscribedCategoriesStories = require('./getSubscribedCategoriesStories');
-
+const getReviewsStories = require ('./getReviewsStories');
 
 module.exports = {
     addStory,
@@ -18,5 +18,6 @@ module.exports = {
     deleteStories,
     searchStories,
     getFollowingStories,
-    getSubscribedCategoriesStories
+    getSubscribedCategoriesStories,
+    getReviewsStories,
 };

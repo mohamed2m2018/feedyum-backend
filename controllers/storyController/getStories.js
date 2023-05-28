@@ -13,7 +13,7 @@ const getStories = (req, res) => {
         .skip((page - 1) * limit).sort({ _id: -1 })
         .exec().then(async (stories) => {
             if (stories.length === 0) {
-                errors.nousers = 'No stories found';
+                errors.nousers = 'No Posts found';
                 return res.status(404).json(errors);
             }
             // get total documents in the stories collection 

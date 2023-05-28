@@ -5,7 +5,7 @@ const router = express.Router();
 
 const followController = require('../controllers/followController');
 
-// @route  POST api/user/follow/:userToFollow
+// @route  POST api/follow/:userToFollow
 // @desc   Follow a user
 // @access Private
 router.post('/',
@@ -13,12 +13,16 @@ router.post('/',
   followController.followUser
 );
 
-// @route  DELETE api/user/unfollow/:userToUnfollow
+// @route  DELETE api/follow/:userToUnfollow
 // @desc   Unfollow a user
 // @access Private
 router.delete('/',
   passport.authenticate('jwt', { session: false }),
   followController.unfollowUser
+);
+
+router.get('/statistics/:userId',
+  followController.getStatisticsbyUser
 );
 
 module.exports = router;

@@ -12,6 +12,7 @@ const UserSchema = new Schema({
   avatar: String,
   fullName:String,
   phone: String,
+  gender: String,
   date: {
     type: Date,
     default: Date.now

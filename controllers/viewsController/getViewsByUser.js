@@ -11,9 +11,10 @@ const getViewsByUser = async (req, res) => {
     // Find all stories by the user
     const stories = await Story.find({ author: userId }).select('_id');
 
+
     // Get the total views for the user's stories
     const totalViews = await View.aggregate([
-      { $match: { story: { $in: stories } } },
+      { $match: { story: { $in: stories.map((story) => story._id) } } },
       { $group: { _id: null, totalViews: { $sum: '$count' } } },
     ]);
 

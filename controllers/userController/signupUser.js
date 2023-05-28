@@ -34,10 +34,12 @@ const signupUser = (req, res) => {
         password: req.body.password,
         profileCompleted: false,
         fullName: req.body.fullName,
-        username: req.body.username,
+        username: req.body.userName,
+        gender: req.body.gender,
         phone: req.body.phone,
         postsNo: 0,
         likesNo: 0,
+        avatar: req.body.avatar,
       });
 
       bcrypt.genSalt(10, (err, salt) => {

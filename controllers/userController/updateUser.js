@@ -1,48 +1,50 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 // Models
-const User = mongoose.model('user');
+const User = mongoose.model("user");
 
 // Validations
-const validateUser = require('../../validations/EditUser');
+const validateUser = require("../../validations/EditUser");
 
-module.exports = updateUser = (req, res) => {
+const updateUser = (req, res) => {
   // Validate
   const { errors, isValid } = validateUser(req.body);
   if (!isValid) {
     return res.status(400).json(errors);
   }
-  const newUserInfo = {
-    ...req?.body,
-    ...req.body?.username && {
-      profileCompleted: true,
-    }
+
+  const updatedFields = {
+    fullName: req.body.fullName,
+    phone: req.body.phone,
+    userName: req.body.userName,
+    gender: req.body.gender,
+    email: req.body.email,
+    password: req.body.password,
+    type: req.body.type,
+    avatar: req.body.avatar,
   };
 
-  User.findOne({username: req.body.userName}).then((user=>{
-    if (user) {
-      errors.userName = 'username already exists';
-      return res.status(400).json(errors);
-    } else {
-      User.findByIdAndUpdate(
-        { _id: req.user._id.toString() },
-        { $set: newUserInfo },
-        { new: true }
-      )
-        .then((user) =>{
-          res.json({
-            user,
-            success: true
-          })
-        }
-       
-        )
-        .catch((err) => {
-          errors.error = 'Error checking for the user in the database';
-          res.status(500).json({ ...errors, ...err });
-        });
-    }
-  }))
 
+  User.findByIdAndUpdate(
+    req.user._id.toString(),
+    { $set: updatedFields },
+    { new: true }
+  )
+    .then((user) => {
+      if (!user) {
+        errors.error = "User not found";
+        return res.status(404).json(errors);
+      }
 
+      res.json({
+        user,
+        success: true,
+      });
+    })
+    .catch((err) => {
+      errors.error = "Error checking for the user in the database";
+      res.status(500).json({ ...errors, ...err });
+    });
 };
+
+module.exports = updateUser;

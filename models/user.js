@@ -20,6 +20,10 @@ const UserSchema = new Schema({
   wallet: Number,
   profileCompleted: Boolean,
   currentUserFollowed: Boolean,
+  postsNo: Number,
+  likesNo: Number,
 });
 
-module.exports = User = mongoose.model('user', UserSchema);
+const User = mongoose.model('user', UserSchema);
+
+module.exports = User;

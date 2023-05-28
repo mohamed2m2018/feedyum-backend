@@ -5,3 +5,4 @@ require('../models/address');
 require('../models/like');
 require('../models/comment');
 require('../models/follow');
+require('../models/views');

@@ -6,7 +6,7 @@ const Story = mongoose.model('story');
 // Validations
 const validateStory = require('../../validations/EditStory');
 
-module.exports = updateStory = (req, res) => {
+const updateStory = (req, res) => {
     // Validate
     const { errors, isValid } = validateStory(req.body);
     if (!isValid) {
@@ -36,3 +36,5 @@ module.exports = updateStory = (req, res) => {
             res.status(500).json({ ...errors, ...err });
         });
 };
+
+module.exports = updateStory;

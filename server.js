@@ -70,6 +70,9 @@ app.use("/api/comment", require("./routes/comment"));
 
 app.use("/api/follow", require("./routes/follow"));
 
+app.use("/api/views", require("./routes/views"));
+
+
 app.use(express.static(__dirname + '/public', { dotfiles: 'allow' }))
 
 

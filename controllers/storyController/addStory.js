@@ -6,8 +6,10 @@ const validateStory = require('../../validations/AddStory');
 // Models
 const Story = mongoose.model('story');
 
+const User = mongoose.model('user');
 
-module.exports = addStory = (req, res) => {
+
+const addStory = async (req, res) => {
 
     // Validate
     const { errors, isValid } = validateStory(req.body);
@@ -26,9 +28,13 @@ module.exports = addStory = (req, res) => {
         title: req.body?.title,
         phone: req.body?.phone,
     });
+    await User.findByIdAndUpdate(req.user._id, { $inc: { postsNo: 1 } });
+
     newStory.save().then(story => res.json({ story, success: true })).catch((err) => {
         errors.error = 'Error saving user to database';
         res.status(500).json({ ...errors, ...err });
     });
 
 };
+
+module.exports = addStory;

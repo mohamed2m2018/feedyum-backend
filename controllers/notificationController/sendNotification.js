@@ -8,7 +8,7 @@ const sendNotification = async (userId, message) => {
     notification.contents = {
       en: message,
     };
-    notification.include_player_ids = [userId];
+    notification.include_external_user_ids = [userId];
   
     try {
       await client.createNotification(notification);

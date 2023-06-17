@@ -42,10 +42,8 @@ const addLike = async function addLike(req, res) {
     // Update the number of likes in the story
     if (post.likesNo) {
       post.likesNo += 1;
-      console.log('id ', post.author._id);
       sendNotification(post.author._id, "Your Post got a like");
     } else {
-      console.log('id ', post.author._id);
       sendNotification(post.author._id, "Your Post got a like");
       post.likesNo = 1;
     }

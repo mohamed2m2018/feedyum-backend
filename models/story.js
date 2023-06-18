@@ -40,7 +40,8 @@ const StorySchema = new Schema({
     type: "String"
   },
   price: {
-    type: "Number"
+    type: "Number",
+    required: true,
   },
   phone: {
   type: "String",
@@ -53,7 +54,7 @@ const StorySchema = new Schema({
     default: 0, // Set a default value if needed
   },
   commentsNo: {
-    type: "Number"
+    type: Number
   }
 });
 

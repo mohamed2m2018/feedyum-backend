@@ -2,15 +2,15 @@ const mongoose = require('mongoose');
 const Comment = mongoose.model('comment');
 
 module.exports = getCommentsByPostId = async (req, res) => {
-  const { post_id } = req.params;
-  const { page = 1, limit = 10 } = req.query;
+  const { page = 1, limit = 10, post_id } = req.query;
   const errors = {};
 
   try {
     const comments = await Comment.find({ post_id: post_id })
       .limit(limit * 1)
       .skip((page - 1) * limit)
-      .populate('user')
+      .populate('user_id')
+      .sort({ created_at: -1 })
       .exec();
 
     if (comments.length === 0) {

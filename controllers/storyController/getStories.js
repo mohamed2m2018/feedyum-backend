@@ -84,10 +84,9 @@ const getStories = async (req, res) => {
     });
 
     // Get the subset of stories for the current page
-    const paginatedData = sortedData.slice((page - 1) * limit, page * limit);
 
     const populatedStories = await Promise.all(
-      paginatedData.map(async (data) => {
+      sortedData.map(async (data) => {
         // Check if the current user has liked the story
         const currentUserLiked = await Like.exists({
           post_id: data.story._id,

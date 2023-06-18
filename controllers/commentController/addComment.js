@@ -1,10 +1,14 @@
 const mongoose = require('mongoose');
+const sendNotification = require('../notificationController/sendNotification');
 // Validations
 
 // Models
 const Post = mongoose.model('story');
 
 const User = mongoose.model('user');
+
+const Comment = mongoose.model('comment');
+
 
 module.exports = async function addComment(req, res) {
     try {
@@ -26,6 +30,14 @@ module.exports = async function addComment(req, res) {
       });
 
       post.commentsNo += 1;
+      if (post.commentsNo) {
+        post.commentsNo += 1;
+        sendNotification(post.author._id, "Your Post got a comment", post);
+      } else {
+        sendNotification(post.author._id, "Your Post got a comment", post);
+        post.commentsNo = 1;
+      }
+
       await post.save();
   
       // Save the comment to the database

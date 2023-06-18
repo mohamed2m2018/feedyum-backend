@@ -2,13 +2,16 @@
 const client = require("../../services/oneSignalNotification");
 const {oneSignalAppId } = require("../../config/keys");
 
-const sendNotification = async (userId, message) => {
+const sendNotification = async (userId, message, additionalData) => {
     const notification = {};
     notification.app_id = oneSignalAppId;
     notification.contents = {
       en: message,
     };
     notification.include_external_user_ids = [userId];
+
+    notification.data = additionalData;
+
   
     try {
       await client.createNotification(notification);

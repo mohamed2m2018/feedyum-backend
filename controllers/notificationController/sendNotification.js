@@ -12,7 +12,6 @@ const sendNotification = async (userId, message, additionalData) => {
 
     notification.data = additionalData;
 
-  
     try {
       await client.createNotification(notification);
       console.log("Notification sent successfully.");

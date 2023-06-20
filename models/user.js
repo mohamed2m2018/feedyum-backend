@@ -23,6 +23,7 @@ const UserSchema = new Schema({
   currentUserFollowed: Boolean,
   postsNo: Number,
   likesNo: Number,
+  isGoogleUser: Boolean,
 });
 
 const User = mongoose.model('user', UserSchema);

@@ -40,6 +40,7 @@ const signupUser = (req, res) => {
         postsNo: 0,
         likesNo: 0,
         avatar: req.body.avatar,
+        isGoogleUser: req.body.isGoogleSignIn
       });
 
       bcrypt.genSalt(10, (err, salt) => {

@@ -24,7 +24,7 @@ module.exports = validateSignupUser = (data) => {
 
   }
 
-  if (!data.isGoogle){
+  if (!data.isGoogleSignIn){
     data.password = !isEmpty(data.password) ? data.password : '';
 
     // password

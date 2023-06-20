@@ -5,7 +5,6 @@ module.exports = function validateLoginInput(data) {
   let errors = {};
 
   data.email = !isEmpty(data.email) ? data.email : '';
-  data.password = !isEmpty(data.password) ? data.password : '';
 
 
   if (Validator.isEmpty(data.email)) {
@@ -13,8 +12,12 @@ module.exports = function validateLoginInput(data) {
   }
 
 
-  if (Validator.isEmpty(data.password)) {
-    errors.password = 'Password is required';
+  if(!data.googleSignIn){
+    data.password = !isEmpty(data.password) ? data.password : '';
+
+    if (Validator.isEmpty(data.password)) {
+      errors.password = 'Password is required';
+    }  
   }
 
   return {

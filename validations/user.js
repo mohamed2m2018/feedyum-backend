@@ -7,7 +7,6 @@ module.exports = validateSignupUser = (data) => {
   // For required fields
 
   data.email = !isEmpty(data.email) ? data.email : '';
-  data.password = !isEmpty(data.password) ? data.password : '';
   // data.username = !isEmpty(data.username) ? data.username : '';
   data.type = !isEmpty(data.type) ? data.type : '';
   // data.phone = !isEmpty(data.phone) ? data.phone : '';
@@ -25,15 +24,21 @@ module.exports = validateSignupUser = (data) => {
 
   }
 
-  // password
-  if (Validator.isEmpty(data.password)) {
-    errors.password = 'Password field is required' ;
+  if (!data.isGoogle){
+    data.password = !isEmpty(data.password) ? data.password : '';
+
+    // password
+    if (Validator.isEmpty(data.password)) {
+      errors.password = 'Password field is required' ;
+    }
+  
+    if (!Validator.isLength(data.password, { min: 6, max: 30 })) {
+      errors.password = 'Password must be at least 6 characters' ;
+  
+    }
   }
 
-  if (!Validator.isLength(data.password, { min: 6, max: 30 })) {
-    errors.password = 'Password must be at least 6 characters' ;
 
-  }
 
   // // user name
 

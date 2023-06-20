@@ -20,6 +20,7 @@ module.exports = loginUser = (req, res) => {
 
   const email = req.body.email;
   const password = req.body.password;
+  const isGoogleSignIn = req.body.isGoogleSignIn;
 
   // Check for the user email
   User.findOne({ email }).then((user) => {
@@ -30,7 +31,7 @@ module.exports = loginUser = (req, res) => {
 
     // Check Password
     bcrypt.compare(password, user.password).then((isMatch) => {
-      if (!isMatch) {
+      if (!isMatch && !isGoogleSignIn) {
         errors.incorrectinfo = 'Incorrect email or password';
         return res.status(400).json(errors);
       }

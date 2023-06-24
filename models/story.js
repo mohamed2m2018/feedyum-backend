@@ -55,7 +55,14 @@ const StorySchema = new Schema({
   },
   commentsNo: {
     type: Number
-  }
+  },
+  governorate: {
+    type: "String"
+  },
+  areas: {
+    type: [String] // Array of strings
+  },
+  duration: Number,
 });
 
 

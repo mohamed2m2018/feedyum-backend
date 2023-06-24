@@ -12,7 +12,7 @@ module.exports = function validateLoginInput(data) {
   }
 
 
-  if(!data.googleSignIn){
+  if(!data.isGoogleSignIn){
     data.password = !isEmpty(data.password) ? data.password : '';
 
     if (Validator.isEmpty(data.password)) {

@@ -10,7 +10,6 @@ const getStoryById = (req, res) => {
   Story.findById(req.params.id)
     .populate("author")
     .then(async (story) => {
-      console.log(req.params, req.user)
       const currentUserLiked = await Like.exists({
         post_id: req.params.id,
         user_id: userId,

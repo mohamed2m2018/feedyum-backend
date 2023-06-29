@@ -9,6 +9,7 @@ const getFollowingStories = require('./getFollowingStories');
 const getSubscribedCategoriesStories = require('./getSubscribedCategoriesStories');
 const getReviewsStories = require ('./getReviewsStories');
 const deleteStoryById = require('./deleteStoryById');
+const reportStory = require('./reportStory');
 
 module.exports = {
     addStory,
@@ -22,4 +23,5 @@ module.exports = {
     getSubscribedCategoriesStories,
     getReviewsStories,
     deleteStoryById,
+    reportStory,
 };

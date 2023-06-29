@@ -15,6 +15,10 @@ router.post(
   storyController.addStory
 );
 
+router.post(
+  "/report_story", storyController.reportStory
+);
+
 // @route  GET api/story/stories
 // @desc   Get all stories
 // @access Public

@@ -24,7 +24,7 @@ module.exports = validateAddStory = (data) => {
   }
 
   if (data?.caption && data?.caption?.length< 5) {
-    errors.caption = 'caption is too short' ;
+    errors.caption = 'Meal description is too short' ;
   }
   
 

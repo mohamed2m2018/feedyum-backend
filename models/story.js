@@ -63,6 +63,10 @@ const StorySchema = new Schema({
     type: [String] // Array of strings
   },
   duration: Number,
+  created_at: {
+    type: Date,
+    default: Date.now
+  }
 });
 
 

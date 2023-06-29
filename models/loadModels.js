@@ -6,3 +6,4 @@ require('../models/like');
 require('../models/comment');
 require('../models/follow');
 require('../models/views');
+require('../models/reportedStories');

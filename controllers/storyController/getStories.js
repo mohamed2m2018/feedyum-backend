@@ -5,6 +5,7 @@ const Story = mongoose.model("story");
 const Like = mongoose.model("like");
 const Follow = mongoose.model("follow");
 const Comment = mongoose.model("comment");
+const View = mongoose.model("view");
 
 const getStories = async (req, res) => {
   const { page = 1, limit = 10, userId } = req.query;
@@ -12,11 +13,12 @@ const getStories = async (req, res) => {
 
   try {
     // Retrieve stories with pagination and populate the author field
+
     const storiesQuery = Story.find()
       .limit(limit * 1)
       .populate("author")
       .skip((page - 1) * limit)
-      .sort({ createdAt: -1 }); // Sort by most recent posts first
+      .sort({ _id: -1 });
 
     // Retrieve the total count of documents in the stories collection
     const countQuery = Story.countDocuments();
@@ -34,17 +36,13 @@ const getStories = async (req, res) => {
     const sortingPromises = [];
 
     // Iterate over the stories and add sorting factor promises to the array
-    stories.forEach((dbStory) => {
+    stories.forEach(async (dbStory) => {
       const story = dbStory._doc;
-      const likesPromise = Like.countDocuments({ post_id: story._id });
-      const commentsPromise = Comment.countDocuments({ post_id: story._id });
-      const followsPromise = Follow.countDocuments({
-        follower_id: userId,
-        following_id: story.author._id,
+      const viewedBeforePromise = View.exists({
+        story: story._id,
+        user_id: userId,
       });
-      sortingPromises.push(
-        Promise.all([likesPromise, commentsPromise, followsPromise])
-      );
+      sortingPromises.push(Promise.all([viewedBeforePromise]));
     });
 
     // Execute all sorting factor promises concurrently
@@ -53,34 +51,31 @@ const getStories = async (req, res) => {
     // Map the sorting factors and stories to a combined array for sorting
     const combinedData = stories.map((dbStory, index) => {
       const story = dbStory._doc;
-      const [likesCount, commentsCount, followsCount] = sortingResults[index];
+      const [likesCount, commentsCount, followsCount, viewedBefore] =
+        sortingResults[index];
       return {
         story,
         likesCount,
         commentsCount,
         followsCount,
+        viewedBefore,
       };
     });
 
     // Sort the combined array based on multiple factors
     const sortedData = combinedData.sort((a, b) => {
-      // Sort by likes count
-      if (a.likesCount !== b.likesCount) {
-        return b.likesCount - a.likesCount;
+      const randomIndex = Math.floor(Math.random() * 18);
+
+      if (randomIndex >= 0 || randomIndex <= 9) {
+        if (a.viewedBefore && !b.viewedBefore) {
+          return b.followsCount - a.followsCount;
+        }
       }
 
-      // Sort by comments count
-      if (a.commentsCount !== b.commentsCount) {
-        return b.commentsCount - a.commentsCount;
-      }
-
-      // Sort by follows count
-      if (a.followsCount !== b.followsCount) {
-        return b.followsCount - a.followsCount;
-      }
-
-      // Sort by recency (createdAt)
-      return b.story.createdAt - a.story.createdAt;
+      // If all sorting factors are equal, introduce more randomness
+      const randomA = Math.random();
+      const randomB = Math.random();
+      return randomA - randomB;
     });
 
     // Get the subset of stories for the current page
@@ -107,9 +102,10 @@ const getStories = async (req, res) => {
       currentPage: page,
     });
   } catch (err) {
-    console.log("ee ", err);
-    errors.error = "Error fetching stories from database";
+    console.log("Error: ", err);
+    errors.error = "Error fetching stories from the database";
     res.status(500).json({ ...errors, ...err });
   }
 };
+
 module.exports = getStories;

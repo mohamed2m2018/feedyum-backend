@@ -17,13 +17,18 @@ mongoose
   .then((mongooseDb) => {
     console.log("MongoDB Connected");
     // init adminJS
-   let  adminJS = new AdminJS({
-      databases: [mongooseDb],
-      rootPath: "/admin",
-    });
-    const adminJSRouter = AdminJSExpress.buildRouter(adminJS);
-    
-    app.use(adminJS.options.rootPath, adminJSRouter);
+    try{
+      let  adminJS = new AdminJS({
+        databases: [mongooseDb],
+        rootPath: "/admin",
+      });
+      const adminJSRouter = AdminJSExpress.buildRouter(adminJS);
+  
+      app.use(adminJS.options.rootPath, adminJSRouter);
+    } catch(err){
+      console.log(err)
+    }
+
   })
   .catch((err) => console.log("Error connecting to database", err));
 

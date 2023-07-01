@@ -15,7 +15,6 @@
     "@google-cloud/bigquery": "^6.1.0",
     "@tiptap/core": "^2.0.3",
     "@tiptap/pm": "^2.0.3",
-    "@tiptap/react": "^2.0.3",
     "@tiptap/starter-kit": "^2.0.3",
     "adminjs": "6.8.7",
     "aws-sdk": "^2.411.0",

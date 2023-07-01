@@ -22,6 +22,7 @@ mongoose
       rootPath: "/admin",
     });
     const adminJSRouter = AdminJSExpress.buildRouter(adminJS);
+    
     app.use(adminJS.options.rootPath, adminJSRouter);
   })
   .catch((err) => console.log("Error connecting to database", err));

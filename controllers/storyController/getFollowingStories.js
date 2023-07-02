@@ -39,21 +39,69 @@ const getFollowingStories = async (req, res) => {
       return res.status(404).json(errors);
     }
 
-    // Fetch currentUserLiked for each story
-    const populatedStories = await Promise.all(
-      followingStories.map(async (story) => {
-        // Check if the current user has liked the story
-        const currentUserLiked = await Like.exists({
-          post_id: story._doc._id,
-          user_id: userId,
-        });
 
-        return {
-          ...story?._doc,
-          currentUserLiked,
-        };
-      })
-    );
+// Prepare an array to store promises for additional sorting factors
+const sortingPromises = [];
+
+// Iterate over the stories and add sorting factor promises to the array
+followingStories.forEach(async (dbStory) => {
+  const story = dbStory._doc;
+  const viewedBeforePromise = View.exists({
+    story: story._id,
+    user_id: userId,
+  });
+  sortingPromises.push(Promise.all([viewedBeforePromise]));
+});
+
+// Execute all sorting factor promises concurrently
+const sortingResults = await Promise.all(sortingPromises);
+
+// Map the sorting factors and stories to a combined array for sorting
+const combinedData = followingStories.map((dbStory, index) => {
+  const story = dbStory._doc;
+  const [likesCount, commentsCount, followsCount, viewedBefore] =
+    sortingResults[index];
+  return {
+    story,
+    likesCount,
+    commentsCount,
+    followsCount,
+    viewedBefore,
+  };
+});
+
+// Sort the combined array based on multiple factors
+const sortedData = combinedData.sort((a, b) => {
+  const randomIndex = Math.floor(Math.random() * 18);
+
+  if (randomIndex >= 0 || randomIndex <= 9) {
+    if (a.viewedBefore && !b.viewedBefore) {
+      return b.followsCount - a.followsCount;
+    }
+  }
+
+  // If all sorting factors are equal, introduce more randomness
+  const randomA = Math.random();
+  const randomB = Math.random();
+  return randomA - randomB;
+});
+
+// Get the subset of stories for the current page
+
+const populatedStories = await Promise.all(
+  sortedData.map(async (data) => {
+    // Check if the current user has liked the story
+    const currentUserLiked = await Like.exists({
+      post_id: data.story._id,
+      user_id: userId,
+    });
+
+    return {
+      ...data.story,
+      currentUserLiked: currentUserLiked ? true : false,
+    };
+  })
+);
 
     // Return response with stories, total pages, and current page
     res.json({

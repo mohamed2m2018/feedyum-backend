@@ -41,7 +41,6 @@ const StorySchema = new Schema({
   },
   price: {
     type: "Number",
-    required: true,
   },
   phone: {
   type: "String",

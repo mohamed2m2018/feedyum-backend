@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const Story = mongoose.model("story");
 const Like = mongoose.model("like");
 const Follow = mongoose.model("follow");
+const View = mongoose.model("view");
 
 const getFollowingStories = async (req, res) => {
   const { page = 1, limit = 10, userId } = req.query;

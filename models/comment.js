@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const Reply = require('./reply');
 
 const commentSchema = new mongoose.Schema({
   user_id: {
@@ -18,7 +19,8 @@ const commentSchema = new mongoose.Schema({
   created_at: {
     type: Date,
     default: Date.now
-  }
+  },
+  replies: [Reply.schema],
 });
 
 const Comment = mongoose.model('comment', commentSchema);

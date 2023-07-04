@@ -42,9 +42,9 @@ const addLike = async function addLike(req, res) {
     // Update the number of likes in the story
     if (post.likesNo) {
       post.likesNo += 1;
-      sendNotification(post.author._id, "Your Post got a like", post);
+      sendNotification(post.author._id, post.title + " got a like", post);
     } else {
-      sendNotification(post.author._id, "Your Post got a like", post);
+      sendNotification(post.author._id, post.title + " got a like", post);
       post.likesNo = 1;
     }
     await post.save();

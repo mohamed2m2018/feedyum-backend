@@ -29,12 +29,11 @@ module.exports = async function addComment(req, res) {
         content
       });
 
-      post.commentsNo += 1;
       if (post.commentsNo) {
         post.commentsNo += 1;
-        sendNotification(post.author._id, "Your Post got a comment", post);
+        sendNotification(post.author._id, post.title+ " got a comment", post);
       } else {
-        sendNotification(post.author._id, "Your Post got a comment", post);
+        sendNotification(post.author._id, post.title+ " got a comment", post);
         post.commentsNo = 1;
       }
 

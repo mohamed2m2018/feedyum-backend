@@ -7,6 +7,9 @@ const commentController = require("../controllers/commentController");
 
 router.get("/", commentController.getCommentByPostId);
 
+router.get("/count", commentController.getCommentsCountByPostId);
+
+
 // @route  POST api/story/:postId/comment
 // @desc   Add a comment to a story
 // @access Private
@@ -14,6 +17,12 @@ router.post(
   "/",
   passport.authenticate("jwt", { session: false }),
 commentController.addComment
+);
+
+router.post(
+  "/reply",
+  passport.authenticate("jwt", { session: false }),
+  commentController.addReplyToComment
 );
 
 

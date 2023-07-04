@@ -7,8 +7,14 @@ const Follow = mongoose.model("follow");
 var ObjectId = require("mongoose").Types.ObjectId;
 
 const searchUser = (req, res) => {
-  const { page = 1, limit = 10, searchString, currentUserId, ...rest } = req.query;
-  const string = new RegExp(searchString, 'i')
+  const {
+    page = 1,
+    limit = 10,
+    searchString,
+    currentUserId,
+    ...rest
+  } = req.query;
+  const string = new RegExp(searchString, "i");
   const errors = {};
   if (rest.category && !ObjectId.isValid(rest.category)) {
     errors.error = "Category id is invalid";
@@ -17,10 +23,12 @@ const searchUser = (req, res) => {
   User.find(
     searchString
       ? {
-          $or: [{fullName: string },{username: string}],
+          $or: [{ fullName: string }, { username: string }],
+          _id: { $ne: currentUserId },
           ...rest,
         }
       : {
+          _id: { $ne: currentUserId },
           ...rest,
         }
   )
@@ -38,16 +46,19 @@ const searchUser = (req, res) => {
 
       const populatedUsers = await Promise.all(
         users.map(async (user) => {
-        // Check if the current user has liked the story
-        const currentUserFollowed = await Follow.exists({ follower_id: currentUserId, following_id: user?._doc._id });
-        return {
+          // Check if the current user has liked the story
+          const currentUserFollowed = await Follow.exists({
+            follower_id: currentUserId,
+            following_id: user?._doc._id,
+          });
+          return {
             ...user?._doc,
             currentUserFollowed: Boolean(currentUserFollowed),
-        };
+          };
         })
-    );
+      );
 
-      // return response with stories, total pages, and current page
+      // return response with users, total pages, and current page
       res.json({
         users: populatedUsers,
         totalPages: Math.ceil(count / limit),

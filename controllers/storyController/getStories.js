@@ -3,8 +3,8 @@ const mongoose = require("mongoose");
 // Models
 const Story = mongoose.model("story");
 const Like = mongoose.model("like");
-const Follow = mongoose.model("follow");
-const Comment = mongoose.model("comment");
+// const Follow = mongoose.model("follow");
+// const Comment = mongoose.model("comment");
 const View = mongoose.model("view");
 
 const getStories = async (req, res) => {
@@ -102,7 +102,6 @@ const getStories = async (req, res) => {
       currentPage: page,
     });
   } catch (err) {
-    console.log("Error: ", err);
     errors.error = "Error fetching stories from the database";
     res.status(500).json({ ...errors, ...err });
   }

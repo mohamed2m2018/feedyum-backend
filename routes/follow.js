@@ -13,6 +13,17 @@ router.post('/',
   followController.followUser
 );
 
+router.get('/followers',
+  passport.authenticate('jwt', { session: false }),
+  followController.getFollowers
+);
+
+
+router.get('/following',
+  passport.authenticate('jwt', { session: false }),
+  followController.getFollowing
+);
+
 // @route  DELETE api/follow/:userToUnfollow
 // @desc   Unfollow a user
 // @access Private

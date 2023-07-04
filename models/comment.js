@@ -21,6 +21,8 @@ const commentSchema = new mongoose.Schema({
     default: Date.now
   },
   replies: [Reply.schema],
+  likesNo: Number,
+  
 });
 
 const Comment = mongoose.model('comment', commentSchema);

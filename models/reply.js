@@ -18,7 +18,8 @@ const replySchema = new mongoose.Schema({
   created_at: {
     type: Date,
     default: Date.now
-  }
+  },
+  likesNo: Number,
 });
 
 const Reply = mongoose.model('reply', replySchema);

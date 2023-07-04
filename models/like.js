@@ -9,12 +9,19 @@ const likeSchema = new mongoose.Schema({
   post_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'story',
-    required: true
+  },
+  comment_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'comment',
+  },
+  reply_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'comment',
   },
   created_at: {
     type: Date,
     default: Date.now
-  }
+  },
 });
 
 const Like = mongoose.model('like', likeSchema);

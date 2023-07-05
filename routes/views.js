@@ -7,6 +7,10 @@ const viewController = require('../controllers/viewsController');
 router.get('/user/:userId',
   viewController.getViewsByUser,
 );
+
+router.get('/user/:storyId',
+  viewController.getViewsByPost,
+);
 // @route  POST api/views/:postId
 // @desc   uodate view
 // @access Private

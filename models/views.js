@@ -8,10 +8,6 @@ const viewSchema = new mongoose.Schema({
     ref: 'story',
     required: true,
   },
-  count: {
-    type: Number,
-    default: 0,
-  },
   user_id: { type: mongoose.Schema.Types.ObjectId, ref: "user", required: true },
 
 });

@@ -61,7 +61,7 @@ const StorySchema = new Schema({
   areas: {
     type: [String] // Array of strings
   },
-  duration: Number,
+  duration: String,
   created_at: {
     type: Date,
     default: Date.now

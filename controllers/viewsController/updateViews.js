@@ -1,34 +1,27 @@
-// controllers/viewController.js
-
+// controllers/viewsController.js
 const mongoose = require('mongoose');
-
 const View = mongoose.model('view');
 
+// Update views for a story
 const updateViews = async (req, res) => {
+  const { storyId } = req.body;
+  const { userId } = req.body;
+  
   try {
-    const { storyId, userId } = req.body;
-
-    // Find the view entry for the story
-    let view = await View.findOne({ story: storyId });
-
-    if (!view) {
-      // Create a new view entry if it doesn't exist
-      view = new View({ story: storyId});
+    // Check if the user has already viewed the story
+    const existingView = await View.findOne({ story: storyId, user_id: userId });
+    if (existingView) {
+      return  res.json({ message: 'you viewed it before' });
     }
-
-    // Increment the view count
-    view.count += 1;
-
-    view.user_id = userId;
-
-    // Save the updated view entry
-    await view.save();
-
-    res.json({ count: view.count });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Error updating views' });
+    
+    // Create a new view for the story
+    const newView = new View({ story: storyId, user_id: userId });
+    await newView.save();
+    
+    res.json({ message: 'Views updated successfully' });
+  } catch (error) {
+    console.log('eee ', error)
+    res.status(500).json({ error: 'Failed to update views' });
   }
 };
-
 module.exports = updateViews;

@@ -26,6 +26,13 @@ router.post(
 );
 
 
+router.post(
+  "/reply/delete",
+  passport.authenticate("jwt", { session: false }),
+  commentController.deleteReply
+);
+
+
 // @route  DELETE api/story/:postId/comment/:commentId
 // @desc   Delete a comment
 // @access Private

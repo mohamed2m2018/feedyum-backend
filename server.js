@@ -6,7 +6,7 @@ const mongoose = require("mongoose");
 const mongoURI = require("./config/keys").mongoURI;
 const AdminJSExpress = require("@adminjs/express");
 const AdminJSMongoose = require("@adminjs/mongoose");
-const http = require('http');
+const http = require('https');
 
 AdminJS.registerAdapter(AdminJSMongoose);
 

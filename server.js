@@ -6,7 +6,7 @@ const mongoose = require("mongoose");
 const mongoURI = require("./config/keys").mongoURI;
 const AdminJSExpress = require("@adminjs/express");
 const AdminJSMongoose = require("@adminjs/mongoose");
-const http = require('https');
+const http = require('http');
 
 AdminJS.registerAdapter(AdminJSMongoose);
 
@@ -20,7 +20,7 @@ mongoose
     try{
       let  adminJS = new AdminJS({
         databases: [mongooseDb],
-        rootPath: "/admin",
+        rootPath: "/shoman-salah-not-expected",
       });
       const adminJSRouter = AdminJSExpress.buildRouter(adminJS);
   

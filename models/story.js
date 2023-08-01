@@ -10,7 +10,6 @@ const StorySchema = new Schema({
   category: { type: mongoose.Schema.Types.ObjectId, ref: "category", required: true },
   uri: {
     type: "String",
-    required: true
   },
   caption: {
     type: "String"

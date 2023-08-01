@@ -64,12 +64,16 @@ const getStories = async (req, res) => {
 
     // Sort the combined array based on multiple factors
     const sortedData = combinedData.sort((a, b) => {
-      const randomIndex = Math.floor(Math.random() * 18);
+      const randomIndex = Math.floor(Math.random() * 36);
 
       if (randomIndex >= 0 || randomIndex <= 9) {
         if (a.viewedBefore && !b.viewedBefore) {
-          return b.followsCount - a.followsCount;
+          return b.viewedBefore - a.viewedBefore;
         }
+      }
+
+      if(randomIndex >=10 && randomIndex <=28){
+        return b.followsCount - a.followsCount
       }
 
       // If all sorting factors are equal, introduce more randomness
@@ -97,7 +101,7 @@ const getStories = async (req, res) => {
 
     // Return response with stories, total pages, and current page
     res.json({
-      stories: populatedStories,
+      stories: [...populatedStories, "ad"],
       totalPages: Math.ceil(count / limit),
       currentPage: page,
     });

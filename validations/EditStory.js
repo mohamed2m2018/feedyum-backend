@@ -3,9 +3,6 @@ const isEmpty = require('./assets/is-empty');
 module.exports = validateEditStory = (data) => {
   let errors = {};
 
-  if (data?.title && data?.title?.length< 5) {
-    errors.title = 'Title is too short' ;
-  }
 
   if (data?.description && data?.description?.length< 2) {
     errors.description = 'Description is too short' ;

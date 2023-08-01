@@ -38,8 +38,7 @@ const searchUser = (req, res) => {
     .exec()
     .then(async (users) => {
       if (users.length === 0) {
-        errors.nousers = "No users found";
-        return res.status(404).json(errors);
+        return res.json([]);
       }
       // get total documents in the stories collection
       const count = await User.countDocuments();

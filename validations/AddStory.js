@@ -19,10 +19,6 @@ module.exports = validateAddStory = (data) => {
     errors.title = 'Category field is required';
   }
 
-   if (Validator.isEmpty(data.uri)) {
-    errors.uri = 'Uri field is required';
-  }
-
   if (data?.caption && data?.caption?.length< 5) {
     errors.caption = 'Meal description is too short' ;
   }

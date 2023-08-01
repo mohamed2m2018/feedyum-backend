@@ -28,8 +28,8 @@ module.exports = searchStories = (req, res) => {
     .exec()
     .then(async (stories) => {
       if (stories.length === 0) {
-        errors.nousers = "No stories found";
-        return res.status(404).json(errors);
+        
+        return res.json({stories: []});
       }
       // get total documents in the stories collection
       const count = await Story.countDocuments();

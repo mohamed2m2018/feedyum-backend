@@ -30,6 +30,7 @@ const addStory = async (req, res) => {
         duration: req.body?.duration,
         governorate: req.body?.governorate,
         areas: req.body?.areas,
+        poster: req.body?.poster
     });
     await User.findByIdAndUpdate(req.user._id, { $inc: { postsNo: 1 } });
 

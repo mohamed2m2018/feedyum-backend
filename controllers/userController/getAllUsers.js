@@ -9,8 +9,7 @@ module.exports = getAllUsers = (req, res) => {
     .sort({ date: -1 })
     .then((users) => {
       if (users.length === 0) {
-        errors.nousers = 'No users found';
-        return res.status(404).json(errors);
+        return res.json([]);
       }
       users = users.map((user) => {
         const {password, ...userData}  = user?._doc

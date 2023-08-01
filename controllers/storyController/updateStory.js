@@ -23,7 +23,7 @@ const updateStory = (req, res) => {
         { new: true }
     )
         .then((story) => {
-            errors.id = 'Story does not exist, or you are not the author';
+            errors.id = 'Post does not exist, or you are not the author';
             if(!story) return res.status(404).json(errors);
             return res.json({
                 story,

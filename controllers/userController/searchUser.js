@@ -22,15 +22,18 @@ const searchUser = (req, res) => {
   }
   User.find(
     searchString
-      ? {
-          $or: [{ fullName: string }, { username: string }],
-          _id: { $ne: currentUserId },
-          ...rest,
-        }
-      : {
-          _id: { $ne: currentUserId },
-          ...rest,
-        }
+    ? {
+        $or: [{ fullName: string }, { username: string }],
+        _id: { $ne: currentUserId },
+        type: { $ne: "guest" },
+        ...rest,
+      }
+    : {
+        _id: { $ne: currentUserId },
+        type
+        : { $ne: "guest" },
+        ...rest,
+      }
   )
     .limit(limit * 1)
     .skip((page - 1) * limit)

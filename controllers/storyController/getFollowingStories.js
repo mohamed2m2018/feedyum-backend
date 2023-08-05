@@ -36,8 +36,11 @@ const getFollowingStories = async (req, res) => {
       .exec();
 
     if (followingStories.length === 0) {
-      errors.nostories = "No stories found";
-      return res.status(404).json(errors);
+      res.json({
+        stories: [],
+        totalPages: 1,
+        currentPage: page,
+      });
     }
 
 

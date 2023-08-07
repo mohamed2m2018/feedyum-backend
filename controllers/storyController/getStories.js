@@ -102,7 +102,7 @@ const getStories = async (req, res) => {
     // Return response with stories, total pages, and current page
 
     res.json({
-      stories: populatedStories?.length> 0 ? [...populatedStories, "ad"]: [],
+      stories: populatedStories?.length> 0 ? [...populatedStories]: [],
       totalPages: Math.ceil(count / limit),
       currentPage: page,
     });

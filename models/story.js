@@ -39,7 +39,7 @@ const StorySchema = new Schema({
     type: "String"
   },
   price: {
-    type: "Number",
+    type: "String",
   },
   phone: {
   type: "String",

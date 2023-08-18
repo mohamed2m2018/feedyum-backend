@@ -14,6 +14,7 @@ const searchUser = (req, res) => {
     currentUserId,
     ...rest
   } = req.query;
+  const string = new RegExp(searchString, "i");
   const errors = {};
   if (rest.category && !ObjectId.isValid(rest.category)) {
     errors.error = "Category id is invalid";
@@ -23,8 +24,8 @@ const searchUser = (req, res) => {
     searchString
     ? {
         $or: [
-          { fullName: { $regex: searchString, $options: 'i' } }, // Case-insensitive regex match
-         ],
+          { fullName: string },
+           { username: string }],
         _id: { $ne: currentUserId },
         type: { $ne: "guest" },
         ...rest,

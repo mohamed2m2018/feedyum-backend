@@ -15,7 +15,7 @@ module.exports = searchStories = (req, res) => {
   Story.find(
     searchString
       ? {
-          $or: [{caption: string },{description: string}],
+          $or: [{caption: string },{description: string}, {title: string}],
           ...rest,
         }
       : {

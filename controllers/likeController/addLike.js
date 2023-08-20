@@ -63,7 +63,7 @@ const addLike = async function addLike(req, res) {
     // Update the number of likes for the entity
     entity.likesNo = (Number(entity.likesNo) || 0) + 1;
 
-    sendNotification(entity.author._id, entity.title + "got a like", entity).then(message=>console.log('message', message)).catch(err=> console.log('err', err))
+    sendNotification(entity.author._id, entity.title + " got a like", entity).then(message=>console.log('message', message)).catch(err=> console.log('err', err))
 
     await entity.save();
 

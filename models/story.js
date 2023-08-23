@@ -64,7 +64,9 @@ const StorySchema = new Schema({
   created_at: {
     type: Date,
     default: Date.now
-  }
+  },
+  reviewMode: Boolean,
+  allowContact: Boolean,
 });
 
 

@@ -43,7 +43,7 @@ const updateUser = (req, res) => {
     })
     .catch((err) => {
       errors.error = "Error checking for the user in the database";
-      res.status(500).json({ ...errors, ...err });
+      return res.status(500).json({ ...errors, ...err });
     });
 };
 

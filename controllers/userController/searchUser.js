@@ -63,7 +63,7 @@ const searchUser = (req, res) => {
       );
 
       // return response with users, total pages, and current page
-      res.json({
+      return res.json({
         users: populatedUsers,
         totalPages: Math.ceil(count / limit),
         currentPage: page,
@@ -71,7 +71,7 @@ const searchUser = (req, res) => {
     })
     .catch((err) => {
       errors.error = "Error fetching users from database";
-      res.status(500).json({ ...errors, ...err });
+     return res.status(500).json({ ...errors, ...err });
     });
 };
 

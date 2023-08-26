@@ -46,7 +46,7 @@ module.exports = addAddress = (req, res) => {
           .save()
           .then((address) => res.json({ address, success: true }))
           .catch((err) => {
-            res.status(500).json({ ...err });
+            return res.status(500).json({ ...err });
           });
       }
     );
@@ -65,7 +65,7 @@ module.exports = addAddress = (req, res) => {
       .save()
       .then((address) => res.json({ address, success: true }))
       .catch((err) => {
-        res.status(500).json({ ...err });
+       return res.status(500).json({ ...err });
       });
   }
 };

@@ -2,9 +2,7 @@ const mongoose = require("mongoose");
 
 // Models
 const Story = mongoose.model("story");
-const Like = mongoose.model("like");
 const Follow = mongoose.model("follow");
-const View = mongoose.model("view");
 
 // Function to shuffle an array using Fisher-Yates algorithm
 function shuffleArray(array) {

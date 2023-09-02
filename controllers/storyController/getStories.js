@@ -17,15 +17,9 @@ const getStories = async (req, res) => {
   const errors = {};
 
   try {
-    // Check if stories have been seen and retrieved before
-    if (!req.session || !req.session.seenStories) {
-      req.session.seenStories = new Set(); // Initialize the set to store seen stories
-    }
+    // Retrieve stories with pagination and populate the author field
 
-    // Retrieve stories with pagination, exclude seen stories, and populate the author field
-    const storiesQuery = Story.find({
-      _id: { $nin: [...req.session.seenStories] }, // Exclude seen stories
-    })
+    const storiesQuery = Story.find()
       .limit(limit * 1)
       .populate("author")
       .skip((page - 1) * limit)
@@ -33,9 +27,6 @@ const getStories = async (req, res) => {
 
     // Execute the query to retrieve stories
     const stories = await storiesQuery;
-
-    // Update the set of seen stories with the newly retrieved stories
-    stories.forEach((story) => req.session.seenStories.add(story._id));
 
     // Shuffle the stories array to randomize the order
     const randomizedStories = shuffleArray([...stories]);

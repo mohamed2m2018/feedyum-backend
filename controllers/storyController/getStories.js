@@ -3,56 +3,31 @@ const mongoose = require("mongoose");
 // Models
 const Story = mongoose.model("story");
 
-// Fisher-Yates Shuffle Function
-function shuffleArray(array) {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
-}
 
 const getStories = async (req, res) => {
   const { page = 1, limit = 10 } = req.query;
   const errors = {};
 
   try {
-    // Retrieve random story IDs
-    const randomStoryIds = await Story.aggregate([
-      { $sample: { size: parseInt(limit) } },
-      { $project: { _id: 1 } }, // Project only the _id field
-    ]);
+    // Retrieve stories with pagination and populate the author field
 
-    // Extract the _id values from the randomStoryIds array
-    const storyIds = randomStoryIds.map((doc) => doc._id);
-
-    // Retrieve all stories with the random IDs
-    const allStories = await Story.find({ _id: { $in: storyIds } })
+    const storiesQuery = Story.find()
+      .limit(limit * 1)
       .populate("author")
-      .sort({ _id: -1 })
-      .exec();
+      .skip((page - 1) * limit)
+      .sort({ _id: -1 });
 
-    if (allStories.length === 0) {
-      return res.json({
-        stories: [],
-        totalPages: 1,
-        currentPage: page,
-      });
-    }
+    // Retrieve the total count of documents in the stories collection
+    const countQuery = Story.countDocuments();
 
-    // Shuffle the stories order randomly
-    shuffleArray(allStories);
+    // Execute the queries in parallel
+    const [stories, count] = await Promise.all([storiesQuery, countQuery]);
 
-    // Calculate pagination offsets
-    const startIndex = (page - 1) * limit;
-    const endIndex = page * limit;
+    // Return response with stories, total pages, and current page
 
-    // Get the stories for the current page
-    const stories = allStories.slice(startIndex, endIndex);
-
-    // Return response with randomly ordered stories, total pages, and current page
     res.json({
-      stories: stories ? stories : [],
-      totalPages: Math.ceil(allStories.length / limit),
+      stories: stories?.length> 0 ? [...stories]: [],
+      totalPages: Math.ceil(count / limit),
       currentPage: page,
     });
   } catch (err) {

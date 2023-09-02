@@ -6,14 +6,6 @@ const Like = mongoose.model("like");
 const Follow = mongoose.model("follow");
 const View = mongoose.model("view");
 
-// Fisher-Yates Shuffle Function
-function shuffleArray(array) {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
-}
-
 const getFollowingStories = async (req, res) => {
   const { page = 1, limit = 10, userId } = req.query;
   const errors = {};
@@ -24,17 +16,26 @@ const getFollowingStories = async (req, res) => {
       "following_id"
     );
 
-    // Retrieve all stories of the users the current user is following
-    const allFollowingStories = await Story.find({
+    // Retrieve the count of stories of the users the current user is following
+    const totalStories = await Story.countDocuments({
+      author: {
+        $in: currentUserFollowing.map((follow) => follow.following_id),
+      },
+    });
+
+    // Retrieve paginated stories of the users the current user is following
+    const followingStories = await Story.find({
       author: {
         $in: currentUserFollowing.map((follow) => follow.following_id),
       },
     })
+      .limit(limit * 1)
       .populate("author")
+      .skip((page - 1) * limit)
       .sort({ _id: -1 })
       .exec();
 
-    if (allFollowingStories.length === 0) {
+    if (followingStories.length === 0) {
       return res.json({
         stories: [],
         totalPages: 1,
@@ -42,20 +43,12 @@ const getFollowingStories = async (req, res) => {
       });
     }
 
-    // Shuffle the stories order randomly
-    shuffleArray(allFollowingStories);
 
-    // Calculate pagination offsets
-    const startIndex = (page - 1) * limit;
-    const endIndex = page * limit;
 
-    // Get the stories for the current page
-    const followingStories = allFollowingStories.slice(startIndex, endIndex);
-
-    // Return response with randomly ordered stories, total pages, and current page
+    // Return response with stories, total pages, and current page
     return res.json({
       stories: followingStories,
-      totalPages: Math.ceil(allFollowingStories.length / limit),
+      totalPages: Math.ceil(totalStories / limit),
       currentPage: page,
     });
   } catch (error) {

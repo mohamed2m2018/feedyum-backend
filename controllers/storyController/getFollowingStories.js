@@ -2,7 +2,18 @@ const mongoose = require("mongoose");
 
 // Models
 const Story = mongoose.model("story");
+const Like = mongoose.model("like");
 const Follow = mongoose.model("follow");
+const View = mongoose.model("view");
+
+// Function to shuffle an array using Fisher-Yates algorithm
+function shuffleArray(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
 
 const getFollowingStories = async (req, res) => {
   const { page = 1, limit = 10, userId } = req.query;
@@ -41,11 +52,12 @@ const getFollowingStories = async (req, res) => {
       });
     }
 
+    // Shuffle the followingStories array to randomize the order
+    const randomizedStories = shuffleArray([...followingStories]);
 
-
-    // Return response with stories, total pages, and current page
+    // Return response with randomized stories, total pages, and current page
     return res.json({
-      stories: followingStories,
+      stories: randomizedStories,
       totalPages: Math.ceil(totalStories / limit),
       currentPage: page,
     });

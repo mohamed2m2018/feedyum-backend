@@ -18,7 +18,6 @@ const getStories = async (req, res) => {
 
   try {
     // Retrieve stories with pagination and populate the author field
-
     const storiesQuery = Story.find()
       .limit(limit * 1)
       .populate("author")
@@ -28,8 +27,16 @@ const getStories = async (req, res) => {
     // Execute the query to retrieve stories
     const stories = await storiesQuery;
 
-    // Shuffle the stories array to randomize the order
-    const randomizedStories = shuffleArray([...stories]);
+    // Separate stories with and without a "poster" attribute
+    const storiesWithPoster = stories.filter((story) => story.poster !== undefined);
+    const storiesWithoutPoster = stories.filter((story) => story.poster === undefined);
+
+    // Shuffle both arrays
+    const shuffledStoriesWithPoster = shuffleArray([...storiesWithPoster]);
+    const shuffledStoriesWithoutPoster = shuffleArray([...storiesWithoutPoster]);
+
+    // Concatenate the arrays to ensure the first two stories are without a "poster"
+    const randomizedStories = [...shuffledStoriesWithoutPoster.slice(0, 2), ...shuffledStoriesWithPoster];
 
     // Retrieve the total count of documents in the stories collection
     const countQuery = Story.countDocuments();

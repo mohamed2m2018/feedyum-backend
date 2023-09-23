@@ -26,18 +26,7 @@ const getStories = async (req, res) => {
 
     // Execute the query to retrieve stories
     const stories = await storiesQuery;
-
-    // Separate stories with and without a "poster" attribute
-    const storiesWithPoster = stories.filter((story) => story.poster !== undefined);
-    const storiesWithoutPoster = stories.filter((story) => story.poster === undefined);
-
-    // Shuffle both arrays
-    const shuffledStoriesWithPoster = shuffleArray([...storiesWithPoster]);
-    const shuffledStoriesWithoutPoster = shuffleArray([...storiesWithoutPoster]);
-
-    // Concatenate the arrays to ensure the first two stories are without a "poster"
-    const randomizedStories = [...shuffledStoriesWithoutPoster.slice(0, 2), ...shuffledStoriesWithPoster];
-
+    const randomizedStories = shuffleArray([...stories]);
     // Retrieve the total count of documents in the stories collection
     const countQuery = Story.countDocuments();
 

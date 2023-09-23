@@ -24,6 +24,7 @@ module.exports = searchStories = (req, res) => {
   )
     .limit(limit * 1)
     .skip((page - 1) * limit)
+    .populate('author', 'fullName')
     .sort({ _id: -1 })
     .exec()
     .then(async (stories) => {

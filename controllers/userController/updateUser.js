@@ -22,6 +22,7 @@ const updateUser = (req, res) => {
     password: req.body.password,
     type: req.body.type,
     avatar: req.body.avatar,
+    bio: req.body.bio,
   };
 
 

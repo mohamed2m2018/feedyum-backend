@@ -24,6 +24,7 @@ const UserSchema = new Schema({
   postsNo: Number,
   likesNo: Number,
   isGoogleUser: Boolean,
+  bio: String,
 });
 
 const User = mongoose.model('user', UserSchema);

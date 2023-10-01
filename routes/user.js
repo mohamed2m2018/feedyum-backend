@@ -62,6 +62,12 @@ router.get(
   userController.getUser
 );
 
+router.get(
+  '/location',
+  passport.authenticate('jwt', { session: false }),
+  userController.getAllLocations,
+);
+
 // @route  GET api/user/:id
 // @desc   Get user by ID
 // @access Public

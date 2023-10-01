@@ -1,8 +1,8 @@
+/* eslint-disable no-unsafe-optional-chaining */
 const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const keys = require('../../config/keys');
-
 
 // Models
 const User = mongoose.model('user');
@@ -11,12 +11,11 @@ const User = mongoose.model('user');
 const validateUser = require('../../validations/user');
 
 const signupUser = (req, res) => {
-
   // Validate
   let { errors, isValid } = validateUser(req.body);
 
   if (!isValid) {
-    throw res.status(400).json(errors);
+    return res.status(400).json(errors);
   }
 
   // Check if there is a user with the same email
@@ -41,8 +40,15 @@ const signupUser = (req, res) => {
         likesNo: 0,
         avatar: req.body.avatar,
         isGoogleUser: req.body.isGoogleSignIn,
-        bio: req.body.bio
+        bio: req.body.bio,
+        locations: req.body.locations
       });
+
+      // Check if location data is provided in the request body
+      if (req.body.location) {
+        const { description, lat, long } = req.body.location;
+        newUser.locations.push({ description, lat, long });
+      }
 
       bcrypt.genSalt(10, (err, salt) => {
         bcrypt.hash(newUser.password, salt, (err, hash) => {
@@ -51,12 +57,12 @@ const signupUser = (req, res) => {
           newUser
             .save()
             .then((user) => {
-                // JWT Payload
-                const TokenPayload = {
-                  _id: user._id,
-                  email: user.email,
-                };
-                const {password, ...userData} = user?._doc;
+              // JWT Payload
+              const TokenPayload = {
+                _id: user._id,
+                email: user.email,
+              };
+              const { password, ...userData } = user?._doc;
 
               // Make JWT
               jwt.sign(
@@ -69,12 +75,11 @@ const signupUser = (req, res) => {
               );
             })
             .catch((err) => {
-              errors.error = 'Error saving user to database';
+              errors.error = 'Error saving user to the database';
               res.status(500).json({ ...errors, ...err });
             });
         });
       });
-
     })
     .catch((err) => {
       errors.error = 'Error checking for the user in the database';

@@ -8,14 +8,18 @@ const UserSchema = new Schema({
   email: String,
   password: String,
   type: String,
-  location: String,
+  locations: [new mongoose.Schema({
+    description: String,
+    lat: Number,
+    long: Number,
+  })],
   avatar: String,
-  fullName:String,
+  fullName: String,
   phone: String,
   gender: String,
   date: {
     type: Date,
-    default: Date.now
+    default: Date.now,
   },
   pushNotificationToken: String,
   wallet: Number,

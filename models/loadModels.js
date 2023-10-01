@@ -7,3 +7,4 @@ require('../models/comment');
 require('../models/follow');
 require('../models/views');
 require('../models/reportedStories');
+require('../models/location');

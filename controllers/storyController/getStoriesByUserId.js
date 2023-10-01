@@ -19,9 +19,8 @@ const getStories = (req, res) => {
             const populatedStories = await Promise.all(
                 stories.map(async (story) => {
                 // Check if the current user has liked the story
-                const currentUserLiked = await Like.exists({ post_id: id, user_id: req.user?._id });
-        
-                return {
+                const currentUserLiked = await Like.exists({ post_id: story?._doc?._id, user_id: req.user?._id?.toString() });
+                    return {
                     ...story?._doc,
                     currentUserLiked
                 };

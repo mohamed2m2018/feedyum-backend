@@ -23,7 +23,7 @@ router.post(
 // @desc   Get all stories
 // @access Public
 
-router.get("/stories", storyController.getStories);
+router.get("/stories", passport.authenticate("jwt", { session: false }), storyController.getStories);
 
 // @route  GET api/story/search
 // @desc   Get all stories
@@ -33,7 +33,7 @@ router.get("/search", storyController.searchStories);
 
 // @route  delete api/story/stories
 // @desc   delete all stories
-// @access Public
+// @access private
 
 router.delete("/stories", storyController.deleteStories);
 
@@ -45,9 +45,11 @@ router.delete(
 
 // @route  GET api/story/author
 // @desc   Get story by User ID
-// @access Public
+// @access private
 
-router.get("/author", storyController.getStoriesByUserId);
+router.get("/author",
+passport.authenticate("jwt", { session: false }),
+storyController.getStoriesByUserId);
 
 // @route  GET api/story/following
 // @desc   Get story for following

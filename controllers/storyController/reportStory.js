@@ -18,7 +18,6 @@ const reportStory = async (req, res) => {
 
     // Find the story by ID
     const story = await Story.findById(storyId);
-
     if (!story) {
       return res.status(404).json({ error: 'Story not found' });
     }
@@ -26,14 +25,14 @@ const reportStory = async (req, res) => {
     // Create a reported post
     const reportedPost = new ReportedPost({
       author: story.author,
-      uri: story.uri,
+      uri: story.uri || "no uri",
       caption: story.caption,
       title: story.title,
-      price: story.price,
+      price: story.price || 0,
       phone: story.phone,
       linkToGo: story.linkToGo,
       originalId: story._id,
-      reportReason
+      reportReason,
     });
 
     await reportedPost.save();

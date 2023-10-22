@@ -6,13 +6,12 @@ const Like = mongoose.model("like");
 
 const getStoryById = (req, res) => {
   const errors = {};
-  const { userId } = req.query;
   Story.findById(req.params.id)
     .populate("author")
     .then(async (story) => {
       const currentUserLiked = await Like.exists({
         post_id: req.params.id,
-        user_id: userId,
+        user_id: req.user._id,
       });
       res.json({
         story :{...story?._doc,

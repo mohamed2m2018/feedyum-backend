@@ -73,7 +73,8 @@ router.get("/reviews", storyController.getReviewsStories);
 // @desc   Get story by ID
 // @access Public
 
-router.get("/:id", storyController.getStoryById);
+router.get("/:id", passport.authenticate("jwt", { session: false }),
+storyController.getStoryById);
 
 // @route  PATCH api/story
 // @desc   Update logged in user

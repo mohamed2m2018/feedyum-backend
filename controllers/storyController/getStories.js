@@ -64,16 +64,21 @@ function deg2rad(degrees) {
 
 
 const getStories = async (req, res) => {
-  const { page = 1, limit = 10 } = req.query;
+  const { page = 1, limit = 10, categoryIds } = req.query;
   const errors = {};
 
+  let  params = {};
+
+  if(categoryIds.length){
+    params = { category: { $in: categoryIds } };
+  }
   try {
     // Retrieve stories with pagination and populate the author field
-    const storiesQuery = Story.find()
+    const storiesQuery = Story.find(params?.category? params: null)
       .limit(limit * 1)
       .populate("author")
-      .skip((page - 1) * limit).
-      lean()
+      .skip((page - 1) * limit)
+      .lean()
       .sort({ _id: -1 });
 
     // Execute the query to retrieve stories

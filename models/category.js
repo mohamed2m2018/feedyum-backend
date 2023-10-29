@@ -6,6 +6,7 @@ const Schema = mongoose.Schema;
 
 const CategorySchema = new Schema({
     name: String,
+    nameArabic: String,
     description: String,
 });
 

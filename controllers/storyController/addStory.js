@@ -24,7 +24,7 @@ const addStory = async (req, res) => {
         author: req.user._id,
         price: req.body?.price,
         avatarUri: req.body?.avatarUri,
-        category: req.body.category,
+        category: [...req.body.category],
         title: req.body?.title,
         phone: req.body?.phone,
         duration: req.body?.duration,
@@ -37,7 +37,8 @@ const addStory = async (req, res) => {
     });
     await User.findByIdAndUpdate(req.user._id, { $inc: { postsNo: 1 } });
 
-    newStory.save().then(story => res.json({ story, success: true })).catch((err) => {
+    newStory.save().then(story =>{        
+        return res.json({ story, success: true })}).catch((err) => {
         errors.error = 'Error saving user to database';
         res.status(500).json({ ...errors, ...err });
     });

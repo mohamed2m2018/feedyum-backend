@@ -76,14 +76,15 @@ const getStories = async (req, res) => {
     // Retrieve stories with pagination and populate the author field
     const storiesQuery = Story.find(params?.category? params: null)
       .limit(limit * 1)
-      .populate("author")
+      .populate("author").populate('category')
       .skip((page - 1) * limit)
       .lean()
       .sort({ _id: -1 });
 
+
+
     // Execute the query to retrieve stories
     const stories = await storiesQuery;
-
 
     // Fetch currentUserLiked for each story
     const mappedStories = await Promise.all(

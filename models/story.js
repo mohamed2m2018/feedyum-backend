@@ -7,7 +7,7 @@ const Schema = mongoose.Schema;
 
 const StorySchema = new Schema({
   author: { type: mongoose.Schema.Types.ObjectId, ref: "user", required: true },
-  category: { type: mongoose.Schema.Types.ObjectId, ref: "category", required: true },
+  category: { type: [mongoose.Schema.Types.ObjectId], ref: "category", required: true },
   uri: {
     type: "String",
   },
@@ -21,9 +21,6 @@ const StorySchema = new Schema({
     type: "String"
   },
   share: {
-    type: "String"
-  },
-  category: {
     type: "String"
   },
   avatarUri: {

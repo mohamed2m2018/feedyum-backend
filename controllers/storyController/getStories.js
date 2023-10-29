@@ -70,7 +70,7 @@ const getStories = async (req, res) => {
   let  params = {};
 
   if(categoryIds.length){
-    params = { category: { $in: categoryIds } };
+    params = { category: { $in: categoryIds.split(',') } };
   }
   try {
     // Retrieve stories with pagination and populate the author field
@@ -106,6 +106,7 @@ const getStories = async (req, res) => {
 
     // Execute the count query
     const count = await countQuery;
+
 
     // Return response with randomized stories, total pages, and current page
     res.json({

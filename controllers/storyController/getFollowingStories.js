@@ -73,30 +73,32 @@ const getFollowingStories = async (req, res) => {
       "following_id"
     );
 
-    let params1 = { author: {
-      $in: currentUserFollowing.map((follow) => follow.following_id),
-    }}
-    let params2 = {};
-
-    if(categoryIds.length){
-      params2.category = { $in: categoryIds.split(',') };
-    }
+    let params = {
+      author: {
+        $in: currentUserFollowing.map((follow) => follow.following_id),
+      },
+    };
+    
+    if (categoryIds.length) {
+      params.category = {
+        $in: categoryIds.split(',') 
+      }
+    }    
 
     // Retrieve the count of stories of the users the current user is following
-    const totalStories = await Story.countDocuments({$and: [
-      params1, params2
-    ]});
+    const totalStories = await Story.countDocuments(params);
+
 
     // Retrieve paginated stories of the users the current user is following
-    const followingStories = await Story.find({$and: [
-      params1, params2
-    ]})
+    const followingStories = await Story.find(params)
       .limit(limit * 1)
       .populate("author").populate("category")
       .skip((page - 1) * limit)
       .sort({ _id: -1 })
       .lean()
       .exec();
+
+
 
     if (followingStories.length === 0) {
       return res.json({
@@ -120,6 +122,7 @@ const getFollowingStories = async (req, res) => {
 
     // Shuffle the followingStories array to randomize the order
     const randomizedStories = shuffleArray([...mappedStories]);
+    console.log('rrr ', randomizedStories)
 
     // Return response with randomized stories, total pages, and current page
     return res.json({

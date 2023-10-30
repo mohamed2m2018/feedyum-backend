@@ -73,19 +73,24 @@ const getFollowingStories = async (req, res) => {
       "following_id"
     );
 
-    let params = { author: {
+    let params1 = { author: {
       $in: currentUserFollowing.map((follow) => follow.following_id),
     }}
+    let params2 = {};
 
     if(categoryIds.length){
-      params.category = { $in: categoryIds.split(',') };
+      params2.category = { $in: categoryIds.split(',') };
     }
 
     // Retrieve the count of stories of the users the current user is following
-    const totalStories = await Story.countDocuments(params);
+    const totalStories = await Story.countDocuments({$and: [
+      params1, params2
+    ]});
 
     // Retrieve paginated stories of the users the current user is following
-    const followingStories = await Story.find(params)
+    const followingStories = await Story.find({$and: [
+      params1, params2
+    ]})
       .limit(limit * 1)
       .populate("author").populate("category")
       .skip((page - 1) * limit)

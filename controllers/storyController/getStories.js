@@ -50,7 +50,6 @@ function getNearestLocation(targetLat, targetLong, locations) {
       nearestDistance = distance;
     }
   }
-
   return {
     nearestLocation,
     distance: nearestDistance,

@@ -92,7 +92,7 @@ const getFollowingStories = async (req, res) => {
     // Retrieve paginated stories of the users the current user is following
     const followingStories = await Story.find(params)
       .limit(limit * 1)
-      .populate("author").populate("category")
+      .populate("author")
       .skip((page - 1) * limit)
       .sort({ _id: -1 })
       .lean()

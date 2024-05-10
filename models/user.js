@@ -16,6 +16,10 @@ const UserSchema = new Schema({
   avatar: String,
   fullName: String,
   phone: String,
+  percentage: {
+     maxAmount: Number,
+     percentageAmount: Number
+  },
   gender: String,
   date: {
     type: Date,

@@ -16,7 +16,7 @@ const UserSchema = new Schema({
   avatar: String,
   fullName: String,
   phone: String,
-  percentage: {
+  discount: {
      maxAmount: Number,
      percentageAmount: Number
   },

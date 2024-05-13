@@ -6,8 +6,8 @@ const Schema = mongoose.Schema;
 
 
 const StorySchema = new Schema({
-  author: { type: mongoose.Schema.Types.ObjectId, ref: "user", required: true },
-  category: { type: [mongoose.Schema.Types.ObjectId], ref: "category", required: true },
+  author: { type: mongoose.Schema.Types.ObjectId, ref: "user", required: true, index: true },
+  category: { type: [mongoose.Schema.Types.ObjectId], ref: "category", required: true, index: true },
   uri: {
     type: "String",
   },
@@ -60,7 +60,8 @@ const StorySchema = new Schema({
   duration: String,
   created_at: {
     type: Date,
-    default: Date.now
+    default: Date.now,
+    index: true,
   },
   reviewMode: Boolean,
   allowContact: Boolean,

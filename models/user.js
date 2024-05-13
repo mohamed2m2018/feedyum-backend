@@ -18,7 +18,8 @@ const UserSchema = new Schema({
   phone: String,
   discount: {
      maxAmount: Number,
-     percentageAmount: Number
+     percentageAmount: Number,
+     coupon: String,
   },
   gender: String,
   date: {

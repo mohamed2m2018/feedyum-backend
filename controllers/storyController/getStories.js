@@ -78,7 +78,7 @@ const getStories = async (req, res) => {
       .populate("author")
       .skip((page - 1) * limit)
       .lean()
-      .sort({ _id: -1 });
+      .sort({ _id: -1 })
 
 
 

@@ -78,6 +78,11 @@ app.use("/api/follow", require("./routes/follow"));
 
 app.use("/api/views", require("./routes/views"));
 
+app.get('/post/:any', (req, res) => {
+  res.redirect('/index.html');
+});
+
+
 
 app.use(express.static(__dirname + '/public', { dotfiles: 'allow' }))
 

@@ -7,37 +7,35 @@ const mongoURI = require("./config/keys").mongoURI;
 const AdminJSExpress = require("@adminjs/express");
 const AdminJSMongoose = require("@adminjs/mongoose");
 const http = require('http');
+const socketSetup = require('./socket');
 
 AdminJS.registerAdapter(AdminJSMongoose);
-
-
-//connecting to db
-mongoose
-  .connect(mongoURI, {  useNewUrlParser: true })
-  .then((mongooseDb) => {
-    console.log("MongoDB Connected");
-    // init adminJS
-    try{
-      let  adminJS = new AdminJS({
-        databases: [mongooseDb],
-        rootPath: "/shoman-salah-not-expected",
-      });
-      const adminJSRouter = AdminJSExpress.buildRouter(adminJS);
-  
-      app.use(adminJS.options.rootPath, adminJSRouter);
-    } catch(err){
-      console.log(err)
-    }
-
-  })
-  .catch((err) => console.log("Error connecting to database", err));
-
-const app = express();
 
 
 // Models
 require("./models/loadModels");
 
+const app = express();
+
+// Connect to MongoDB
+mongoose
+  .connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(mongooseDb => {
+    console.log("MongoDB Connected");
+
+    // Initialize AdminJS
+    try {
+      const adminJS = new AdminJS({
+        databases: [mongooseDb],
+        rootPath: "/shoman-salah-not-expected",
+      });
+      const adminJSRouter = AdminJSExpress.buildRouter(adminJS);
+      app.use(adminJS.options.rootPath, adminJSRouter);
+    } catch (err) {
+      console.log(err);
+    }
+  })
+  .catch(err => console.log("Error connecting to database", err));
 
 // BodyParser Middleware
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -59,40 +57,30 @@ app.use(function (req, res, next) {
 });
 
 // Routes
-
-
 app.use("/api/user", require("./routes/user"));
-
 app.use("/api/story", require("./routes/story"));
-
 app.use("/api/categories", require("./routes/categories"));
-
 app.use("/api/address", require("./routes/address"));
-
 app.use("/api/like", require("./routes/like"));
-
-
 app.use("/api/comment", require("./routes/comment"));
-
 app.use("/api/follow", require("./routes/follow"));
-
 app.use("/api/views", require("./routes/views"));
+app.use("/api/tags", require("./routes/tags"));
+app.use("/api/chat", require("./routes/chat"));
 
 app.get('/post/:any', (req, res) => {
   res.redirect('/index.html');
 });
 
-
-
-app.use(express.static(__dirname + '/public', { dotfiles: 'allow' }))
-
-
+app.use(express.static(__dirname + '/public', { dotfiles: 'allow' }));
 
 const port = process.env.PORT || 4800;
 
-http
-  .createServer( app ).listen(port, ()=>{
-  console.log('listening on ', port)
-})
+const server = http.createServer(app);
 
-// https.createServer({    key: fs.readFileSync('./key.pem'),    cert: fs.readFileSync('./cert.pem'),    passphrase: '123456'}, app).listen(port);
+// Socket.io setup
+socketSetup(server);
+
+server.listen(port, () => {
+  console.log('listening on ', port);
+});

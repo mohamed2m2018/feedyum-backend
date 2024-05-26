@@ -34,6 +34,10 @@ const UserSchema = new Schema({
   likesNo: Number,
   isGoogleUser: Boolean,
   bio: String,
+  tags: [{ 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'tag'  // Reference to the Tag model
+}],
 });
 
 const User = mongoose.model('user', UserSchema);

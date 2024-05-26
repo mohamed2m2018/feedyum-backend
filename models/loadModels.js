@@ -8,3 +8,5 @@ require('../models/follow');
 require('../models/views');
 require('../models/reportedStories');
 require('../models/location');
+require('../models/tag');
+require('../models/message');

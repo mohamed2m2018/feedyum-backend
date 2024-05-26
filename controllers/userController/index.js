@@ -7,6 +7,7 @@ const getUser = require('./getUser');
 const getUserById = require('./getUserById');
 const searchUser = require('./searchUser');
 const getAllLocations = require('./getAllUserLocations');
+const getUserByTag = require('./getUserByTag');
 
 module.exports = {
   getAllUsers,
@@ -18,4 +19,5 @@ module.exports = {
   getUserById,
   searchUser,
   getAllLocations,
+  getUserByTag,
 };

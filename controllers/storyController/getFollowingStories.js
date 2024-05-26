@@ -122,7 +122,6 @@ const getFollowingStories = async (req, res) => {
 
     // Shuffle the followingStories array to randomize the order
     const randomizedStories = shuffleArray([...mappedStories]);
-    console.log('rrr ', randomizedStories)
 
     // Return response with randomized stories, total pages, and current page
     return res.json({

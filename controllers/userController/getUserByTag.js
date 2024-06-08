@@ -31,6 +31,7 @@ const getUserByTag = async (req, res) => {
                                 .skip(skip)
                                 .limit(limit)
                                 .lean()
+                                .sort({_id:-1})
                                 .exec();
         if (users.length === 0) {
             return res.status(404).json({ success: false, error: 'No users found with the specified tag' });

@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 // Models
 const Address = mongoose.model("address");
 
-module.exports = addAddress = (req, res) => {
+const addAddress = (req, res) => {
   const errors = {};
   if (!req.body?.nameLine) {
     errors.error = "Name line is required ";
@@ -69,3 +69,5 @@ module.exports = addAddress = (req, res) => {
       });
   }
 };
+
+module.exports = addAddress;

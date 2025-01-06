@@ -1,7 +1,7 @@
 const isEmpty = require('./assets/is-empty');
 const Validator = require('validator');
 
-module.exports = validateEditUser = (data) => {
+const validateEditUser = (data) => {
   let errors = {};
 
   if (data?.email && !Validator.isEmail(data.email)) {
@@ -22,3 +22,5 @@ module.exports = validateEditUser = (data) => {
     isValid: isEmpty(errors)
   };
 };
+
+module.exports = validateEditUser;

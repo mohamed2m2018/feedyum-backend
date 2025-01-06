@@ -70,4 +70,5 @@ const StorySchema = new Schema({
 
 // StorySchema.index({ title: "text", description: "text" });
 
-module.exports = Story = mongoose.model("story", StorySchema);
+const Story = mongoose.model("story", StorySchema);
+module.exports = Story;

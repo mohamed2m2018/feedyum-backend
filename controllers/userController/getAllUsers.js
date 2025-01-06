@@ -3,7 +3,8 @@ const mongoose = require('mongoose');
 // Models
 const User = mongoose.model('user');
 
-module.exports = getAllUsers = (req, res) => {
+
+const getAllUsers = (req, res) => {
   const errors = {};
   User.find()
     .sort({ date: -1 })
@@ -22,3 +23,5 @@ module.exports = getAllUsers = (req, res) => {
       res.status(500).json({ ...errors, ...err });
     });
 };
+
+module.exports = getAllUsers;

@@ -1,10 +1,11 @@
 const mongoose = require("mongoose");
+const { search } = require("../../routes/user");
 
 // Models
 const Story = mongoose.model("story");
 var ObjectId = require("mongoose").Types.ObjectId;
 
-module.exports = searchStories = (req, res) => {
+ const searchStories = (req, res) => {
   const { page = 1, limit = 10, searchString, ...rest } = req.query;
   const string = new RegExp(searchString, 'i')
   const errors = {};
@@ -47,3 +48,4 @@ module.exports = searchStories = (req, res) => {
       res.status(500).json({ ...errors, ...err });
     });
 };
+module.exports = searchStories;

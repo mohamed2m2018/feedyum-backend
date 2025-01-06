@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 // Models
 const Address = mongoose.model("address");
 
-module.exports = removeAddress = (req, res) => {
+const removeAddress = (req, res) => {
   const errors = {};
   Address.remove(
     { _id: req.body.addressId.toString() },
@@ -18,3 +18,5 @@ module.exports = removeAddress = (req, res) => {
       res.status(500).json({ ...errors, ...err });
     });
 };
+
+module.exports = removeAddress;

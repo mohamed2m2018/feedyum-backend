@@ -16,4 +16,5 @@ const AddressSchema = new Schema({
 
 AddressSchema.index({isPrimary: 1}, {unique: true, partialFilterExpression: {isPrimary: true}});
 
-module.exports = Address = mongoose.model('address', AddressSchema);
+const Address = mongoose.model('address', AddressSchema);
+module.exports = Address;

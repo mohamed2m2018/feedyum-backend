@@ -2,10 +2,10 @@
   "name": "makeit-be",
   "version": "1.0.0",
   "description": "makeit-be",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "start": "nodemon index.js",
-    "server": "nodemon index.js"
+    "start": "nodemon server.js",
+    "server": "nodemon server.js"
   },
   "author": "",
   "license": "ISC",

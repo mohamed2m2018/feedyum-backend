@@ -3,7 +3,8 @@ const mongoose = require('mongoose');
 // Models
 const Category = mongoose.model('category');
 
-module.exports = getCategory = (req, res) => {
+
+const getCategory = (req, res) => {
   const errors = {};
   Category.find().lean()
     .then((categories) => {
@@ -18,3 +19,4 @@ module.exports = getCategory = (req, res) => {
       res.status(500).json({ ...errors, ...err });
     });
 };
+module.exports = getCategory;

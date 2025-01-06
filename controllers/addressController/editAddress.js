@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 // Models
 const Address = mongoose.model("address");
 
-module.exports = editAddress = (req, res) => {
+const editAddress = (req, res) => {
   const errors = {};
   const {addressId, ...rest} = req.body;
 
@@ -54,3 +54,4 @@ module.exports = editAddress = (req, res) => {
 
 
 };
+module.exports = editAddress;

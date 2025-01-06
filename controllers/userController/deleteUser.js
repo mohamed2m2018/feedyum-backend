@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 // Models
 const User = mongoose.model('user');
 
-module.exports = deleteUser = (req, res) => {
+ const deleteUser = (req, res) => {
   const errors = {};
 
   User.findByIdAndRemove(req.user._id)
@@ -12,3 +12,5 @@ module.exports = deleteUser = (req, res) => {
       return res.status(500).json({ ...errors, ...err });
     });
 };
+
+module.exports = deleteUser;

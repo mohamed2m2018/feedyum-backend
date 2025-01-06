@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 // Models
 const Address = mongoose.model("address");
 
-module.exports = getAddresses = (req, res) => {
+const getAddresses = (req, res) => {
   const errors = {};
   //lean() make you able to get rid of _doc
   //populate() make you able to populate all fields for story given its id
@@ -25,3 +25,5 @@ module.exports = getAddresses = (req, res) => {
       });
     });
 };
+
+module.exports = getAddresses;

@@ -1,7 +1,8 @@
 const isEmpty = require('./assets/is-empty');
 const Validator = require('validator');
 
-module.exports = validateSignupUser = (data) => {
+
+const validateSignupUser = (data) => {
   let errors = {};
 
   // For required fields
@@ -61,3 +62,5 @@ module.exports = validateSignupUser = (data) => {
     isValid: isEmpty(errors)
   };
 };
+
+module.exports =  validateSignupUser;

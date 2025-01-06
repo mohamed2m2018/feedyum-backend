@@ -10,7 +10,7 @@ const User = mongoose.model('user');
 // Validations
 const validateLoginUser = require('../../validations/loginUser');
 
-module.exports = loginUser = (req, res) => {
+const loginUser = (req, res) => {
 
   // Validate
   const { errors, isValid } = validateLoginUser(req.body);
@@ -58,3 +58,4 @@ module.exports = loginUser = (req, res) => {
     });
   });
 };
+module.exports = loginUser;

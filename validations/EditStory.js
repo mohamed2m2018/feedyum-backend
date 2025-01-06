@@ -1,6 +1,6 @@
 const isEmpty = require('./assets/is-empty');
 
-module.exports = validateEditStory = (data) => {
+const validateEditStory = (data) => {
   let errors = {};
 
 
@@ -26,3 +26,4 @@ module.exports = validateEditStory = (data) => {
     isValid: isEmpty(errors)
   };
 };
+module.exports = validateEditStory;

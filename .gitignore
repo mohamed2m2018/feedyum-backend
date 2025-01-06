@@ -53,3 +53,4 @@ buck-out/
 */fastlane/Preview.html
 */fastlane/screenshots
 node_modules
+.vercel

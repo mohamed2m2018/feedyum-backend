@@ -7,12 +7,12 @@ const mongoURI = require("./config/keys").mongoURI;
 const AdminJSExpress = require("@adminjs/express");
 const AdminJSMongoose = require("@adminjs/mongoose");
 const http = require('http');
-const socketSetup = require('./socket');
+const socketSetup = require('../socket');
 
 AdminJS.registerAdapter(AdminJSMongoose);
 
 // Models
-require("./models/loadModels");
+require("../models/loadModels");
 
 const app = express();
 
@@ -42,7 +42,7 @@ app.use(bodyParser.json());
 
 // Passport Config
 app.use(passport.initialize());
-require("./config/passport")(passport);
+require("../config/passport")(passport);
 
 // Cross Origin Problem
 app.use(function (req, res, next) {
@@ -56,22 +56,22 @@ app.use(function (req, res, next) {
 });
 
 // Routes
-app.use("/api/user", require("./routes/user"));
-app.use("/api/story", require("./routes/story"));
-app.use("/api/categories", require("./routes/categories"));
-app.use("/api/address", require("./routes/address"));
-app.use("/api/like", require("./routes/like"));
-app.use("/api/comment", require("./routes/comment"));
-app.use("/api/follow", require("./routes/follow"));
-app.use("/api/views", require("./routes/views"));
-app.use("/api/tags", require("./routes/tags"));
-app.use("/api/chat", require("./routes/chat"));
+app.use("/api/user", require("../routes/user"));
+app.use("/api/story", require("../routes/story"));
+app.use("/api/categories", require("../routes/categories"));
+app.use("/api/address", require("../routes/address"));
+app.use("/api/like", require("../routes/like"));
+app.use("/api/comment", require("../routes/comment"));
+app.use("/api/follow", require("../routes/follow"));
+app.use("/api/views", require("../routes/views"));
+app.use("/api/tags", require("../routes/tags"));
+app.use("/api/chat", require("../routes/chat"));
 
 // Add the new routes here
-app.use("/api/menus", require("./routes/menu"));
-app.use("/api/dishes", require("./routes/dish"));
-app.use("/api/cart", require("./routes/cart"));
-app.use("/api/orders", require("./routes/order"));
+app.use("/api/menus", require("../routes/menu"));
+app.use("/api/dishes", require("../routes/dish"));
+app.use("/api/cart", require("../routes/cart"));
+app.use("/api/orders", require("../routes/order"));
 
 app.get('/post/:any', (req, res) => {
   res.redirect('/index.html');

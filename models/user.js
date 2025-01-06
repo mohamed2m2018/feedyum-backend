@@ -7,7 +7,7 @@ const UserSchema = new Schema({
   username: String,
   email: String,
   password: String,
-  type: String,
+  type: String, // 'chef' for restaurants, others for different types
   locations: [new mongoose.Schema({
     description: String,
     lat: Number,
@@ -17,9 +17,9 @@ const UserSchema = new Schema({
   fullName: String,
   phone: String,
   discount: {
-     maxAmount: Number,
-     percentageAmount: Number,
-     coupon: String,
+    maxAmount: Number,
+    percentageAmount: Number,
+    coupon: String,
   },
   gender: String,
   date: {
@@ -37,7 +37,7 @@ const UserSchema = new Schema({
   tags: [{ 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'tag'  // Reference to the Tag model
-}],
+  }],
 });
 
 const User = mongoose.model('user', UserSchema);

@@ -10,3 +10,7 @@ require('../models/reportedStories');
 require('../models/location');
 require('../models/tag');
 require('../models/message');
+require('../models/cart');
+require('../models/menu');
+require('../models/dish');
+require('../models/order');

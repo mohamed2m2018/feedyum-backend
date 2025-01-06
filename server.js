@@ -11,7 +11,6 @@ const socketSetup = require('./socket');
 
 AdminJS.registerAdapter(AdminJSMongoose);
 
-
 // Models
 require("./models/loadModels");
 
@@ -67,6 +66,12 @@ app.use("/api/follow", require("./routes/follow"));
 app.use("/api/views", require("./routes/views"));
 app.use("/api/tags", require("./routes/tags"));
 app.use("/api/chat", require("./routes/chat"));
+
+// Add the new routes here
+app.use("/api/menus", require("./routes/menu"));
+app.use("/api/dishes", require("./routes/dish"));
+app.use("/api/cart", require("./routes/cart"));
+app.use("/api/orders", require("./routes/order"));
 
 app.get('/post/:any', (req, res) => {
   res.redirect('/index.html');

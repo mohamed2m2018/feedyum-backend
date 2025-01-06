@@ -3,8 +3,58 @@ const router = express.Router();
 const Message = require('../models/message');
 const User = require('../models/user');
 
-// Middleware to get current user ID from req.user._id
-const getCurrentUserId = (req) => req.user?._id;
+// Middleware to get current user ID from req.query.userId
+const getCurrentUserId = (req) => req.query?.userId;
+
+// Route to get all unique chat participants for the current user with pagination
+router.get('/chats', async (req, res) => {
+    const userId = getCurrentUserId(req);
+    const { page = 1, limit = 10 } = req.query;
+
+    const pageNumber = parseInt(page);
+    const pageSize = parseInt(limit);
+
+    try {
+        const sentMessages = await Message.find({ sender: userId }).distinct('receiver');
+        const receivedMessages = await Message.find({ receiver: userId }).distinct('sender');
+
+        const chatUserIds = Array.from(new Set([...sentMessages, ...receivedMessages]));
+
+        const totalChats = chatUserIds.length;
+        const totalPages = Math.ceil(totalChats / pageSize);
+
+        const chatUsers = await User.find({ _id: { $in: chatUserIds } })
+            .skip((pageNumber - 1) * pageSize)
+            .limit(pageSize)
+            .lean();
+
+        const recentChats = await Promise.all(chatUsers.map(async (user) => {
+            const latestMessage = await Message.findOne({
+                $or: [
+                    { sender: userId, receiver: user._id },
+                    { sender: user._id, receiver: userId }
+                ]
+            }).sort({ timestamp: -1 }).lean();
+            return {
+                ...user,
+                latestMessage: {
+                    content: latestMessage?.content || '',
+                    timestamp: latestMessage?.timestamp || ''
+                }
+            };
+        }));
+
+        recentChats.sort((a, b) => new Date(b.latestMessage.timestamp) - new Date(a.latestMessage.timestamp));
+
+        res.status(200).json({
+            chatUsers: recentChats,
+            totalPages,
+            currentPage: pageNumber,
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
 
 // Route to get all messages for the current user (with optional chat user filtering and pagination)
 router.get('/messages', async (req, res) => {
@@ -44,41 +94,11 @@ router.get('/messages', async (req, res) => {
     }
 });
 
-// Route to get all unique chat participants for the current user with pagination
-router.get('/chats', async (req, res) => {
-    const userId = getCurrentUserId(req);
-    const { page = 1, limit = 10 } = req.query;
-
-    const pageNumber = parseInt(page);
-    const pageSize = parseInt(limit);
-
-    try {
-        const sentMessages = await Message.find({ sender: userId }).distinct('receiver');
-        const receivedMessages = await Message.find({ receiver: userId }).distinct('sender');
-        const chatUserIds = Array.from(new Set([...sentMessages, ...receivedMessages]));
-
-        const totalChats = chatUserIds.length;
-        const totalPages = Math.ceil(totalChats / pageSize);
-
-        const chatUsers = await User.find({ _id: { $in: chatUserIds } }, 'username')
-            .skip((pageNumber - 1) * pageSize)
-            .limit(pageSize);
-
-        res.status(200).json({
-            chatUsers,
-            totalPages,
-            currentPage: pageNumber,
-        });
-    } catch (error) {
-        res.status(500).json({ error: 'Server error' });
-    }
-});
-
 // Route to initiate a chat (if needed)
 router.post('/initiate', async (req, res) => {
     const userId1 = getCurrentUserId(req);
     const { userId2, message } = req.body;
-    
+
     try {
         // Check if any messages exist between the two users
         const existingMessages = await Message.find({
@@ -125,5 +145,8 @@ router.post('/message', async (req, res) => {
         res.status(500).json({ error: 'Server error' });
     }
 });
+
+
+
 
 module.exports = router;

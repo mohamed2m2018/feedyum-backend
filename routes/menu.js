@@ -2,7 +2,7 @@ const express = require('express');
 const passport = require('passport');
 const router = express.Router();
 
-const menuController = require('../controllers/menuController');
+const menuController = require('../controllers/MenuController');
 
 // @route  POST api/menus
 // @desc   Create a new menu (only for chefs, and only one menu per chef)

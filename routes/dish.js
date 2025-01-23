@@ -13,7 +13,7 @@ router.post('/',
 );
 
 
-router.post('/menu/:menuId',
+router.get('/menu/:menuId',
   passport.authenticate('jwt', { session: false }),
   dishController.getDishesByMenuId
 );

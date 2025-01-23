@@ -19,4 +19,5 @@ const getDishesByMenuId = async (req, res) => {
   }
 };
 
-module.exports = { getDishesByMenuId };
+module.exports = getDishesByMenuId;
+

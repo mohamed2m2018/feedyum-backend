@@ -12,6 +12,11 @@ router.post('/',
   dishController.createDish
 );
 
+
+router.post('/menu/:menuId',
+  passport.authenticate('jwt', { session: false }),
+  dishController.getDishesByMenuId
+);
 // @route  GET api/dishes
 // @desc   Get all dishes
 // @access Public

@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const Menu = require("../../routes/menu");
 
-const getMenuCategories = async (req, res) => {
+const getMenuSections = async (req, res) => {
     try {
         const { menuId } = req.params;
 
@@ -16,7 +16,7 @@ const getMenuCategories = async (req, res) => {
         // Find menu and populate categories
         const menu = await Menu.findById(menuId)
             .populate({
-                path: "categories",
+                path: "sections",
                 select: "-__v" // Exclude version field
             })
             .lean();
@@ -28,14 +28,14 @@ const getMenuCategories = async (req, res) => {
             });
         }
 
-        // Return populated categories
+        // Return populated sections
         res.status(200).json({ 
             success: true, 
-            categories: menu.categories 
+            sections: menu.sections 
         });
 
     } catch (error) {
-        console.error("Error fetching menu categories:", error);
+        console.error("Error fetching menu sections:", error);
         res.status(500).json({ 
             success: false, 
             message: "Server error while fetching categories",
@@ -44,4 +44,4 @@ const getMenuCategories = async (req, res) => {
     }
 };
 
-module.exports = getMenuCategories;
+module.exports = getMenuSections;

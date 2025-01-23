@@ -10,8 +10,8 @@ const getDishesByMenuId = async (req, res) => {
       return res.status(400).json({ message: "Invalid menu ID format" });
     }
 
-    // Find dishes by menuId and populate category details
-    const dishes = await Dish.find({ menu: menuId }).populate("category");
+    // Find dishes by menuId and populate section details
+    const dishes = await Dish.find({ menu: menuId }).populate("section");
 
     res.status(200).json(dishes);
   } catch (error) {

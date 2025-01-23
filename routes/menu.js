@@ -24,7 +24,7 @@ router.get('/chef/:chefId',
 );
 
 router.get('/:menuId/categroies',
-  menuController.getMenuCategories
+  menuController.getMenuSections
 );
 
 // @route  GET api/menus

@@ -14,3 +14,4 @@ require('../models/cart');
 require('../models/menu');
 require('../models/dish');
 require('../models/order');
+require('../models/section');

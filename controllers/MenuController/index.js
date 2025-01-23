@@ -4,7 +4,7 @@ const getAllMenus = require('./getAllMenus');
 const getMenuById = require('./getMenuById');
 const updateMenu = require('./updateMenu');
 const deleteMenu = require('./deleteMenu');
-const getMenuCategories = require ('./getMenuCategories');
+const getMenuSections = require ('./getMenuSections');
 
 module.exports = {
   createMenu,
@@ -13,5 +13,5 @@ module.exports = {
   getMenuById,
   updateMenu,
   deleteMenu,
-  getMenuCategories
+  getMenuSections
 };

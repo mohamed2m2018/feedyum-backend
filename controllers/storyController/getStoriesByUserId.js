@@ -59,6 +59,7 @@ const getStories = (req, res) => {
     Story.find({author: new mongoose.Types.ObjectId(id)})
         .limit(limit * 1)
         .populate("author")
+        .populate("dishes")
         .skip((page - 1) * limit).sort({ _id: -1 })
         .exec().then(async (stories) => {
             // get total documents in the stories collection 

@@ -76,6 +76,7 @@ const getStories = async (req, res) => {
     const storiesQuery = Story.find(params?.category? params: null)
       .limit(limit * 1)
       .populate("author")
+      .populate("dishes")
       .skip((page - 1) * limit)
       .lean()
       .sort({ _id: -1 })

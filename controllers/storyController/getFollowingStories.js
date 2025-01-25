@@ -93,6 +93,7 @@ const getFollowingStories = async (req, res) => {
     const followingStories = await Story.find(params)
       .limit(limit * 1)
       .populate("author")
+      .populate("dishes")
       .skip((page - 1) * limit)
       .sort({ _id: -1 })
       .lean()

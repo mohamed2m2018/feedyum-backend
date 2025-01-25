@@ -2,9 +2,7 @@ const mongoose = require("mongoose");
 
 const Schema = mongoose.Schema;
 
-// story schema
-
-
+// Story schema
 const StorySchema = new Schema({
   author: { type: mongoose.Schema.Types.ObjectId, ref: "user", required: true, index: true },
   category: { type: [mongoose.Schema.Types.ObjectId], ref: "category", required: true, index: true },
@@ -31,7 +29,7 @@ const StorySchema = new Schema({
   },
   views: {
     type: "Number"
-},
+  },
   title: {
     type: "String"
   },
@@ -39,14 +37,14 @@ const StorySchema = new Schema({
     type: "String",
   },
   phone: {
-  type: "String",
+    type: "String",
   },
   linkToGo: {
     type: "String",
   },
   likesNo: {
-    type: Number, // Ensure likesNo is of number type
-    default: 0, // Set a default value if needed
+    type: Number,
+    default: 0,
   },
   commentsNo: {
     type: Number
@@ -55,7 +53,7 @@ const StorySchema = new Schema({
     type: "String"
   },
   areas: {
-    type: [String] // Array of strings
+    type: [String]
   },
   duration: String,
   created_at: {
@@ -65,10 +63,13 @@ const StorySchema = new Schema({
   },
   reviewMode: Boolean,
   allowContact: Boolean,
+  dishes: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "dish", // Reference to the Dish model
+    },
+  ],
 });
-
-
-// StorySchema.index({ title: "text", description: "text" });
 
 const Story = mongoose.model("story", StorySchema);
 module.exports = Story;

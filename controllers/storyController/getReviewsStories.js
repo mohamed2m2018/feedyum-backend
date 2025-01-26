@@ -13,6 +13,7 @@ const getReviewsStories = (req, res) => {
       path: "author",
       match: { type: "user" },
     })
+    .populate("dishes")
     .skip((page - 1) * limit)
     .sort({ _id: -1 })
     .exec()

@@ -57,6 +57,7 @@ const getStoryById = (req, res) => {
   const errors = {};
   Story.findById(req.params.id)
     .populate("author")
+    .populate("dishes")
     .then(async (story) => {
       const currentUserLiked = await Like.exists({
         post_id: req.params.id,

@@ -24,9 +24,9 @@ var ObjectId = require("mongoose").Types.ObjectId;
         }
   )
     .limit(limit * 1)
-    .skip((page - 1) * limit)
     .populate('author', 'fullName')
     .populate("dishes")
+    .skip((page - 1) * limit)
     .sort({ _id: -1 })
     .exec()
     .then(async (stories) => {

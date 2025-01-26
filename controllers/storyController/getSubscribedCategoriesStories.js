@@ -20,6 +20,7 @@ const getCategoryStories = async (req, res) => {
     const categoryStories = await Story.find({ category: { $in: categoryIds } })
       .limit(limit * 1)
       .populate('author')
+      .populate('dishes')
       .skip((page - 1) * limit)
       .sort({ _id: -1 })
       .exec();

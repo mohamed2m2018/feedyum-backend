@@ -34,9 +34,17 @@ const UserSchema = new Schema({
   likesNo: Number,
   isGoogleUser: Boolean,
   bio: String,
+  hasMenu: {
+    type: Boolean,
+    default: false,
+  },
   tags: [{ 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'tag'  // Reference to the Tag model
+  }],
+  favorites: [{ 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'dish'  // Reference to favorite dishes
   }],
 });
 

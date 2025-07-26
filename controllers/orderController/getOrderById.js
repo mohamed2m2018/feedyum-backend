@@ -2,8 +2,13 @@ const Order = require('../../models/order');
 
 const getOrderById = async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id).populate('items.dish');
+    const order = await Order.findById(req.params.id)
+      .populate('user', 'fullName username avatar email phone')
+      .populate('chef', 'fullName username avatar email phone')
+      .populate('items.dish', 'name price image description');
+    
     if (!order) return res.status(404).json({ message: 'Order not found' });
+    
     res.status(200).json(order);
   } catch (error) {
     res.status(500).json({ error: error.message });

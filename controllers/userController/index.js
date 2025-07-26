@@ -5,6 +5,8 @@ const updateUser = require('./updateUser');
 const deleteUser = require('./deleteUser');
 const getUser = require('./getUser');
 const getUserById = require('./getUserById');
+const getUserProfile = require('./getUserProfile');
+const getChefProfile = require('./getChefProfile');
 const searchUser = require('./searchUser');
 const getAllLocations = require('./getAllUserLocations');
 const getUserByTag = require('./getUserByTag');
@@ -17,6 +19,8 @@ module.exports = {
   deleteUser,
   getUser,
   getUserById,
+  getUserProfile,
+  getChefProfile,
   searchUser,
   getAllLocations,
   getUserByTag,

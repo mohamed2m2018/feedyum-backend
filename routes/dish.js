@@ -17,6 +17,28 @@ router.get('/menu/:menuId',
   passport.authenticate('jwt', { session: false }),
   dishController.getDishesByMenuId
 );
+
+// @route  GET api/dishes/chef/:chefId
+// @desc   Get dishes by chef ID
+// @access Private
+router.get('/chef/:chefId',
+  passport.authenticate('jwt', { session: false }),
+  dishController.getDishesByChef
+);
+// @route  GET api/dishes/test
+// @desc   Test dishes endpoint
+// @access Public
+router.get('/test', (req, res) => {
+  res.json({ message: 'Dishes endpoint is working', timestamp: new Date() });
+});
+
+// @route  GET api/dishes/search
+// @desc   Search dishes
+// @access Public
+router.get('/search',
+  dishController.searchDishes
+);
+
 // @route  GET api/dishes
 // @desc   Get all dishes
 // @access Public

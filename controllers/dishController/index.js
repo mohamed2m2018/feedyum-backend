@@ -4,6 +4,8 @@ const getDishById = require('./getDishById');
 const updateDish = require('./updateDish');
 const deleteDish = require('./deleteDish');
 const getDishesByMenuId = require('./getDishesByMenuId');
+const getDishesByChef = require('./getDishesByChef');
+const searchDishes = require('./searchDishes');
 
 module.exports = {
   createDish,
@@ -12,4 +14,6 @@ module.exports = {
   updateDish,
   deleteDish,
   getDishesByMenuId,
+  getDishesByChef,
+  searchDishes,
 };

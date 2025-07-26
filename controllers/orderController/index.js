@@ -1,9 +1,13 @@
-const getOrdersByUser = require('./getOrdersByUser');
 const getOrderById = require('./getOrderById');
+const getOrdersByUser = require('./getOrdersByUser');
+const getOrdersByChef = require('./getOrdersByChef');
+const createOrder = require('./createOrder');
 const updateOrderStatus = require('./updateOrderStatus');
 
 module.exports = {
-  getOrdersByUser,
   getOrderById,
-  updateOrderStatus
+  getOrdersByUser,
+  getOrdersByChef,
+  createOrder,
+  updateOrderStatus,
 };

@@ -70,7 +70,6 @@ router.get(
 
 router.get(
   '/tag/:tag',
-  passport.authenticate('jwt', { session: false }),
   userController.getUserByTag,
 );
 
@@ -79,6 +78,18 @@ router.get(
 // @access Public
 // @errors
 router.get('/:id', userController.getUserById);
+
+// @route  GET api/user/:id/profile
+// @desc   Get user profile with menu (if chef)
+// @access Public
+// @errors
+router.get('/:id/profile', userController.getUserProfile);
+
+// @route  GET api/user/chef/:chefId/profile
+// @desc   Get chef profile with menu details
+// @access Public
+// @errors
+router.get('/chef/:chefId/profile', userController.getChefProfile);
 
 
 module.exports = router;

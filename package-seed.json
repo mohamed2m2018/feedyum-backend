@@ -1,0 +1,5 @@
+{
+  "scripts": {
+    "seed-dishes": "node scripts/seedDishes.js"
+  }
+}

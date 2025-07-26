@@ -25,8 +25,6 @@ const updateUser = (req, res) => {
       
 
       user.locations = locationData;
-
-
       
 
       // Update other user fields as needed
@@ -54,7 +52,9 @@ const updateUser = (req, res) => {
       if(req.body.bio){
         user.bio = req.body.bio;
       }
-
+      if(req.body.hasMenu){
+        user.hasMenu = req.body.hasMenu;
+      }
 
       // Save the updated user document
       user

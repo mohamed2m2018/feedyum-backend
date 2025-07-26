@@ -3,6 +3,15 @@ const passport = require('passport');
 const router = express.Router();
 
 const orderController = require('../controllers/orderController');
+const checkChefPaymentStatus = require('../middleware/checkChefPaymentStatus');
+
+// @route  POST api/orders
+// @desc   Create a new order
+// @access Private
+router.post('/',
+  passport.authenticate('jwt', { session: false }),
+  orderController.createOrder
+);
 
 // @route  GET api/orders/user/:userId
 // @desc   Get all orders for a user
@@ -10,6 +19,14 @@ const orderController = require('../controllers/orderController');
 router.get('/user/:userId',
   passport.authenticate('jwt', { session: false }),
   orderController.getOrdersByUser
+);
+
+// @route  GET api/orders/chef/:chefId
+// @desc   Get all orders for a chef
+// @access Private
+router.get('/chef/:chefId',
+  passport.authenticate('jwt', { session: false }),
+  orderController.getOrdersByChef
 );
 
 // @route  GET api/orders/:id
@@ -25,6 +42,7 @@ router.get('/:id',
 // @access Private
 router.put('/:id/status',
   passport.authenticate('jwt', { session: false }),
+  checkChefPaymentStatus,
   orderController.updateOrderStatus
 );
 

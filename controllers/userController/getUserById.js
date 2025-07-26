@@ -1,27 +1,30 @@
-const mongoose = require('mongoose');
-
-// Models
-const User = mongoose.model('user');
-const Follow = mongoose.model('follow');
-
-
+const User = require('../../models/user');
 
 const getUserById = async (req, res) => {
-  const errors = {};
-  User.findById(req.params.id).populate('locations')
-    .then(async (user) => {
-      const {password, ...userData}  = user._doc
-      const currentUserFollowed = await Follow.exists({ follower_id: req.query?.currentUser?._id, following_id: userData?._id });
-      res.json({
-        user: userData,
-        currentUserFollowed: Boolean(currentUserFollowed),
-        success: true
+  try {
+    const { id } = req.params;
+    
+    const user = await User.findById(id).select('fullName username avatar email phone type bio');
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
       });
-    })
-    .catch((err) => {
-      errors.error = 'Error checking for the user in the database';
-      res.status(500).json({ ...errors, ...err });
+    }
+    
+    res.status(200).json({
+      success: true,
+      user
     });
+  } catch (error) {
+    console.error('Get user by ID error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get user',
+      error: error.message
+    });
+  }
 };
 
 module.exports = getUserById;

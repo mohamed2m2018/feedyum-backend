@@ -25,15 +25,14 @@ const searchUser = (req, res) => {
     ? {
         $or: [
           { fullName: string },
-           { username: string }],
+          { username: string }],
         _id: { $ne: currentUserId },
         type: { $ne: "guest" },
         ...rest,
       }
     : {
         _id: { $ne: currentUserId },
-        type
-        : { $ne: "guest" },
+        type: { $ne: "guest" },
         ...rest,
       }
   )

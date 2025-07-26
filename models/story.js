@@ -4,34 +4,45 @@ const Schema = mongoose.Schema;
 
 // Story schema
 const StorySchema = new Schema({
-  author: { type: mongoose.Schema.Types.ObjectId, ref: "user", required: true, index: true },
-  category: { type: [mongoose.Schema.Types.ObjectId], ref: "category", required: true, index: true },
+  author: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "user",
+    required: true,
+    index: true,
+  },
+  category: {
+    type: [mongoose.Schema.Types.ObjectId],
+    ref: "category",
+    required: true,
+    index: true,
+  },
   uri: {
     type: "String",
   },
+  avatarUri: {
+    type: "String",
+  },
   caption: {
-    type: "String"
+    type: "String",
   },
   likes: {
-    type: "Number"
+    type: "Number",
   },
   bookmark: {
-    type: "String"
+    type: "String",
   },
   share: {
-    type: "String"
-  },
-  avatarUri: {
-    type: "String"
+    type: "String",
   },
   poster: {
-    type: "String"
+    type: "String",
+    // Food/dish image URL for the story poster
   },
   views: {
-    type: "Number"
+    type: "Number",
   },
   title: {
-    type: "String"
+    type: "String",
   },
   price: {
     type: "String",
@@ -47,13 +58,13 @@ const StorySchema = new Schema({
     default: 0,
   },
   commentsNo: {
-    type: Number
+    type: Number,
   },
   governorate: {
-    type: "String"
+    type: "String",
   },
   areas: {
-    type: [String]
+    type: [String],
   },
   duration: String,
   created_at: {
@@ -69,6 +80,28 @@ const StorySchema = new Schema({
       ref: "dish", // Reference to the Dish model
     },
   ],
+  // Review-specific fields
+  reviewType: {
+    type: String,
+    enum: ['dish', 'menu'],
+    required: function() { return this.reviewMode; }
+  },
+  reviewedDish: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "dish",
+    required: function() { return this.reviewMode && this.reviewType === 'dish'; }
+  },
+  reviewedMenu: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "menu",
+    required: function() { return this.reviewMode && this.reviewType === 'menu'; }
+  },
+  rating: {
+    type: Number,
+    min: 1,
+    max: 5,
+    required: function() { return this.reviewMode; }
+  },
 });
 
 const Story = mongoose.model("story", StorySchema);

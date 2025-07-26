@@ -86,4 +86,21 @@ router.patch(
   storyController.updateStory
 );
 
+// @route  POST api/story/create-review-reel
+// @desc   Create a review reel for a dish or menu
+// @access Private
+router.post(
+  "/create-review-reel",
+  passport.authenticate("jwt", { session: false }),
+  storyController.createReviewReel
+);
+
+// @route  GET api/story/reviews/dish/:dishId
+// @desc   Get review stories for a specific dish
+// @access Public
+router.get(
+  "/reviews/dish/:dishId",
+  storyController.getReviewStoriesByDish
+);
+
 module.exports = router;

@@ -66,12 +66,18 @@ app.use("/api/follow", require("./routes/follow"));
 app.use("/api/views", require("./routes/views"));
 app.use("/api/tags", require("./routes/tags"));
 app.use("/api/chat", require("./routes/chat"));
+app.use("/api/messages", require("./routes/messages"));
 
 // Add the new routes here
 app.use("/api/menus", require("./routes/menu"));
 app.use("/api/dishes", require("./routes/dish"));
+app.use("/api/sections", require("./routes/section"));
 app.use("/api/cart", require("./routes/cart"));
 app.use("/api/orders", require("./routes/order"));
+app.use("/api/promocode", require("./routes/promocode"));
+app.use("/api/chef-wallet", require("./routes/chefWallet"));
+app.use("/api/reviews", require("./routes/review"));
+app.use("/api/favorites", require("./routes/favorites"));
 
 app.get('/post/:any', (req, res) => {
   res.redirect('/index.html');

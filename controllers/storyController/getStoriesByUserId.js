@@ -54,16 +54,36 @@ function getNearestLocation(targetLat, targetLong, locations) {
     return degrees * (Math.PI / 180);
   }
 const getStories = (req, res) => {
-    const { page = 1, limit = 10, id } = req.query;
+    const { page = 1, limit = 10, id, excludeReviews, reviewsOnly } = req.query;
     const errors = {};
-    Story.find({author: new mongoose.Types.ObjectId(id)})
+    
+    // Build query based on review filtering
+    let query = { author: new mongoose.Types.ObjectId(id) };
+    
+    if (excludeReviews === 'true') {
+        // Exclude review posts (posts without rating or reviewType)
+        query.$or = [
+            { rating: { $exists: false } },
+            { rating: null },
+            { reviewType: { $exists: false } },
+            { reviewType: null }
+        ];
+    } else if (reviewsOnly === 'true') {
+        // Only include review posts (posts with rating or reviewType)
+        query.$or = [
+            { rating: { $exists: true, $ne: null } },
+            { reviewType: { $exists: true, $ne: null } }
+        ];
+    }
+    
+    Story.find(query)
         .limit(limit * 1)
         .populate("author")
         .populate("dishes")
         .skip((page - 1) * limit).sort({ _id: -1 })
         .exec().then(async (stories) => {
-            // get total documents in the stories collection 
-            const count = await Story.countDocuments({author: new mongoose.Types.ObjectId(id)});
+            // get total documents in the stories collection with the same filter
+            const count = await Story.countDocuments(query);
 
             // Fetch currentUserLiked for each story
             const populatedStories = await Promise.all(

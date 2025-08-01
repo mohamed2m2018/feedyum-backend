@@ -25,6 +25,13 @@ router.get('/chef/:chefId',
   passport.authenticate('jwt', { session: false }),
   dishController.getDishesByChef
 );
+
+// @route  GET api/dishes/category/:category
+// @desc   Get dishes by category
+// @access Public
+router.get('/category/:category',
+  dishController.getDishesByCategory
+);
 // @route  GET api/dishes/test
 // @desc   Test dishes endpoint
 // @access Public

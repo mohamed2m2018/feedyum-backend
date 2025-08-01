@@ -126,8 +126,8 @@ const addReview = async (req, res) => {
 
     // Populate the review for response
     const populatedReview = await Review.findById(newReview._id)
-      .populate('userId', 'fullName username profileImage')
-      .populate('chefId', 'fullName username profileImage')
+      .populate('userId', 'fullName username avatar')
+      .populate('chefId', 'fullName username avatar')
       .populate('dishId', 'name image')
       .populate('orderId', 'created_at status');
 

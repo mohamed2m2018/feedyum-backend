@@ -37,6 +37,12 @@ const upload = multer({
 });
 
 const createReviewReel = async (req, res) => {
+  console.log("=== CREATE REVIEW REEL REQUEST ===");
+  console.log("Request received at:", new Date().toISOString());
+  console.log("User ID:", req.user?._id);
+  console.log("Request body:", JSON.stringify(req.body, null, 2));
+  console.log("Has file:", !!req.file);
+  
   try {
     // Handle file upload
     upload.single("video")(req, res, async (err) => {
@@ -153,15 +159,39 @@ const createReviewReel = async (req, res) => {
           .json({ error: "You cannot review your own content" });
       }
 
+      // Ensure categoryIds is not empty (required field)
+      if (!categoryIds || categoryIds.length === 0) {
+        console.error("No categories found, creating default category");
+        let defaultCategory = await Category.findOne({ name: "Food" });
+        if (!defaultCategory) {
+          defaultCategory = new Category({
+            name: "Food",
+            description: "Default food category",
+          });
+          await defaultCategory.save();
+        }
+        categoryIds = [defaultCategory._id];
+      }
+
       let videoUrl = null;
       let posterUrl = null;
 
-      // Check if video file is provided
-      if (!req.file) {
-        return res.status(400).json({ error: "Video file is required for review reel" });
+      // Check if URLs are provided from frontend (already uploaded)
+      if (req.body.uri) {
+        videoUrl = req.body.uri;
+        console.log("Using frontend-provided video URL:", videoUrl);
       }
 
-      // Upload video to S3 if provided
+      if (req.body.poster) {
+        posterUrl = req.body.poster;  
+        console.log("Using frontend-provided poster URL:", posterUrl);
+      } else if (req.body.avatarUri) {
+        // If no poster but avatarUri exists, it's likely an image post
+        posterUrl = req.body.avatarUri;
+        console.log("Using frontend-provided avatar URL as poster:", posterUrl);
+      }
+
+      // Upload video to S3 if provided (legacy support for direct file uploads)
       if (req.file) {
         const videoKey = `review-reels/${Date.now()}-${req.file.originalname}`;
 
@@ -200,10 +230,32 @@ const createReviewReel = async (req, res) => {
         }
       }
 
+      // Set poster URL fallback if no video was uploaded and no poster provided from frontend
+      if (!posterUrl && reviewedItem) {
+        posterUrl = reviewedItem.image || null;
+        console.log("Using dish image as fallback poster:", posterUrl);
+      }
+
       // Create review reel story
+      console.log("Creating review reel with data:", {
+        caption: caption,
+        uri: req.body.uri || videoUrl,
+        avatarUri: req.body.avatarUri,
+        poster: posterUrl,
+        author: req.user._id,
+        categoryIds: categoryIds,
+        categoryCount: categoryIds ? categoryIds.length : 0,
+        reviewType: reviewType,
+        dishId: dishId,
+        menuId: menuId,
+        rating: parseInt(rating),
+        reviewedItem: reviewedItem ? reviewedItem.name : 'none'
+      });
+
       const reviewReel = new Story({
         caption: caption,
-        uri: videoUrl,
+        uri: req.body.uri || videoUrl,  // Prioritize frontend URL over multer upload
+        avatarUri: req.body.avatarUri,  // For images
         author: req.user._id,
         category: categoryIds,
         title: `Review: ${reviewedItem.name}`,
@@ -222,29 +274,64 @@ const createReviewReel = async (req, res) => {
       });
 
       // Save the review reel
-      const savedReviewReel = await reviewReel.save();
+      try {
+        const savedReviewReel = await reviewReel.save();
 
-      // Update user's posts count
-      await User.findByIdAndUpdate(req.user._id, { $inc: { postsNo: 1 } });
+        // Update user's posts count
+        await User.findByIdAndUpdate(req.user._id, { $inc: { postsNo: 1 } });
 
-      // Populate the response with referenced data
-      const populatedReviewReel = await Story.findById(savedReviewReel._id)
-        .populate("author", "fullName avatar")
-        .populate("reviewedDish", "name image price")
-        .populate("reviewedMenu", "name description");
+        // Populate the response with referenced data
+        const populatedReviewReel = await Story.findById(savedReviewReel._id)
+          .populate("author", "fullName avatar")
+          .populate("reviewedDish", "name image price")
+          .populate("reviewedMenu", "name description");
 
-      console.log("Review reel created successfully:", {
-        id: savedReviewReel._id,
-        author: req.user._id,
-        reviewType: reviewType,
-        rating: rating,
-      });
+        console.log("Review reel created successfully:", {
+          id: savedReviewReel._id,
+          author: req.user._id,
+          reviewType: reviewType,
+          rating: rating,
+        });
 
-      res.json({
-        success: true,
-        story: populatedReviewReel, // Using 'story' to match existing API pattern
-        message: "Review reel created successfully",
-      });
+        res.json({
+          success: true,
+          story: populatedReviewReel, // Using 'story' to match existing API pattern
+          message: "Review reel created successfully",
+        });
+      } catch (saveError) {
+        console.error("Review reel save error:", saveError);
+        
+        // Handle specific validation errors
+        if (saveError.name === 'ValidationError') {
+          const validationErrors = {};
+          for (const field in saveError.errors) {
+            validationErrors[field] = saveError.errors[field].message;
+          }
+          
+          console.error("Validation errors:", validationErrors);
+          return res.status(400).json({
+            error: "Validation failed",
+            details: validationErrors,
+            message: "Story validation failed. Check required fields."
+          });
+        }
+        
+        // Handle duplicate key errors
+        if (saveError.code === 11000) {
+          return res.status(409).json({
+            error: "Duplicate entry",
+            details: saveError.message,
+            message: "This review already exists."
+          });
+        }
+        
+        // Generic database error
+        return res.status(500).json({
+          error: "Database save failed",
+          details: saveError.message,
+          message: "Failed to save review to database"
+        });
+      }
       } catch (innerError) {
         console.error("Create review reel inner error:", innerError);
         res.status(500).json({

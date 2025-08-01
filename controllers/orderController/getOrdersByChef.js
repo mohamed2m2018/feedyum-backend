@@ -11,7 +11,11 @@ const getOrdersByChef = async (req, res) => {
       });
     }
 
-    // Get orders for the chef with populated data
+    // Get orders for the chef with populated data and pagination
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
     const orders = await Order.find({ chef: chefId })
       .populate('user', 'fullName username avatar type')
       .populate({
@@ -19,6 +23,8 @@ const getOrdersByChef = async (req, res) => {
         select: 'name price image description'
       })
       .sort({ created_at: -1 }) // Most recent first
+      .skip(skip)
+      .limit(limit)
       .lean();
 
     res.json({

@@ -16,9 +16,16 @@ require("./models/loadModels");
 
 const app = express();
 
-// Connect to MongoDB
+// Connect to MongoDB with optimized connection settings
 mongoose
-  .connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .connect(mongoURI, { 
+    useNewUrlParser: true, 
+    useUnifiedTopology: true,
+    maxPoolSize: 10, // Maintain up to 10 socket connections
+    serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
+    socketTimeoutMS: 45000, // Close sockets after 45 seconds
+    bufferCommands: false, // Disable mongoose buffering
+  })
   .then(mongooseDb => {
     console.log("MongoDB Connected");
 
@@ -35,6 +42,13 @@ mongoose
     }
   })
   .catch(err => console.log("Error connecting to database", err));
+
+// Performance monitoring middleware
+const performanceMonitor = require('./middleware/performance');
+const timeout = require('./middleware/timeout');
+
+app.use(performanceMonitor);
+app.use(timeout(30000)); // 30 second timeout
 
 // BodyParser Middleware
 app.use(bodyParser.urlencoded({ extended: false }));

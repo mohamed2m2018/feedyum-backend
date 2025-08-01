@@ -33,6 +33,12 @@ const OrderSchema = new mongoose.Schema({
   status: { type: String, default: "pending" },
 });
 
+// Add indexes for better query performance
+OrderSchema.index({ user: 1, created_at: -1 });
+OrderSchema.index({ chef: 1, created_at: -1 });
+OrderSchema.index({ status: 1 });
+OrderSchema.index({ created_at: -1 });
+
 const Order = mongoose.model("order", OrderSchema);
 
 module.exports = Order;

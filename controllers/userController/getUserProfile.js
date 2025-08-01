@@ -1,5 +1,6 @@
 const User = require('../../models/user');
 const Menu = require('../../models/menu');
+const mongoose = require('mongoose');
 
 const getUserProfile = async (req, res) => {
   try {
@@ -8,7 +9,8 @@ const getUserProfile = async (req, res) => {
     // Find the user
     const user = await User.findById(id)
       .select('fullName username avatar email phone type bio hasMenu locations tags postsNo likesNo')
-      .populate('tags', 'name');
+      .populate('tags', 'name')
+      .lean();
     
     if (!user) {
       return res.status(404).json({
@@ -17,49 +19,62 @@ const getUserProfile = async (req, res) => {
       });
     }
 
-    let userProfile = user.toObject();
+    let userProfile = { ...user };
 
-    // If user is a chef, check for menu information (regardless of hasMenu flag)
+    // If user is a chef, check for menu information with optimized query
     if (user.type === 'chef') {
-      const menu = await Menu.findOne({ chef: id })
-        .populate({
-          path: 'sections',
-          select: 'name description dishes',
-          populate: {
-            path: 'dishes',
-            select: 'name description price image isAvailable'
+      // Use aggregation for better performance
+      const menuData = await Menu.aggregate([
+        { $match: { chef: new mongoose.Types.ObjectId(id) } },
+        {
+          $lookup: {
+            from: 'sections',
+            localField: 'sections',
+            foreignField: '_id',
+            as: 'sections',
+            pipeline: [
+              { $project: { name: 1, description: 1, dishes: 1 } }
+            ]
           }
-        })
-        .populate({
-          path: 'dishes',
-          select: 'name description price image isAvailable section',
-          populate: {
-            path: 'section',
-            select: 'name'
+        },
+        {
+          $lookup: {
+            from: 'dishes',
+            localField: 'dishes',
+            foreignField: '_id',
+            as: 'dishes',
+            pipeline: [
+              { $project: { name: 1, description: 1, price: 1, image: 1, isAvailable: 1, section: 1 } }
+            ]
           }
-        });
+        },
+        {
+          $project: {
+            name: 1,
+            description: 1,
+            sections: 1,
+            dishes: 1,
+            dishCount: { $size: '$dishes' },
+            sectionCount: { $size: '$sections' },
+            created_at: 1
+          }
+        }
+      ]);
 
+      const menu = menuData[0];
+      
       if (menu) {
-        userProfile.menu = {
-          _id: menu._id,
-          name: menu.name,
-          description: menu.description,
-          sections: menu.sections,
-          dishes: menu.dishes,
-          dishCount: menu.dishes ? menu.dishes.length : 0,
-          sectionCount: menu.sections ? menu.sections.length : 0,
-          created_at: menu.created_at
-        };
+        userProfile.menu = menu;
         
-        // Update hasMenu flag if menu exists but flag is false
+        // Update hasMenu flag asynchronously if needed
         if (!user.hasMenu) {
-          await User.findByIdAndUpdate(id, { hasMenu: true });
+          User.findByIdAndUpdate(id, { hasMenu: true }).exec(); // Non-blocking
           userProfile.hasMenu = true;
         }
       } else {
         // No menu found, ensure hasMenu is false
         if (user.hasMenu) {
-          await User.findByIdAndUpdate(id, { hasMenu: false });
+          User.findByIdAndUpdate(id, { hasMenu: false }).exec(); // Non-blocking
           userProfile.hasMenu = false;
         }
       }

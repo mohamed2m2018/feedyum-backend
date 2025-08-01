@@ -1,6 +1,7 @@
 const Order = require('../../models/order');
 const User = require('../../models/user');
 const Dish = require('../../models/dish');
+const EnhancedNotificationService = require('../../services/enhancedNotificationService');
 
 const createOrder = async (req, res) => {
   try {
@@ -20,11 +21,19 @@ const createOrder = async (req, res) => {
       });
     }
 
-    // Verify chef exists
-    const chef = await User.findById(chefId).select('fullName username type');
+    // Verify chef exists and get chef details
+    const chef = await User.findById(chefId).select('fullName username type avatar');
     if (!chef || chef.type !== 'chef') {
       return res.status(404).json({
         message: 'Chef not found'
+      });
+    }
+
+    // Get customer details for notifications
+    const customer = await User.findById(userId).select('fullName username avatar');
+    if (!customer) {
+      return res.status(404).json({
+        message: 'Customer not found'
       });
     }
 
@@ -68,10 +77,10 @@ const createOrder = async (req, res) => {
       user: userId,
       chef: chefId,
       items: validatedItems,
-      subtotal: totalAmount,
-      totalPrice: finalTotal,
-      serviceFee,
-      deliveryFee,
+      subtotal: Number(totalAmount.toFixed(2)),
+      totalPrice: Number(finalTotal.toFixed(2)),
+      serviceFee: Number(serviceFee.toFixed(2)),
+      deliveryFee: Number(deliveryFee.toFixed(2)),
       deliveryAddress,
       specialInstructions: notes || '',
       status: 'pending',
@@ -84,6 +93,36 @@ const createOrder = async (req, res) => {
     await order.populate('user', 'fullName username avatar');
     await order.populate('chef', 'fullName username avatar');
     await order.populate('items.dish', 'name price image description');
+
+    // Send notifications
+    try {
+      // Notify chef about new order
+      await EnhancedNotificationService.sendNewOrderNotification({
+        chefId: chef._id.toString(),
+        orderId: order._id.toString(),
+        customerName: customer.fullName,
+        orderTotal: finalTotal.toFixed(2),
+        itemCount: validatedItems.length,
+        customerAvatar: customer.avatar
+      });
+
+      // Notify customer about order status (pending)
+      await EnhancedNotificationService.sendOrderStatusNotification({
+        userId: customer._id.toString(),
+        orderId: order._id.toString(),
+        status: 'pending',
+        chefName: chef.fullName,
+        orderDetails: {
+          total: finalTotal.toFixed(2),
+          itemCount: validatedItems.length
+        }
+      });
+
+      console.log('Order notifications sent successfully');
+    } catch (notificationError) {
+      console.error('Failed to send order notifications:', notificationError);
+      // Don't fail the order creation if notifications fail
+    }
 
     res.status(201).json({
       success: true,

@@ -13,6 +13,14 @@ router.post('/',
   orderController.createOrder
 );
 
+// @route  GET api/orders/user
+// @desc   Get all orders for the current authenticated user
+// @access Private
+router.get('/user',
+  passport.authenticate('jwt', { session: false }),
+  orderController.getCurrentUserOrders
+);
+
 // @route  GET api/orders/user/:userId
 // @desc   Get all orders for a user
 // @access Private
@@ -27,6 +35,15 @@ router.get('/user/:userId',
 router.get('/chef/:chefId',
   passport.authenticate('jwt', { session: false }),
   orderController.getOrdersByChef
+);
+
+// @route  PUT api/orders/:id/status
+// @desc   Update order status
+// @access Private
+router.put('/:id/status',
+  passport.authenticate('jwt', { session: false }),
+  checkChefPaymentStatus,
+  orderController.updateOrderStatus
 );
 
 // @route  GET api/orders/:id

@@ -1,0 +1,122 @@
+const mongoose = require('mongoose');
+
+const ChefBranchSchema = new mongoose.Schema({
+  chef: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: "user", 
+    required: true 
+  },
+  
+  // Complete address information
+  addressDetails: {
+    streetName: { type: String, required: true },
+    buildingNumber: { type: String, required: true },
+    area: { type: String, required: true },
+    city: { type: String, required: true },
+    state: { type: String, required: true },
+    country: { type: String, required: true },
+    postalCode: { type: String, required: true },
+    formattedAddress: { type: String, required: true }
+  },
+  
+  // Geographic coordinates
+  location: {
+    lat: { type: Number, required: true },
+    long: { type: Number, required: true }
+  },
+  
+  // Branch information
+  branchName: { type: String, required: true }, // e.g., "Main Branch", "Downtown Location"
+  contactInfo: {
+    phoneNumber: { type: String, required: true },
+    countryCode: { type: String, required: true }
+  },
+  
+  // Operational details
+  isActive: { type: Boolean, default: true },
+  operatingHours: [{
+    day: { 
+      type: String, 
+      enum: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
+      required: true 
+    },
+    isOpen: { type: Boolean, default: true },
+    openTime: { type: String }, // Format: "09:00"
+    closeTime: { type: String }, // Format: "22:00"
+  }],
+  
+  // Delivery settings
+  deliveryRadius: { type: Number, default: 10 }, // in kilometers
+  deliveryFee: { type: Number, default: 0 },
+  minimumOrderAmount: { type: Number, default: 0 },
+  
+  // Metadata
+  isPrimary: { type: Boolean, default: false }, // Primary branch for the chef
+  created_at: { type: Date, default: Date.now },
+  updated_at: { type: Date, default: Date.now }
+});
+
+// Indexes for better query performance
+ChefBranchSchema.index({ chef: 1 });
+ChefBranchSchema.index({ 'addressDetails.city': 1 });
+ChefBranchSchema.index({ 'addressDetails.country': 1 });
+ChefBranchSchema.index({ location: '2dsphere' }); // For geospatial queries
+ChefBranchSchema.index({ chef: 1, isPrimary: 1 });
+ChefBranchSchema.index({ isActive: 1 });
+
+// Ensure only one primary branch per chef
+ChefBranchSchema.index(
+  { chef: 1, isPrimary: 1 }, 
+  { unique: true, partialFilterExpression: { isPrimary: true } }
+);
+
+// Update timestamp on save
+ChefBranchSchema.pre('save', function(next) {
+  this.updated_at = new Date();
+  next();
+});
+
+// Static method to get active branches by city
+ChefBranchSchema.statics.getActiveByCity = function(city, country) {
+  return this.find({
+    'addressDetails.city': new RegExp(city, 'i'),
+    'addressDetails.country': new RegExp(country, 'i'),
+    isActive: true
+  }).populate('chef', 'fullName avatar type');
+};
+
+// Static method to get branches within delivery radius
+ChefBranchSchema.statics.getWithinDeliveryRadius = function(lat, long, maxDistance = 50) {
+  return this.find({
+    location: {
+      $near: {
+        $geometry: { type: 'Point', coordinates: [long, lat] },
+        $maxDistance: maxDistance * 1000 // Convert km to meters
+      }
+    },
+    isActive: true
+  }).populate('chef', 'fullName avatar type');
+};
+
+// Instance method to check if branch delivers to a location
+ChefBranchSchema.methods.deliversTo = function(clientLat, clientLong) {
+  const distance = this.calculateDistance(clientLat, clientLong);
+  return distance <= this.deliveryRadius;
+};
+
+// Instance method to calculate distance to a point
+ChefBranchSchema.methods.calculateDistance = function(lat, long) {
+  const R = 6371; // Earth's radius in kilometers
+  const dLat = (lat - this.location.lat) * Math.PI / 180;
+  const dLon = (long - this.location.long) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(this.location.lat * Math.PI / 180) * Math.cos(lat * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c; // Distance in kilometers
+};
+
+const ChefBranch = mongoose.model('chefBranch', ChefBranchSchema);
+
+module.exports = ChefBranch; 

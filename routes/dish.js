@@ -46,6 +46,13 @@ router.get('/search',
   dishController.searchDishes
 );
 
+// @route  GET api/dishes/semantic-search
+// @desc   Semantic search dishes (with AI embeddings)
+// @access Public
+router.get('/semantic-search',
+  dishController.semanticSearchDishes
+);
+
 // @route  GET api/dishes
 // @desc   Get all dishes
 // @access Public

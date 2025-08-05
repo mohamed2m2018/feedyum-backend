@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { cleanResponseData } = require('../../utils/embeddingUtils');
 
 // Models
 const User = mongoose.model('user');
@@ -16,7 +17,9 @@ const getAllUsers = (req, res) => {
         const {password, ...userData}  = user?._doc
         return userData;
       });
-      return res.json(users);
+      // Remove embeddings from response
+      const cleanUsers = cleanResponseData(users);
+      return res.json(cleanUsers);
     })
     .catch((err) => {
       errors.error = 'Error fetching users from database';

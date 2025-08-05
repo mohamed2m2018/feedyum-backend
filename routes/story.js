@@ -31,6 +31,12 @@ router.get("/stories", passport.authenticate("jwt", { session: false }), storyCo
 
 router.get("/search", storyController.searchStories);
 
+// @route  GET api/story/semantic-search
+// @desc   Semantic search stories (with AI embeddings)
+// @access Public
+
+router.get("/semantic-search", storyController.semanticSearchStories);
+
 // @route  delete api/story/stories
 // @desc   delete all stories
 // @access private

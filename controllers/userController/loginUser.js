@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 
 const keys = require('../../config/keys');
+const { cleanResponseData } = require('../../utils/embeddingUtils');
 
 // Models
 const User = mongoose.model('user');
@@ -52,7 +53,9 @@ const loginUser = (req, res) => {
         keys.secretOrKey,
         // { expiresIn: 604800 },
         (err, token) => {
-          return res.json({ user: userData, success: true, token: 'Bearer ' + token });
+          // Remove embeddings from response
+          const cleanUserData = cleanResponseData(userData);
+          return res.json({ user: cleanUserData, success: true, token: 'Bearer ' + token });
         }
       );
     });

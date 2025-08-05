@@ -7,6 +7,12 @@ const editAddress = async (req, res) => {
   const errors = {};
   const {addressId, ...rest} = req.body;
 
+  // Enhanced validation for edit operations
+  if (rest?.addressType && !['apartment', 'house', 'office'].includes(rest.addressType)) {
+    errors.error = "Invalid address type. Must be apartment, house, or office";
+    return res.status(400).json({ ...errors });
+  }
+
   try {
     if (rest?.isPrimary === true) {
       // First, unset any existing primary address

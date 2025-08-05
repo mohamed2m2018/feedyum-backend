@@ -1,6 +1,7 @@
 const Order = require('../../models/order');
 const User = require('../../models/user');
 const Dish = require('../../models/dish');
+const ChefBranch = require('../../models/chefBranch');
 const EnhancedNotificationService = require('../../services/enhancedNotificationService');
 
 const createOrder = async (req, res) => {
@@ -64,6 +65,51 @@ const createOrder = async (req, res) => {
         price: dish.price,
         total: itemTotal
       });
+    }
+
+    // Geographic validation: Check if chef has branches in delivery city
+    if (deliveryAddress) {
+      let clientCity;
+      
+      // Extract city from delivery address with better fallback logic
+      if (deliveryAddress.city) {
+        clientCity = deliveryAddress.city;
+      } else if (deliveryAddress.streetDetails?.area) {
+        clientCity = deliveryAddress.streetDetails.area;
+      } else if (deliveryAddress.streetDetails?.city) {
+        clientCity = deliveryAddress.streetDetails.city;
+      } else if (deliveryAddress.nameLine) {
+        const addressParts = deliveryAddress.nameLine.split(',');
+        // Try to extract city from different positions in the address
+        if (addressParts.length > 2) {
+          clientCity = addressParts[addressParts.length - 2].trim();
+        } else if (addressParts.length > 1) {
+          clientCity = addressParts[1].trim();
+        }
+      }
+      
+      // Clean up city name (remove extra text)
+      if (clientCity) {
+        clientCity = clientCity.replace(/\b(city|governorate|gov)\b/gi, '').trim();
+      }
+      
+      if (clientCity) {
+        // Check if chef has active branches in the delivery city
+        const chefBranches = await ChefBranch.find({
+          chef: chefId,
+          isActive: true,
+          'addressDetails.city': new RegExp(clientCity, 'i')
+        });
+        
+        if (chefBranches.length === 0) {
+          return res.status(400).json({
+            message: `This chef does not deliver to ${clientCity}. Please select a different chef or delivery address.`,
+            error: 'delivery_area_not_supported',
+            chefId: chefId,
+            deliveryCity: clientCity
+          });
+        }
+      }
     }
 
     // Calculate fees

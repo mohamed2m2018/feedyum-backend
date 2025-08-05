@@ -81,10 +81,13 @@ app.use("/api/views", require("./routes/views"));
 app.use("/api/tags", require("./routes/tags"));
 app.use("/api/chat", require("./routes/chat"));
 app.use("/api/messages", require("./routes/messages"));
+app.use("/api/notifications", require("./routes/notifications"));
 
 // Add the new routes here
 app.use("/api/menus", require("./routes/menu"));
 app.use("/api/dishes", require("./routes/dish"));
+app.use("/api/branches", require("./routes/branches"));
+app.use("/api/location-chefs", require("./routes/locationChefs"));
 app.use("/api/sections", require("./routes/section"));
 app.use("/api/cart", require("./routes/cart"));
 app.use("/api/orders", require("./routes/order"));

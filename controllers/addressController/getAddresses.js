@@ -9,7 +9,10 @@ const getAddresses = async (req, res) => {
   try {
     //lean() make you able to get rid of _doc
     //populate() make you able to populate all fields for story given its id
-    const addresses = await Address.find({ owner: req.user._id }).lean();
+    // Sort by isPrimary (primary first), then by updatedAt (most recent first)
+    const addresses = await Address.find({ owner: req.user._id })
+      .sort({ isPrimary: -1, updatedAt: -1 })
+      .lean();
     
     if (addresses.length === 0) {
       return res.status(200).json({

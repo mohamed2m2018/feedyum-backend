@@ -11,9 +11,25 @@ const getDishesByMenuId = async (req, res) => {
     }
 
     // Find dishes by menuId and populate section details
-    const dishes = await Dish.find({ menu: menuId }).populate("section");
+    const dishes = await Dish.find({ menu: menuId }).populate("section").lean();
 
-    res.status(200).json(dishes);
+    // Transform ObjectIds to strings
+    const transformedDishes = dishes.map(dish => ({
+      ...dish,
+      _id: dish._id.toString(),
+      user_id: dish.user_id.toString(),
+      menu: dish.menu.toString(),
+      section: dish.section ? {
+        ...dish.section,
+        _id: dish.section._id.toString()
+      } : dish.section,
+      // Add chef information for easier access
+      chef: {
+        _id: dish.user_id.toString()
+      }
+    }));
+
+    res.status(200).json(transformedDishes);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

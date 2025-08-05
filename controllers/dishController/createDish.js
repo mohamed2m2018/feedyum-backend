@@ -1,6 +1,7 @@
 const Dish = require('../../models/dish');
 const Menu = require('../../models/menu');
 const Section = require('../../models/section');
+const embeddingService = require('../../services/embeddingService');
 
 const createDish = async (req, res) => {
   try {
@@ -124,6 +125,33 @@ const createDish = async (req, res) => {
     });
     
     await dish.save();
+
+    // Generate embedding for the new dish
+    try {
+      const text = embeddingService.prepareTextForEmbedding(dish, [
+        'name',
+        'description', 
+        'category',
+        'tags',
+        'ingredients',
+        'dietaryInfo'
+      ]);
+      
+      if (text && text.trim().length > 0) {
+        const embedding = await embeddingService.generateEmbedding(text);
+        if (embedding) {
+          dish.embedding = embedding;
+          dish.embeddingGenerated = new Date();
+          await dish.save();
+          console.log(`✅ Generated embedding for new dish: ${dish.name}`);
+        } else {
+          console.log(`⚠️ Failed to generate embedding for dish: ${dish.name}`);
+        }
+      }
+    } catch (error) {
+      console.error(`❌ Error generating embedding for dish ${dish.name}:`, error.message);
+      // Don't fail the dish creation if embedding generation fails
+    }
 
     menu.dishes.push(dish._id);
     await menu.save();

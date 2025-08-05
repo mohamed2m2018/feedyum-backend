@@ -7,6 +7,7 @@ const getDishesByMenuId = require('./getDishesByMenuId');
 const getDishesByChef = require('./getDishesByChef');
 const getDishesByCategory = require('./getDishesByCategory');
 const searchDishes = require('./searchDishes');
+const semanticSearchDishes = require('./semanticSearchDishes');
 
 module.exports = {
   createDish,
@@ -18,4 +19,5 @@ module.exports = {
   getDishesByChef,
   getDishesByCategory,
   searchDishes,
+  semanticSearchDishes,
 };

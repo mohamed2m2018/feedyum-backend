@@ -8,6 +8,7 @@ const getUserById = require('./getUserById');
 const getUserProfile = require('./getUserProfile');
 const getChefProfile = require('./getChefProfile');
 const searchUser = require('./searchUser');
+const semanticSearchUser = require('./semanticSearchUser');
 const getAllLocations = require('./getAllUserLocations');
 const getUserByTag = require('./getUserByTag');
 
@@ -22,6 +23,7 @@ module.exports = {
   getUserProfile,
   getChefProfile,
   searchUser,
+  semanticSearchUser,
   getAllLocations,
   getUserByTag,
 };

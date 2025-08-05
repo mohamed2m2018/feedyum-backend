@@ -9,6 +9,9 @@ const checkoutCart = async (req, res) => {
   try {
     const { deliveryAddress, specialInstructions, promocode } = req.body;
     
+    // Import models for geographic validation
+    const ChefBranch = mongoose.model("chefBranch");
+    
     let cart = await Cart.findOne({ user: req.user._id }).populate({
       path: "items.dish",
       populate: {
@@ -75,6 +78,37 @@ const checkoutCart = async (req, res) => {
       return res.status(400).json({ 
         message: 'All items in cart must be from the same chef' 
       });
+    }
+
+    // Geographic validation: Check if chef has branches in delivery city
+    if (deliveryAddress) {
+      let clientCity;
+      
+      // Extract city from delivery address
+      if (deliveryAddress.streetDetails?.area) {
+        clientCity = deliveryAddress.streetDetails.area;
+      } else if (deliveryAddress.nameLine) {
+        const addressParts = deliveryAddress.nameLine.split(',');
+        clientCity = addressParts.length > 1 ? addressParts[addressParts.length - 2].trim() : null;
+      }
+      
+      if (clientCity) {
+        // Check if chef has active branches in the delivery city
+        const chefBranches = await ChefBranch.find({
+          chef: chefId,
+          isActive: true,
+          'addressDetails.city': new RegExp(clientCity, 'i')
+        });
+        
+        if (chefBranches.length === 0) {
+          return res.status(400).json({
+            message: `This chef does not deliver to ${clientCity}. Please select a different chef or delivery address.`,
+            error: 'delivery_area_not_supported',
+            chefId: chefId,
+            deliveryCity: clientCity
+          });
+        }
+      }
     }
 
     // Calculate totals (delivery fee will be set by chef when accepting)

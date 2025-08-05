@@ -5,6 +5,7 @@ const getStoriesByUserId = require('./getStoriesByUserId');
 const updateStory = require('./updateStory');
 const deleteStories = require('./deleteStories');
 const searchStories = require('./searchStories');
+const semanticSearchStories = require('./semanticSearchStories');
 const getFollowingStories = require('./getFollowingStories');
 const getSubscribedCategoriesStories = require('./getSubscribedCategoriesStories');
 const getReviewsStories = require ('./getReviewsStories');
@@ -21,6 +22,7 @@ module.exports = {
     updateStory,
     deleteStories,
     searchStories,
+    semanticSearchStories,
     getFollowingStories,
     getSubscribedCategoriesStories,
     getReviewsStories,

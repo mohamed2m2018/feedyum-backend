@@ -12,6 +12,8 @@ const messageSchema = new mongoose.Schema({
     enum: ['text', 'audio'], 
     default: 'text' 
   },
+  isRead: { type: Boolean, default: false }, // Track if message has been read
+  readAt: { type: Date }, // When message was read
   isDeleted: { type: Boolean, default: false }, // Soft delete flag
   deletedAt: { type: Date }, // When message was deleted
   timestamp: { type: Date, default: Date.now }

@@ -9,6 +9,9 @@ const User = mongoose.model("user");
 const Dish = mongoose.model("dish");
 const Menu = mongoose.model("menu");
 
+// Services
+const embeddingService = require('../../services/embeddingService');
+
 const addStory = async (req, res) => {
   // Validate
   const { errors, isValid } = validateStory(req.body);
@@ -158,7 +161,32 @@ const addStory = async (req, res) => {
 
   newStory
     .save()
-    .then((story) => {
+    .then(async (story) => {
+      // Generate embedding for the new story
+      try {
+        const text = embeddingService.prepareTextForEmbedding(story, [
+          'title',
+          'caption',
+          'description'
+        ]);
+        
+        if (text && text.trim().length > 0) {
+          const embedding = await embeddingService.generateEmbedding(text);
+          if (embedding) {
+            await Story.findByIdAndUpdate(story._id, {
+              embedding: embedding,
+              embeddingGenerated: new Date()
+            });
+            console.log(`✅ Generated embedding for new story: ${story.title || story.caption || story._id}`);
+          } else {
+            console.log(`⚠️ Failed to generate embedding for story: ${story.title || story.caption || story._id}`);
+          }
+        }
+      } catch (error) {
+        console.error(`❌ Error generating embedding for story ${story.title || story.caption || story._id}:`, error.message);
+        // Don't fail the story creation if embedding generation fails
+      }
+
       return res.json({ story, success: true });
     })
     .catch((err) => {

@@ -4,10 +4,11 @@ const User = require('../../models/user');
 const searchDishes = async (req, res) => {
   try {
     const { searchString, page = 1, limit = 10 } = req.query;
-    console.log('Search dishes called with:', { searchString, page, limit });
+    console.log('Traditional dish search called with:', { searchString, page, limit });
     
     // If no search string, return all visible dishes
     if (!searchString || searchString.trim() === '') {
+      console.log('No search string provided, returning all visible dishes');
       const pageNum = parseInt(page);
       const limitNum = parseInt(limit);
       const skip = (pageNum - 1) * limitNum;
@@ -18,31 +19,33 @@ const searchDishes = async (req, res) => {
 
       const dishes = await Dish.find(query)
         .populate('user_id', 'fullName avatar')
-        .sort({ average_rating: -1, created_at: -1 })
+        .sort({ averageRating: -1, createdAt: -1 })
         .skip(skip)
         .limit(limitNum)
         .lean();
 
-      const formattedDishes = dishes.map(dish => ({
-        ...dish,
-        chef: dish.user_id
-      }));
+      // Remove embeddings from response to reduce size
+      const dishesWithoutEmbeddings = dishes.map(dish => {
+        const { embedding, embeddingGenerated, ...dishWithoutEmbedding } = dish;
+        return dishWithoutEmbedding;
+      });
+
+      console.log(`Traditional dishes search found ${dishesWithoutEmbeddings.length} dishes for query: "${searchString}"`);
 
       return res.status(200).json({
         success: true,
-        data: {
-          dishes: formattedDishes,
-          pagination: {
-            currentPage: pageNum,
-            totalPages,
-            totalItems: totalDishes,
-            hasNextPage: pageNum < totalPages,
-            hasPrevPage: pageNum > 1
-          }
-        }
+        dishes: dishesWithoutEmbeddings,
+        pagination: {
+          currentPage: pageNum,
+          totalPages,
+          totalItems: totalDishes,
+          hasNextPage: pageNum < totalPages,
+          hasPrevPage: pageNum > 1,
+        },
       });
     }
 
+    console.log(`Searching for dishes with term: "${searchString}"`);
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
     const skip = (pageNum - 1) * limitNum;
@@ -59,11 +62,15 @@ const searchDishes = async (req, res) => {
       ]
     };
 
+    console.log('Dish search query:', JSON.stringify(searchQuery, null, 2));
+
     // Get total count for pagination
     const totalDishes = await Dish.countDocuments(searchQuery);
     const totalPages = Math.ceil(totalDishes / limitNum);
+    
+    console.log(`Found ${totalDishes} dishes matching search criteria`);
 
-    // Find dishes with pagination
+    // Get dishes with pagination
     const dishes = await Dish.find(searchQuery)
       .populate('user_id', 'fullName avatar')
       .sort({ average_rating: -1, created_at: -1 })
@@ -71,13 +78,21 @@ const searchDishes = async (req, res) => {
       .limit(limitNum)
       .lean();
 
-    // Format response
+    // Format dishes with chef information and convert ObjectIds to strings
     const formattedDishes = dishes.map(dish => ({
       ...dish,
-      chef: dish.user_id
+      _id: dish._id.toString(),
+      user_id: dish.user_id._id.toString(),
+      menu: dish.menu ? dish.menu.toString() : dish.menu,
+      chef: dish.user_id ? {
+        ...dish.user_id,
+        _id: dish.user_id._id.toString()
+      } : null
     }));
 
-    res.status(200).json({
+    console.log(`Returning ${formattedDishes.length} dishes for page ${pageNum}`);
+
+    return res.status(200).json({
       success: true,
       data: {
         dishes: formattedDishes,
@@ -92,13 +107,20 @@ const searchDishes = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error searching dishes:', error);
-    console.error('Stack trace:', error.stack);
-    res.status(500).json({
+    console.error('Dish search error:', error);
+    return res.status(500).json({
       success: false,
-      message: 'Internal server error',
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      error: 'Failed to search dishes',
+      data: {
+        dishes: [],
+        pagination: {
+          currentPage: parseInt(req.query.page || 1),
+          totalPages: 0,
+          totalItems: 0,
+          hasNextPage: false,
+          hasPrevPage: false
+        }
+      }
     });
   }
 };

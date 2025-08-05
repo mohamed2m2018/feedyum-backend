@@ -1,6 +1,7 @@
 const User = require('../../models/user');
 const Menu = require('../../models/menu');
 const mongoose = require('mongoose');
+const { cleanResponseData } = require('../../utils/embeddingUtils');
 
 const getUserProfile = async (req, res) => {
   try {
@@ -80,9 +81,12 @@ const getUserProfile = async (req, res) => {
       }
     }
 
+    // Remove embeddings from response
+    const cleanUserProfile = cleanResponseData(userProfile);
+    
     res.status(200).json({
       success: true,
-      user: userProfile
+      user: cleanUserProfile
     });
 
   } catch (error) {

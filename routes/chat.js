@@ -4,9 +4,28 @@ const passport = require('passport');
 const Message = require('../models/message');
 const User = require('../models/user');
 const Order = require('../models/order');
+const messagesController = require('../controllers/messagesController');
 
 // Middleware to get current user ID from authenticated user
 const getCurrentUserId = (req) => req.user?._id;
+
+// Route to get unread message counts
+router.get('/unread-counts', 
+  passport.authenticate('jwt', { session: false }),
+  messagesController.getUnreadCounts
+);
+
+// Route to mark a specific message as read
+router.put('/messages/:messageId/read', 
+  passport.authenticate('jwt', { session: false }),
+  messagesController.markMessageAsRead
+);
+
+// Route to mark all messages from a specific sender as read
+router.put('/chats/:senderId/read', 
+  passport.authenticate('jwt', { session: false }),
+  messagesController.markChatAsRead
+);
 
 // Route to get order-based chats for the current user
 router.get('/order-chats', 

@@ -5,9 +5,18 @@ const { search } = require("../../routes/user");
 const Story = mongoose.model("story");
 var ObjectId = require("mongoose").Types.ObjectId;
 
-const searchStories = (req, res) => {
+const searchStories = async (req, res) => {
   const { page = 1, limit = 10, searchString, excludeReviews, reviewsOnly, ...rest } = req.query;
-  const string = new RegExp(searchString, 'i')
+  
+  console.log('Traditional story search called with:', {
+    searchString,
+    page,
+    limit,
+    excludeReviews,
+    reviewsOnly,
+    rest
+  });
+
   const errors = {};
   if (rest.category && !ObjectId.isValid(rest.category)) {
     errors.error = "Category id is invalid";
@@ -15,14 +24,23 @@ const searchStories = (req, res) => {
   }
 
   // Build base query
-  let baseQuery = searchString
-    ? {
-        $or: [{caption: string}, {description: string}, {title: string}],
-        ...rest,
-      }
-    : {
-        ...rest,
-      };
+  let baseQuery;
+  
+  if (searchString && searchString.trim() !== '') {
+    const string = new RegExp(searchString.trim(), 'i');
+    baseQuery = {
+      $or: [
+        { caption: string }, 
+        { description: string }, 
+        { title: string }
+      ],
+      ...rest,
+    };
+  } else {
+    baseQuery = {
+      ...rest,
+    };
+  }
 
   // Add review filtering logic
   if (excludeReviews === 'true') {
@@ -49,32 +67,55 @@ const searchStories = (req, res) => {
     });
   }
 
-  Story.find(baseQuery)
-    .limit(limit * 1)
-    .populate('author', 'fullName')
-    .populate("dishes")
-    .skip((page - 1) * limit)
-    .sort({ _id: -1 })
-    .exec()
-    .then(async (stories) => {
-      if (stories.length === 0) {
-        return res.json({stories: []});
+  console.log('Story search query:', JSON.stringify(baseQuery, null, 2));
+
+  try {
+    const stories = await Story.find(baseQuery)
+      .limit(limit * 1)
+      .populate('author', 'fullName avatar')
+      .populate("dishes")
+      .skip((page - 1) * limit)
+      .sort({ _id: -1 });
+
+    // Get total count for pagination
+    const totalStories = await Story.countDocuments(baseQuery);
+
+    // Remove embeddings from response to reduce size
+    const storiesWithoutEmbeddings = stories.map(story => {
+      const storyObj = story.toObject();
+      delete storyObj.embedding;
+      delete storyObj.embeddingGenerated;
+      
+      // Also remove embeddings from populated dishes
+      if (storyObj.dishes && Array.isArray(storyObj.dishes)) {
+        storyObj.dishes = storyObj.dishes.map(dish => {
+          const dishObj = dish.toObject ? dish.toObject() : dish;
+          delete dishObj.embedding;
+          delete dishObj.embeddingGenerated;
+          return dishObj;
+        });
       }
       
-      // get total documents in the stories collection that match the query
-      const count = await Story.countDocuments(baseQuery);
-
-      // return response with stories, total pages, and current page
-      res.json({
-        stories,
-        totalPages: Math.ceil(count / limit),
-        currentPage: page,
-      });
-    })
-    .catch((err) => {
-      errors.error = "Error fetching stories from database";
-      res.status(500).json({ ...errors, ...err });
+      return storyObj;
     });
+
+    console.log(`Traditional search found ${storiesWithoutEmbeddings.length} stories for query: "${searchString}"`);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        stories: storiesWithoutEmbeddings,
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(totalStories / limit),
+        totalItems: totalStories,
+        hasNextPage: page < Math.ceil(totalStories / limit),
+        hasPrevPage: page > 1,
+      },
+    });
+  } catch (err) {
+    console.error('Story search error:', err);
+    return res.status(500).json({ success: false, error: 'Database error during search' });
+  }
 };
 
 module.exports = searchStories;

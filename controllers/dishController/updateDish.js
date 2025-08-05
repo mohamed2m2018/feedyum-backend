@@ -1,6 +1,7 @@
 const Dish = require('../../models/dish');
 const Section = require('../../models/section');
 const Menu = require('../../models/menu');
+const embeddingService = require('../../services/embeddingService');
 
 const updateDish = async (req, res) => {
   try {
@@ -87,6 +88,34 @@ const updateDish = async (req, res) => {
       .populate('section');
     
     if (!dish) return res.status(404).json({ message: 'Dish not found' });
+    
+    // Regenerate embedding for the updated dish
+    try {
+      const text = embeddingService.prepareTextForEmbedding(dish, [
+        'name',
+        'description', 
+        'category',
+        'tags',
+        'ingredients',
+        'dietaryInfo'
+      ]);
+      
+      if (text && text.trim().length > 0) {
+        const embedding = await embeddingService.generateEmbedding(text);
+        if (embedding) {
+          await Dish.findByIdAndUpdate(dish._id, {
+            embedding: embedding,
+            embeddingGenerated: new Date()
+          });
+          console.log(`✅ Regenerated embedding for updated dish: ${dish.name}`);
+        } else {
+          console.log(`⚠️ Failed to regenerate embedding for dish: ${dish.name}`);
+        }
+      }
+    } catch (error) {
+      console.error(`❌ Error regenerating embedding for dish ${dish.name}:`, error.message);
+      // Don't fail the dish update if embedding generation fails
+    }
     
     res.status(200).json(dish);
   } catch (error) {

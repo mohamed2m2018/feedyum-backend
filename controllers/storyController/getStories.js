@@ -20,17 +20,18 @@ function calculateRecommendationScore(story, userLocation, viewedStoryIds, curre
   const viewScore = isViewed ? 5 : 35;
   score += viewScore;
   
-  // Factor 3: Location Proximity Score (0-20 points)
+  // Factor 3: Location Proximity Score (0-30 points) - Increased weight
   let locationScore = 0;
   if (story.kmAway !== undefined && story.kmAway !== null) {
-    if (story.kmAway <= 5) locationScore = 20;
-    else if (story.kmAway <= 15) locationScore = 16;
-    else if (story.kmAway <= 30) locationScore = 12;
-    else if (story.kmAway <= 50) locationScore = 8;
-    else if (story.kmAway <= 80) locationScore = 4;
+    if (story.kmAway <= 5) locationScore = 30;
+    else if (story.kmAway <= 15) locationScore = 25;
+    else if (story.kmAway <= 30) locationScore = 20;
+    else if (story.kmAway <= 50) locationScore = 15;
+    else if (story.kmAway <= 80) locationScore = 8;
+    else if (story.kmAway <= 150) locationScore = 4;
     else locationScore = 1;
   } else {
-    locationScore = 6;
+    locationScore = 10; // Reduced default for unknown locations
   }
   score += locationScore;
   
@@ -198,7 +199,7 @@ const getStories = async (req, res) => {
     // Enhanced recommendation sorting algorithm
     allStories.sort((a, b) => b._recommendationScore - a._recommendationScore);
     
-    // Create proximity-based groups for better distribution
+    // Create proximity-based groups for better distribution - Enhanced location prioritization
     const proximityGroups = {
       veryClose: [],
       close: [],
@@ -207,13 +208,15 @@ const getStories = async (req, res) => {
     };
     
     allStories.forEach(story => {
+      // Prioritize unseen, high-scoring, very close stories
       if (!viewedStoryIds.has(story._id.toString()) && story._recommendationScore > 70) {
         proximityGroups.veryClose.push(story);
       } else if (story.kmAway !== undefined) {
-        if (story.kmAway <= 5) proximityGroups.veryClose.push(story);
-        else if (story.kmAway <= 30) proximityGroups.close.push(story);
-        else if (story.kmAway <= 80) proximityGroups.nearby.push(story);
-        else proximityGroups.distant.push(story);
+        // Stricter location-based grouping
+        if (story.kmAway <= 10) proximityGroups.veryClose.push(story);        // Within 10km
+        else if (story.kmAway <= 50) proximityGroups.close.push(story);       // 10-50km 
+        else if (story.kmAway <= 150) proximityGroups.nearby.push(story);     // 50-150km
+        else proximityGroups.distant.push(story);                            // 150km+
       } else {
         proximityGroups.distant.push(story);
       }

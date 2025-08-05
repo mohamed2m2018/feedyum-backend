@@ -102,7 +102,15 @@ const StorySchema = new Schema({
     max: 5,
     required: function() { return this.reviewMode; }
   },
+  
+  // Semantic search embedding - excluded by default for performance
+  embedding: { type: [Number], default: null, select: false },
+  embeddingGenerated: { type: Date, default: null, select: false },
 });
+
+// Performance optimization indexes for semantic search
+StorySchema.index({ embedding: 1 }); // Index for semantic search
+StorySchema.index({ reviewMode: 1, embedding: 1 }); // Compound index for review filtering with semantic search
 
 const Story = mongoose.model("story", StorySchema);
 module.exports = Story;

@@ -43,4 +43,22 @@ router.delete(
   addressController.removeAddress
 );
 
+// @route  POST api/address/current_location
+// @desc   Set current location as delivery address
+// @access Private
+router.post(
+  "/current_location",
+  passport.authenticate("jwt", { session: false }),
+  addressController.setCurrentLocation
+);
+
+// @route  POST api/address/geocode
+// @desc   Reverse geocode coordinates to address
+// @access Private
+router.post(
+  "/geocode",
+  passport.authenticate("jwt", { session: false }),
+  addressController.geocodeAddress
+);
+
 module.exports = router;

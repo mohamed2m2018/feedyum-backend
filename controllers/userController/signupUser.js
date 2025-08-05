@@ -3,6 +3,8 @@ const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const keys = require('../../config/keys');
+const embeddingService = require('../../services/embeddingService');
+const { cleanResponseData } = require('../../utils/embeddingUtils');
 
 // Models
 const User = mongoose.model('user');
@@ -56,7 +58,33 @@ const signupUser = (req, res) => {
           newUser.password = hash;
           newUser
             .save()
-            .then((user) => {
+            .then(async (user) => {
+              // Generate embedding for the new user
+              try {
+                const text = embeddingService.prepareTextForEmbedding(user, [
+                  'fullName',
+                  'username',
+                  'bio',
+                  'type'
+                ]);
+                
+                if (text && text.trim().length > 0) {
+                  const embedding = await embeddingService.generateEmbedding(text);
+                  if (embedding) {
+                    await User.findByIdAndUpdate(user._id, {
+                      embedding: embedding,
+                      embeddingGenerated: new Date()
+                    });
+                    console.log(`✅ Generated embedding for new user: ${user.fullName || user.username}`);
+                  } else {
+                    console.log(`⚠️ Failed to generate embedding for user: ${user.fullName || user.username}`);
+                  }
+                }
+              } catch (error) {
+                console.error(`❌ Error generating embedding for user ${user.fullName || user.username}:`, error.message);
+                // Don't fail the user creation if embedding generation fails
+              }
+
               // JWT Payload
               const TokenPayload = {
                 _id: user._id,
@@ -70,7 +98,9 @@ const signupUser = (req, res) => {
                 keys.secretOrKey,
                 // { expiresIn: 604800 },
                 (err, token) => {
-                  return res.json({ user: userData, success: true, token: 'Bearer ' + token });
+                  // Remove embeddings from response
+                  const cleanUserData = cleanResponseData(userData);
+                  return res.json({ user: cleanUserData, success: true, token: 'Bearer ' + token });
                 }
               );
             })

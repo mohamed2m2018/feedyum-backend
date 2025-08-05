@@ -1,6 +1,7 @@
 const Dish = require('../../models/dish');
 const User = require('../../models/user');
 const Review = require('../../models/review');
+const { cleanResponseData } = require('../../utils/embeddingUtils');
 const Rating = require('../../models/rating');
 
 const getDishById = async (req, res) => {
@@ -39,14 +40,24 @@ const getDishById = async (req, res) => {
       isFavorite = user && user.favorites && user.favorites.includes(dishId);
     }
 
-    // Prepare enhanced dish data
+    // Prepare enhanced dish data with ObjectId conversion
+    const dishObject = dish.toObject();
     const enhancedDish = {
-      ...dish.toObject(),
+      ...dishObject,
+      _id: dishObject._id.toString(),
+      user_id: dishObject.user_id.toString(),
+      menu: dishObject.menu ? {
+        ...dishObject.menu,
+        _id: dishObject.menu._id.toString()
+      } : dishObject.menu,
       average_rating: Number(averageRating.toFixed(1)),
       reviews_count: reviewsCount,
       ratings_count: ratings.length,
       isFavorite: isFavorite,
-      chef: chefInfo, // Use the manually populated chef info
+      chef: chefInfo ? {
+        ...chefInfo.toObject(),
+        _id: chefInfo._id.toString()
+      } : null,
       // Add nutritional info if available
       nutritionalInfo: dish.nutritionalInfo || {
         calories: dish.calories || null,
@@ -65,7 +76,9 @@ const getDishById = async (req, res) => {
       tags: dish.tags || [],
     };
 
-    res.status(200).json(enhancedDish);
+    // Remove embeddings from response
+    const cleanEnhancedDish = cleanResponseData(enhancedDish);
+    res.status(200).json(cleanEnhancedDish);
   } catch (error) {
     console.error('Error fetching dish details:', error);
     res.status(500).json({ error: error.message });

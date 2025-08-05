@@ -40,11 +40,22 @@ const DishSchema = new mongoose.Schema({
   fat: { type: String },
   fiber: { type: String },
   
+  // Semantic search embedding - excluded by default for performance
+  embedding: { type: [Number], default: null, select: false },
+  embeddingGenerated: { type: Date, default: null, select: false },
+  
   created_at: {
     type: Date,
     default: Date.now,
   },
 });
+
+// Add index for category search performance (add this near the schema definition)
+// Performance optimization indexes:
+DishSchema.index({ category: 1, visible: 1, created_at: -1 }); // Compound index for discover queries
+DishSchema.index({ user_id: 1, visible: 1 }); // Index for chef dishes queries
+DishSchema.index({ embedding: 1 }); // Index for semantic search
+DishSchema.index({ visible: 1, embedding: 1 }); // Compound index for semantic search with visibility
 
 const Dish = mongoose.model("dish", DishSchema);
 module.exports = Dish;

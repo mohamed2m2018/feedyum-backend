@@ -18,6 +18,11 @@ router.get('/all', userController.getAllUsers);
 // @errors nousers error
 router.get('/search', userController.searchUser);
 
+// @route  GET api/user/semantic-search
+// @desc   Semantic search users (with AI embeddings)
+// @access Public
+router.get('/semantic-search', userController.semanticSearchUser);
+
 // @route  POST api/user
 // @desc   User Signup - Create new user
 // @access Public

@@ -5,7 +5,27 @@ const embeddingService = require('../../services/embeddingService');
 
 const updateDish = async (req, res) => {
   try {
-    const { sectionId, sectionName, ingredients, tags, dietaryInfo, ...updateData } = req.body;
+    const { sectionId, sectionName, ingredients, tags, dietaryInfo, categories, ...updateData } = req.body;
+    // Normalize categories if provided
+    if (categories !== undefined) {
+      if (Array.isArray(categories)) {
+        updateData.categories = categories
+          .map(c => (typeof c === 'string' ? c.trim() : c))
+          .filter(Boolean);
+      } else if (typeof categories === 'string') {
+        updateData.categories = categories
+          .split(/[,\n]/)
+          .map(c => c.trim())
+          .filter(Boolean);
+      } else {
+        updateData.categories = [];
+      }
+
+      // Keep legacy single `category` in sync if not explicitly set
+      if (!updateData.category) {
+        updateData.category = updateData.categories[0] || 'Main Course';
+      }
+    }
     
     // Process ingredients - convert string to array if needed
     if (ingredients !== undefined) {
@@ -95,6 +115,7 @@ const updateDish = async (req, res) => {
         'name',
         'description', 
         'category',
+        'categories',
         'tags',
         'ingredients',
         'dietaryInfo'

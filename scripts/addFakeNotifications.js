@@ -162,7 +162,7 @@ const fakeNotifications = [
   {
     type: 'promotion',
     title: 'Weekend Special',
-    message: 'Free delivery on orders above $25 this weekend',
+    message: 'Free delivery on orders above 25 this weekend',
     isRead: true,
     readAt: new Date(Date.now() - 12 * 60 * 60 * 1000),
     createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago

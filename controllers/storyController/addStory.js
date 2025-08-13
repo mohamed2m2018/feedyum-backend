@@ -32,6 +32,12 @@ const addStory = async (req, res) => {
       return res.status(400).json(errors);
     }
 
+    // Ensure chef's menu has at least one dish before allowing posting
+    if (!chefMenu.dishes || chefMenu.dishes.length === 0) {
+      errors.error = "Chef users must add at least one dish to their menu before posting.";
+      return res.status(400).json(errors);
+    }
+
     // Validate that selected dishes exist in chef's menu
     if (req.body.dishes && req.body.dishes.length > 0) {
       const menuDishIds = chefMenu.dishes.map(dish => dish._id.toString());

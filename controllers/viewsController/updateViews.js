@@ -5,10 +5,23 @@ const Story = mongoose.model('story');
 
 // Update views for a story
 const updateViews = async (req, res) => {
-  const { storyId } = req.body;
-  const { userId } = req.body;
+  const { storyId, userId } = req.body;
 
   try {
+    // Validate required fields
+    if (!storyId || !userId) {
+      return res.status(400).json({ error: 'storyId and userId are required' });
+    }
+
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(storyId)) {
+      return res.status(400).json({ error: 'Invalid storyId format' });
+    }
+    
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ error: 'Invalid userId format' });
+    }
+
     // Check if the user has already viewed the story
     const existingView = await View.findOne({ story: storyId, user_id: userId });
     if (existingView) {

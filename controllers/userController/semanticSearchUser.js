@@ -18,20 +18,57 @@ const semanticSearchUser = async (req, res) => {
       searchType
     });
 
-    // If no search string, return empty results
+    // If no search string, use fallback text search to get all results
     if (!searchString || searchString.trim() === '') {
+      console.log('Empty search string - returning all users');
+      
+      const options = {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        currentUserId
+      };
+      
+      // Use fallback text search with empty string to get all results
+      const searchResults = await semanticSearchService.fallbackTextSearch('users', '', options);
+      
+      // Ensure consistent response format
+      if (!searchResults.success) {
+        return res.status(500).json({
+          success: false,
+          error: searchResults.error || 'Search failed',
+          data: {
+            users: [],
+            pagination: {
+              currentPage: parseInt(page),
+              totalPages: 0,
+              totalItems: 0,
+              hasNextPage: false,
+              hasPrevPage: false
+            }
+          }
+        });
+      }
+      
+      // Remove embedding from response to reduce size (if any)
+      const usersWithoutEmbeddings = searchResults.data.users.map(user => {
+        const { embedding, embeddingGenerated, ...userWithoutEmbedding } = user;
+        return userWithoutEmbedding;
+      });
+      
+      console.log(`Empty search returned ${usersWithoutEmbeddings.length} users`);
+      
       return res.status(200).json({
         success: true,
         data: {
-          users: [],
-          pagination: {
+          users: usersWithoutEmbeddings,
+          pagination: searchResults.data.pagination || {
             currentPage: parseInt(page),
             totalPages: 0,
             totalItems: 0,
             hasNextPage: false,
             hasPrevPage: false
           },
-          searchType: 'empty'
+          searchType: 'all'
         }
       });
     }

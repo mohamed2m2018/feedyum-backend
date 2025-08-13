@@ -20,20 +20,70 @@ const semanticSearchStories = async (req, res) => {
       searchType
     });
 
-    // If no search string, return empty results
+    // If no search string, use fallback text search to get all results
     if (!searchString || searchString.trim() === '') {
+      console.log('Empty search string - returning all stories');
+      
+      const options = {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        excludeReviews,
+        reviewsOnly
+      };
+      
+      // Use fallback text search with empty string to get all results
+      const searchResults = await semanticSearchService.fallbackTextSearch('stories', '', options);
+      
+      // Ensure consistent response format
+      if (!searchResults.success) {
+        return res.status(500).json({
+          success: false,
+          error: searchResults.error || 'Search failed',
+          data: {
+            stories: [],
+            pagination: {
+              currentPage: parseInt(page),
+              totalPages: 0,
+              totalItems: 0,
+              hasNextPage: false,
+              hasPrevPage: false
+            }
+          }
+        });
+      }
+      
+      // Remove embedding from response to reduce size
+      const storiesWithoutEmbeddings = searchResults.data.stories.map(story => {
+        const storyObj = story.toObject ? story.toObject() : story;
+        delete storyObj.embedding;
+        
+        // Also remove embeddings from populated dishes
+        if (storyObj.dishes && Array.isArray(storyObj.dishes)) {
+          storyObj.dishes = storyObj.dishes.map(dish => {
+            const dishObj = dish.toObject ? dish.toObject() : dish;
+            delete dishObj.embedding;
+            delete dishObj.embeddingGenerated;
+            return dishObj;
+          });
+        }
+        
+        return storyObj;
+      });
+      
+      console.log(`Empty search returned ${storiesWithoutEmbeddings.length} stories`);
+      
       return res.status(200).json({
         success: true,
         data: {
-          stories: [],
+          stories: storiesWithoutEmbeddings,
           pagination: {
             currentPage: parseInt(page),
-            totalPages: 0,
-            totalItems: 0,
-            hasNextPage: false,
-            hasPrevPage: false
+            totalPages: Math.ceil(searchResults.data.totalItems / limit),
+            totalItems: searchResults.data.totalItems,
+            hasNextPage: page < Math.ceil(searchResults.data.totalItems / limit),
+            hasPrevPage: page > 1,
           },
-          searchType: 'empty'
+          searchType: 'all'
         }
       });
     }

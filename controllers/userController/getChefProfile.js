@@ -47,7 +47,7 @@ const getChefProfile = async (req, res) => {
           foreignField: '_id',
           as: 'dishes',
           pipeline: [
-            { $project: { name: 1, description: 1, price: 1, image: 1, isAvailable: 1, section: 1 } }
+            { $project: { name: 1, description: 1, price: 1, image: 1, isAvailable: 1, section: 1, average_rating: 1 } }
           ]
         }
       },
@@ -73,10 +73,34 @@ const getChefProfile = async (req, res) => {
       chef.hasMenu = false;
     }
 
+    // Compute average rating across the chef's dishes (based on dish.average_rating)
+    let averageDishRating = 0;
+    let ratedDishesCount = 0;
+    let dishCount = 0;
+
+    if (menu && Array.isArray(menu.dishes)) {
+      dishCount = menu.dishes.length;
+      const ratedDishes = menu.dishes.filter(
+        (dish) => typeof dish.average_rating === 'number' && dish.average_rating > 0
+      );
+      ratedDishesCount = ratedDishes.length;
+      if (ratedDishesCount > 0) {
+        const total = ratedDishes.reduce((sum, dish) => sum + (dish.average_rating || 0), 0);
+        averageDishRating = Math.round((total / ratedDishesCount) * 10) / 10;
+      }
+    }
+
     // Structure the response
     const chefProfile = {
       ...chef,
-      menu: menu || null
+      averageDishRating,
+      ratedDishesCount,
+      menu: menu
+        ? {
+            ...menu,
+            dishCount,
+          }
+        : null,
     };
 
     res.status(200).json({

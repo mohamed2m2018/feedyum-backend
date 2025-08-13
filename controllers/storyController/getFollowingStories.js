@@ -121,6 +121,48 @@ const getFollowingStories = async (req, res) => {
       })
   );
 
+    // Performance optimization: Only compute ratings for unique authors
+    const uniqueAuthorIds = [...new Set(mappedStories.map(s => s.author?._id?.toString()).filter(Boolean))];
+    if (uniqueAuthorIds.length > 0) {
+      try {
+        const Dish = mongoose.model('dish');
+        const ratings = await Dish.aggregate([
+          { $match: { user_id: { $in: uniqueAuthorIds.map(id => mongoose.Types.ObjectId(id)) } } },
+          { $match: { average_rating: { $gt: 0 } } }, // Pre-filter rated dishes
+          {
+            $group: {
+              _id: "$user_id",
+              ratedDishesCount: { $sum: 1 },
+              totalRating: { $sum: "$average_rating" }
+            }
+          },
+          {
+            $project: {
+              ratedDishesCount: 1,
+              averageDishRating: { $round: [{ $divide: ["$totalRating", "$ratedDishesCount"] }, 1] }
+            }
+          }
+        ]).exec();
+        
+        const ratingMap = new Map(ratings.map(r => [r._id.toString(), r]));
+        mappedStories.forEach(story => {
+          if (story.author?._id) {
+            const rating = ratingMap.get(story.author._id.toString());
+            story.author.averageDishRating = rating?.averageDishRating || 0;
+            story.author.ratedDishesCount = rating?.ratedDishesCount || 0;
+          }
+        });
+      } catch (ratingErr) {
+        console.error('[PERF] Failed to attach author ratings (following):', ratingErr?.message);
+        mappedStories.forEach(story => {
+          if (story.author) {
+            story.author.averageDishRating = 0;
+            story.author.ratedDishesCount = 0;
+          }
+        });
+      }
+    }
+
     // Shuffle the followingStories array to randomize the order
     const randomizedStories = shuffleArray([...mappedStories]);
 

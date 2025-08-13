@@ -3,6 +3,7 @@ const passport = require('passport');
 const router = express.Router();
 
 const dishController = require('../controllers/dishController');
+const requestTimeout = require('../middleware/requestTimeout');
 
 // @route  POST api/dishes
 // @desc   Create a new dish and add it to a menu
@@ -50,6 +51,7 @@ router.get('/search',
 // @desc   Semantic search dishes (with AI embeddings)
 // @access Public
 router.get('/semantic-search',
+  requestTimeout(18000), // 18 second timeout (shorter than controller's 15s + buffer)
   dishController.semanticSearchDishes
 );
 

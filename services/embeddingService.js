@@ -6,6 +6,9 @@ class EmbeddingService {
     this.modelName = 'Xenova/multilingual-e5-small'; // Multilingual model for Arabic + English content
     this.maxTokens = 512; // Max tokens for the local model
     this.isInitializing = false;
+    this.embeddingCache = new Map(); // Cache for embeddings
+    this.maxCacheSize = 1000; // Maximum cache entries
+    this.pendingEmbeddings = new Map(); // Track pending embedding requests
   }
 
   /**
@@ -40,6 +43,45 @@ class EmbeddingService {
       return null;
     }
 
+    const truncatedText = this.truncateText(text, this.maxTokens);
+    const cacheKey = truncatedText.toLowerCase().trim();
+
+    // Check cache first
+    if (this.embeddingCache.has(cacheKey)) {
+      console.log(`Cache hit for embedding: "${truncatedText.substring(0, 50)}..."`);
+      return this.embeddingCache.get(cacheKey);
+    }
+
+    // Check if embedding is already being generated
+    if (this.pendingEmbeddings.has(cacheKey)) {
+      console.log(`Waiting for pending embedding: "${truncatedText.substring(0, 50)}..."`);
+      return await this.pendingEmbeddings.get(cacheKey);
+    }
+
+    // Create promise for this embedding generation
+    const embeddingPromise = this._generateEmbeddingInternal(truncatedText, cacheKey);
+    this.pendingEmbeddings.set(cacheKey, embeddingPromise);
+
+    try {
+      const embedding = await embeddingPromise;
+      
+      // Cache the result
+      if (embedding) {
+        this._addToCache(cacheKey, embedding);
+      }
+      
+      return embedding;
+    } finally {
+      // Clean up pending request
+      this.pendingEmbeddings.delete(cacheKey);
+    }
+  }
+
+  /**
+   * Internal method to generate embeddings
+   * @private
+   */
+  async _generateEmbeddingInternal(truncatedText, cacheKey) {
     try {
       // Initialize model if not already done
       if (!this.model && !this.isInitializing) {
@@ -49,7 +91,7 @@ class EmbeddingService {
 
       // Wait for model to be ready if it's initializing
       let waitCount = 0;
-      while (this.isInitializing && waitCount < 100) { // Max 10 seconds wait
+      while (this.isInitializing && waitCount < 50) { // Max 5 seconds wait
         await new Promise(resolve => setTimeout(resolve, 100));
         waitCount++;
       }
@@ -59,12 +101,15 @@ class EmbeddingService {
         return null;
       }
 
-      // Truncate text if it's too long
-      const truncatedText = this.truncateText(text, this.maxTokens);
       console.log(`Generating embedding for text: "${truncatedText.substring(0, 100)}${truncatedText.length > 100 ? '...' : ''}"`);
       
-      // Generate embedding using local model
-      const output = await this.model(truncatedText, { pooling: 'mean', normalize: true });
+      // Generate embedding using local model with timeout
+      const embeddingPromise = this.model(truncatedText, { pooling: 'mean', normalize: true });
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Embedding generation timeout')), 10000); // 10 second timeout
+      });
+
+      const output = await Promise.race([embeddingPromise, timeoutPromise]);
       
       // Convert tensor to array
       const embedding = Array.from(output.data);
@@ -73,9 +118,25 @@ class EmbeddingService {
       return embedding;
     } catch (error) {
       console.error('Error generating local embedding:', error.message);
-      console.error('Embedding error stack:', error.stack);
+      if (error.message === 'Embedding generation timeout') {
+        console.error('Embedding generation timed out - model may be overloaded');
+      }
       return null;
     }
+  }
+
+  /**
+   * Add embedding to cache with size management
+   * @private
+   */
+  _addToCache(key, embedding) {
+    // Remove oldest entries if cache is full
+    if (this.embeddingCache.size >= this.maxCacheSize) {
+      const firstKey = this.embeddingCache.keys().next().value;
+      this.embeddingCache.delete(firstKey);
+    }
+    
+    this.embeddingCache.set(key, embedding);
   }
 
   /**

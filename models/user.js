@@ -98,9 +98,9 @@ UserSchema.pre('save', function(next) {
       this.chefSettings.currency = countryData.currency;
       this.chefSettings.currencySymbol = countryData.symbol;
     } else {
-      // Default to USD if country not found
+      // Default to USD if country not found (no static symbol)
       this.chefSettings.currency = 'USD';
-      this.chefSettings.currencySymbol = '$';
+      this.chefSettings.currencySymbol = '';
     }
   }
   

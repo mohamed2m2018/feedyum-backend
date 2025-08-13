@@ -1,9 +1,10 @@
 const Dish = require('../../models/dish');
 const User = require('../../models/user');
+const mongoose = require('mongoose');
 
 const searchDishes = async (req, res) => {
   try {
-    const { searchString, page = 1, limit = 10 } = req.query;
+    const { searchString, page = 1, limit = 10, chefId } = req.query;
     console.log('Traditional dish search called with:', { searchString, page, limit });
     
     // If no search string, return all visible dishes
@@ -14,6 +15,9 @@ const searchDishes = async (req, res) => {
       const skip = (pageNum - 1) * limitNum;
 
       const query = { visible: { $ne: false } };
+      if (chefId) {
+        query.user_id = mongoose.Types.ObjectId.isValid(chefId) ? new mongoose.Types.ObjectId(chefId) : chefId;
+      }
       const totalDishes = await Dish.countDocuments(query);
       const totalPages = Math.ceil(totalDishes / limitNum);
 
@@ -61,6 +65,9 @@ const searchDishes = async (req, res) => {
         { 'dietaryInfo': { $in: [new RegExp(searchString, 'i')] } }
       ]
     };
+    if (chefId) {
+      searchQuery.user_id = mongoose.Types.ObjectId.isValid(chefId) ? new mongoose.Types.ObjectId(chefId) : chefId;
+    }
 
     console.log('Dish search query:', JSON.stringify(searchQuery, null, 2));
 

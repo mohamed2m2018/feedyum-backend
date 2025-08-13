@@ -5,6 +5,7 @@ const User = mongoose.model("user");
 const Tag = mongoose.model("tag");
 const Story = mongoose.model("story");
 const Category = mongoose.model("category");
+const Dish = mongoose.model("dish");
 
 // Helper function to calculate nearest location distance
 function getNearestLocation(targetLat, targetLong, locations) {
@@ -126,6 +127,44 @@ const getUserByTag = async (req, res) => {
         success: false,
         error: "No users found with the specified tag",
       });
+    }
+
+    // Performance optimization: Add average dish rating for unique users only
+    const uniqueUserIds = [...new Set(users.map(u => u._id.toString()))];
+    if (uniqueUserIds.length > 0) {
+      try {
+        const ratings = await Dish.aggregate([
+          { $match: { user_id: { $in: uniqueUserIds.map(id => mongoose.Types.ObjectId(id)) } } },
+          { $match: { average_rating: { $gt: 0 } } }, // Pre-filter rated dishes for performance
+          {
+            $group: {
+              _id: "$user_id",
+              ratedDishesCount: { $sum: 1 },
+              totalRating: { $sum: "$average_rating" }
+            }
+          },
+          {
+            $project: {
+              ratedDishesCount: 1,
+              averageDishRating: { $round: [{ $divide: ["$totalRating", "$ratedDishesCount"] }, 1] }
+            }
+          }
+        ]).exec();
+        
+        const ratingMap = new Map(ratings.map(r => [r._id.toString(), r]));
+        users = users.map(u => {
+          const rating = ratingMap.get(u._id.toString());
+          return {
+            ...u,
+            averageDishRating: rating?.averageDishRating || 0,
+            ratedDishesCount: rating?.ratedDishesCount || 0,
+          };
+        });
+      } catch (ratingErr) {
+        console.error('[PERF] Failed to attach user ratings:', ratingErr?.message);
+        // Graceful fallback
+        users = users.map(u => ({ ...u, averageDishRating: 0, ratedDishesCount: 0 }));
+      }
     }
 
     // Fetch stories for each user that match the category and attach them to the user object

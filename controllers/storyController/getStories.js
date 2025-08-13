@@ -283,6 +283,53 @@ const getStories = async (req, res) => {
     const startIndex = (page - 1) * pageSize;
     const paginatedStories = finalStories.slice(startIndex, startIndex + pageSize);
     
+    // Performance optimization: Only compute ratings for unique authors to avoid duplicate queries
+    const uniqueAuthorIds = [...new Set(paginatedStories.map(s => s.author?._id?.toString()).filter(Boolean))];
+    if (uniqueAuthorIds.length > 0) {
+      try {
+        // Single aggregation query for all unique authors
+        const Dish = mongoose.model('dish');
+        const ratings = await Dish.aggregate([
+          { $match: { user_id: { $in: uniqueAuthorIds.map(id => new mongoose.Types.ObjectId(id)) } } },
+          { $match: { average_rating: { $gt: 0 } } }, // Pre-filter rated dishes
+          {
+            $group: {
+              _id: "$user_id",
+              ratedDishesCount: { $sum: 1 },
+              totalRating: { $sum: "$average_rating" }
+            }
+          },
+          {
+            $project: {
+              ratedDishesCount: 1,
+              averageDishRating: { $round: [{ $divide: ["$totalRating", "$ratedDishesCount"] }, 1] }
+            }
+          }
+        ]).exec();
+        
+        // Create lookup map for O(1) access
+        const ratingMap = new Map(ratings.map(r => [r._id.toString(), r]));
+        
+        // Apply ratings to all stories with same author efficiently
+        paginatedStories.forEach(story => {
+          if (story.author?._id) {
+            const rating = ratingMap.get(story.author._id.toString());
+            story.author.averageDishRating = rating?.averageDishRating || 0;
+            story.author.ratedDishesCount = rating?.ratedDishesCount || 0;
+          }
+        });
+      } catch (ratingErr) {
+        console.error('[PERF] Failed to attach author ratings:', ratingErr?.message);
+        // Graceful fallback: set default values without breaking the response
+        paginatedStories.forEach(story => {
+          if (story.author) {
+            story.author.averageDishRating = 0;
+            story.author.ratedDishesCount = 0;
+          }
+        });
+      }
+    }
+
     // Clean up debug info before sending to client
     paginatedStories.forEach(story => {
       delete story._recommendationScore;

@@ -11,6 +11,7 @@ const createDish = async (req, res) => {
       price, 
       menuId, 
       category, 
+      categories,
       sectionId, 
       sectionName, 
       image,
@@ -103,12 +104,28 @@ const createDish = async (req, res) => {
       }
     }
 
+    // Normalize categories: accept either single string `category` or array `categories`
+    let normalizedCategories = [];
+    if (Array.isArray(categories)) {
+      normalizedCategories = categories
+        .map(c => (typeof c === 'string' ? c.trim() : c))
+        .filter(Boolean);
+    } else if (typeof categories === 'string') {
+      normalizedCategories = categories
+        .split(/[,\n]/)
+        .map(c => c.trim())
+        .filter(Boolean);
+    } else if (typeof category === 'string' && category.trim()) {
+      normalizedCategories = [category.trim()];
+    }
+
     const dish = new Dish({ 
       id: dishId,
       name, 
       description, 
       price, 
-      category: category || 'Main Course',
+      category: (category && category.trim()) || normalizedCategories[0] || 'Main Course',
+      categories: normalizedCategories,
       section: section?._id,
       menu: menuId,
       menu_id: numericMenuId,
@@ -132,6 +149,7 @@ const createDish = async (req, res) => {
         'name',
         'description', 
         'category',
+        'categories',
         'tags',
         'ingredients',
         'dietaryInfo'

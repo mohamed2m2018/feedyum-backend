@@ -1,4 +1,5 @@
 const embeddingService = require('./embeddingService');
+const vectorSearchService = require('./vectorSearchService');
 const Dish = require('../models/dish');
 const User = require('../models/user');
 const Story = require('../models/story');
@@ -35,13 +36,13 @@ class SemanticSearchService {
   }
 
   /**
-   * Perform semantic search for dishes
+   * Perform semantic search for dishes using Pinecone
    * @param {string} searchQuery - User's search query
-   * @param {Object} options - Search options (page, limit, filters)
+   * @param {Object} options - Search options (cursor, limit, filters)
    * @returns {Promise<Object>} - Search results with similarity scores
    */
   async searchDishes(searchQuery, options = {}) {
-    const { page = 1, limit = 10, filters = {} } = options;
+    const { cursor = null, limit = 10, filters = {} } = options;
 
     try {
       // Enhance Arabic queries for better semantic search
@@ -59,59 +60,79 @@ class SemanticSearchService {
         return this.fallbackTextSearch('dishes', searchQuery, options);
       }
 
-      // Get dishes that have embeddings
-      const dishes = await Dish.find({
-        visible: { $ne: false },
-        embedding: { $exists: true, $ne: null },
-        ...filters
-      })
-      .select('+embedding +embeddingGenerated') // Explicitly include embeddings
-      .populate('user_id', 'fullName avatar')
-      .limit(this.maxResults * 2) // Get more to account for filtering
-      .lean();
+      // Use Pinecone for vector search if available
+      if (vectorSearchService.isAvailable()) {
+        try {
+          const vectorSearchResult = await vectorSearchService.searchDishes(queryEmbedding, {
+            limit,
+            filters,
+            minScore: this.similarityThreshold,
+            cursor
+          });
 
-      // Calculate similarity scores
-      const dishesWithScores = dishes
-        .map(dish => {
-          if (!dish.embedding || !Array.isArray(dish.embedding)) {
-            return null;
+          const { results: vectorResults, pagination } = vectorSearchResult;
+          
+          // Get full dish data from MongoDB using the IDs from Pinecone
+          const dishIds = vectorResults.map(result => result.dishId);
+          
+          if (dishIds.length === 0) {
+            return {
+              success: true,
+              data: {
+                dishes: [],
+                pagination: {
+                  hasMore: false,
+                  nextCursor: null,
+                  limit
+                },
+                searchType: 'semantic-pinecone'
+              }
+            };
           }
 
-          const similarity = embeddingService.calculateCosineSimilarity(
-            queryEmbedding,
-            dish.embedding
-          );
+          const mongoFilter = {
+            _id: { $in: dishIds },
+            visible: { $ne: false },
+            ...(filters.user_id ? { user_id: filters.user_id } : {})
+          };
+
+          const dishes = await Dish.find(mongoFilter)
+          .populate('user_id', 'fullName avatar')
+          .lean();
+
+          // Merge Pinecone scores with MongoDB data, maintaining order
+          const dishesWithScores = vectorResults
+            .map(vectorResult => {
+              const dish = dishes.find(d => d._id.toString() === vectorResult.dishId);
+              if (!dish) return null;
+
+              return {
+                ...dish,
+                chef: dish.user_id,
+                semanticScore: vectorResult.score
+              };
+            })
+            .filter(dish => dish !== null);
+
+          console.log(`Pinecone search found ${dishesWithScores.length} dishes for query: "${searchQuery}"`);
 
           return {
-            ...dish,
-            chef: dish.user_id,
-            semanticScore: similarity
+            success: true,
+            data: {
+              dishes: dishesWithScores,
+              pagination,
+              searchType: 'semantic-pinecone'
+            }
           };
-        })
-        .filter(dish => dish && dish.semanticScore >= this.similarityThreshold)
-        .sort((a, b) => b.semanticScore - a.semanticScore);
 
-      console.log(`Semantic search found ${dishesWithScores.length} dishes for query: "${searchQuery}"`);
-
-      // Apply pagination
-      const startIndex = (page - 1) * limit;
-      const endIndex = startIndex + limit;
-      const paginatedResults = dishesWithScores.slice(startIndex, endIndex);
-
-      return {
-        success: true,
-        data: {
-          dishes: paginatedResults,
-          pagination: {
-            currentPage: page,
-            totalPages: Math.ceil(dishesWithScores.length / limit),
-            totalItems: dishesWithScores.length,
-            hasNextPage: endIndex < dishesWithScores.length,
-            hasPrevPage: page > 1
-          },
-          searchType: 'semantic'
+        } catch (pineconeError) {
+          console.warn('Pinecone search failed, falling back to MongoDB:', pineconeError.message);
+          // Fall through to MongoDB search
         }
-      };
+      }
+
+      // Fallback to MongoDB-based semantic search
+      return this._searchDishesWithMongoDB(searchQuery, queryEmbedding, { ...options, page: 1, limit });
 
     } catch (error) {
       console.error('Semantic search error for dishes:', error);
@@ -121,13 +142,75 @@ class SemanticSearchService {
   }
 
   /**
-   * Perform semantic search for users
+   * MongoDB fallback for dishes search
+   * @private
+   */
+  async _searchDishesWithMongoDB(searchQuery, queryEmbedding, options) {
+    const { page = 1, limit = 10, filters = {} } = options;
+
+    // Get dishes that have embeddings
+    const dishes = await Dish.find({
+      visible: { $ne: false },
+      embedding: { $exists: true, $ne: null },
+      ...filters
+    })
+    .select('+embedding +embeddingGenerated')
+    .populate('user_id', 'fullName avatar')
+    .limit(this.maxResults * 2)
+    .lean();
+
+    // Calculate similarity scores
+    const dishesWithScores = dishes
+      .map(dish => {
+        if (!dish.embedding || !Array.isArray(dish.embedding)) {
+          return null;
+        }
+
+        const similarity = embeddingService.calculateCosineSimilarity(
+          queryEmbedding,
+          dish.embedding
+        );
+
+        return {
+          ...dish,
+          chef: dish.user_id,
+          semanticScore: similarity
+        };
+      })
+      .filter(dish => dish && dish.semanticScore >= this.similarityThreshold)
+      .sort((a, b) => b.semanticScore - a.semanticScore);
+
+    console.log(`MongoDB semantic search found ${dishesWithScores.length} dishes for query: "${searchQuery}"`);
+
+    // Apply pagination
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedResults = dishesWithScores.slice(startIndex, endIndex);
+
+    return {
+      success: true,
+      data: {
+        dishes: paginatedResults,
+        pagination: {
+          currentPage: page,
+          totalPages: Math.ceil(dishesWithScores.length / limit),
+          totalItems: dishesWithScores.length,
+          hasNextPage: endIndex < dishesWithScores.length,
+          hasPrevPage: page > 1
+        },
+        searchType: 'semantic-mongodb'
+      }
+    };
+  }
+
+  /**
+   * Perform semantic search for users using Pinecone
    * @param {string} searchQuery - User's search query
-   * @param {Object} options - Search options (page, limit, currentUserId)
+   * @param {Object} options - Search options (cursor, limit, currentUserId)
    * @returns {Promise<Object>} - Search results with similarity scores
    */
   async searchUsers(searchQuery, options = {}) {
-    const { page = 1, limit = 10, currentUserId } = options;
+    const { cursor = null, limit = 10, currentUserId } = options;
 
     try {
       // Enhance Arabic queries for better semantic search
@@ -350,6 +433,14 @@ class SemanticSearchService {
    */
   async hybridSearch(type, searchQuery, options = {}) {
     try {
+      const trimmedQuery = searchQuery.trim();
+      
+      // For very short queries, use text search only to avoid slow embedding
+      if (trimmedQuery.length < 3) {
+        console.log(`Short query "${trimmedQuery}" - using text search only`);
+        return this.fallbackTextSearch(type, searchQuery, options);
+      }
+
       // Smart enhancement for Arabic queries
       let effectiveQuery = searchQuery;
       if (this.isArabicQuery(searchQuery)) {
@@ -357,19 +448,42 @@ class SemanticSearchService {
         effectiveQuery = this.enhanceArabicQuery(searchQuery);
       }
 
-      // Standard hybrid search with translated query if needed
-      // Get semantic search results using translated query
-      const semanticResults = await this[`search${type.charAt(0).toUpperCase() + type.slice(1)}`](
-        effectiveQuery, 
-        { ...options, limit: Math.ceil(options.limit / 2) }
-      );
+      // Use Promise.allSettled to handle failures gracefully
+      const [semanticResult, textResult] = await Promise.allSettled([
+        this[`search${type.charAt(0).toUpperCase() + type.slice(1)}`](
+          effectiveQuery, 
+          { ...options, limit: Math.ceil(options.limit / 2) }
+        ),
+        this.fallbackTextSearch(
+          type, 
+          searchQuery, 
+          { ...options, limit: Math.ceil(options.limit / 2) }
+        )
+      ]);
 
-      // Get text search results using original query (for exact matches)
-      const textResults = await this.fallbackTextSearch(
-        type, 
-        searchQuery, 
-        { ...options, limit: Math.ceil(options.limit / 2) }
-      );
+      // Extract results, handling failures
+      const semanticResults = semanticResult.status === 'fulfilled' ? semanticResult.value : { data: { [type]: [] } };
+      const textResults = textResult.status === 'fulfilled' ? textResult.value : { data: { [type]: [] } };
+
+      // If both failed, return empty results
+      if (semanticResult.status === 'rejected' && textResult.status === 'rejected') {
+        console.error('Both semantic and text search failed');
+        return {
+          success: false,
+          error: 'Search temporarily unavailable',
+          data: {
+            [type]: [],
+            pagination: {
+              currentPage: options.page || 1,
+              totalPages: 0,
+              totalItems: 0,
+              hasNextPage: false,
+              hasPrevPage: false
+            },
+            searchType: 'hybrid'
+          }
+        };
+      }
 
       // Combine and deduplicate results
       const combinedResults = this.combineSearchResults(
@@ -385,8 +499,8 @@ class SemanticSearchService {
           pagination: {
             currentPage: options.page || 1,
             totalPages: Math.max(
-              semanticResults.data.pagination?.totalPages || 1,
-              textResults.data.pagination?.totalPages || 1
+              semanticResults.data?.pagination?.totalPages || 1,
+              textResults.data?.pagination?.totalPages || 1
             ),
             totalItems: combinedResults.length,
             hasNextPage: combinedResults.length >= options.limit,
@@ -491,6 +605,8 @@ class SemanticSearchService {
    */
   async wrapControllerCall(controller, searchQuery, options) {
     return new Promise((resolve) => {
+      let resolved = false;
+      
       const mockReq = {
         query: {
           searchString: searchQuery,
@@ -500,72 +616,22 @@ class SemanticSearchService {
         }
       };
 
+      const resolveOnce = (data) => {
+        if (resolved) return;
+        resolved = true;
+        resolve(data);
+      };
+
       const mockRes = {
         status: (code) => ({
           json: (data) => {
             console.log('Text search response:', { code, data });
             
-            // Transform the response to match semantic search format
             if (code === 200 && data) {
-              let transformedData;
-              
-              if (data.dishes) {
-                transformedData = {
-                  success: true,
-                  data: {
-                    dishes: data.dishes,
-                    pagination: {
-                      currentPage: parseInt(data.currentPage || options.page || 1),
-                      totalPages: data.totalPages || 1,
-                      totalItems: data.dishes.length,
-                      hasNextPage: (data.currentPage || 1) < (data.totalPages || 1),
-                      hasPrevPage: (data.currentPage || 1) > 1
-                    }
-                  },
-                  searchType: 'text'
-                };
-              } else if (data.stories) {
-                transformedData = {
-                  success: true,
-                  data: {
-                    stories: data.stories,
-                    pagination: {
-                      currentPage: parseInt(data.currentPage || options.page || 1),
-                      totalPages: data.totalPages || 1,
-                      totalItems: data.stories.length,
-                      hasNextPage: (data.currentPage || 1) < (data.totalPages || 1),
-                      hasPrevPage: (data.currentPage || 1) > 1
-                    }
-                  },
-                  searchType: 'text'
-                };
-              } else if (data.users) {
-                transformedData = {
-                  success: true,
-                  data: {
-                    users: data.users,
-                    pagination: {
-                      currentPage: parseInt(data.currentPage || options.page || 1),
-                      totalPages: data.totalPages || 1,
-                      totalItems: data.users.length,
-                      hasNextPage: (data.currentPage || 1) < (data.totalPages || 1),
-                      hasPrevPage: (data.currentPage || 1) > 1
-                    }
-                  },
-                  searchType: 'text'
-                };
-              } else {
-                // Handle cases where the response format doesn't match expected
-                transformedData = {
-                  success: true,
-                  data: data,
-                  searchType: 'text'
-                };
-              }
-              
-              resolve(transformedData);
+              let transformedData = this.transformSearchResponse(data, options);
+              resolveOnce(transformedData);
             } else {
-              resolve({
+              resolveOnce({
                 success: false,
                 error: data?.error || 'Search failed',
                 data: {},
@@ -576,64 +642,8 @@ class SemanticSearchService {
         }),
         json: (data) => {
           console.log('Direct text search response:', data);
-          
-          // Handle direct json calls (without status)
-          let transformedData;
-          
-          if (data.dishes) {
-            transformedData = {
-              success: true,
-              data: {
-                dishes: data.dishes,
-                pagination: {
-                  currentPage: parseInt(data.currentPage || options.page || 1),
-                  totalPages: data.totalPages || 1,
-                  totalItems: data.dishes.length,
-                  hasNextPage: (data.currentPage || 1) < (data.totalPages || 1),
-                  hasPrevPage: (data.currentPage || 1) > 1
-                }
-              },
-              searchType: 'text'
-            };
-          } else if (data.stories) {
-            transformedData = {
-              success: true,
-              data: {
-                stories: data.stories,
-                pagination: {
-                  currentPage: parseInt(data.currentPage || options.page || 1),
-                  totalPages: data.totalPages || 1,
-                  totalItems: data.stories.length,
-                  hasNextPage: (data.currentPage || 1) < (data.totalPages || 1),
-                  hasPrevPage: (data.currentPage || 1) > 1
-                }
-              },
-              searchType: 'text'
-            };
-          } else if (data.users) {
-            transformedData = {
-              success: true,
-              data: {
-                users: data.users,
-                pagination: {
-                  currentPage: parseInt(data.currentPage || options.page || 1),
-                  totalPages: data.totalPages || 1,
-                  totalItems: data.users.length,
-                  hasNextPage: (data.currentPage || 1) < (data.totalPages || 1),
-                  hasPrevPage: (data.currentPage || 1) > 1
-                }
-              },
-              searchType: 'text'
-            };
-          } else {
-            transformedData = {
-              success: true,
-              data: data,
-              searchType: 'text'
-            };
-          }
-          
-          resolve(transformedData);
+          let transformedData = this.transformSearchResponse(data, options);
+          resolveOnce(transformedData);
         }
       };
 
@@ -641,7 +651,7 @@ class SemanticSearchService {
         controller(mockReq, mockRes);
       } catch (error) {
         console.error('Controller execution error:', error);
-        resolve({
+        resolveOnce({
           success: false,
           error: error.message,
           data: {},
@@ -649,6 +659,127 @@ class SemanticSearchService {
         });
       }
     });
+  }
+
+  /**
+   * Transform search response to consistent format
+   * @param {Object} data - Response data
+   * @param {Object} options - Search options
+   * @returns {Object} - Transformed response
+   */
+  transformSearchResponse(data, options) {
+    // Handle nested data structure first (most common case from controllers)
+    if (data.data) {
+      if (data.data.stories) {
+        return {
+          success: true,
+          data: {
+            stories: data.data.stories,
+            pagination: {
+              currentPage: data.data.currentPage || parseInt(options.page || 1),
+              totalPages: data.data.totalPages || 1,
+              totalItems: data.data.totalItems || data.data.stories.length,
+              hasNextPage: data.data.hasNextPage || false,
+              hasPrevPage: data.data.hasPrevPage || false
+            }
+          },
+          searchType: 'text'
+        };
+      } else if (data.data.dishes) {
+        return {
+          success: true,
+          data: {
+            dishes: data.data.dishes,
+            pagination: data.data.pagination || {
+              currentPage: data.data.currentPage || parseInt(options.page || 1),
+              totalPages: data.data.totalPages || 1,
+              totalItems: data.data.totalItems || data.data.dishes.length,
+              hasNextPage: data.data.hasNextPage || false,
+              hasPrevPage: data.data.hasPrevPage || false,
+              hasMore: data.data.hasMore,
+              nextCursor: data.data.nextCursor
+            }
+          },
+          searchType: 'text'
+        };
+      } else if (data.data.users) {
+        return {
+          success: true,
+          data: {
+            users: data.data.users,
+            pagination: {
+              currentPage: data.data.currentPage || parseInt(options.page || 1),
+              totalPages: data.data.totalPages || 1,
+              totalItems: data.data.totalItems || data.data.users.length,
+              hasNextPage: data.data.hasNextPage || false,
+              hasPrevPage: data.data.hasPrevPage || false
+            }
+          },
+          searchType: 'text'
+        };
+      } else {
+        // Generic nested data
+        return {
+          success: true,
+          data: data.data,
+          searchType: 'text'
+        };
+      }
+    }
+    
+    // Handle direct data structure (legacy format)
+    if (data.dishes) {
+      return {
+        success: true,
+        data: {
+          dishes: data.dishes,
+          pagination: data.pagination || {
+            currentPage: parseInt(options.page || 1),
+            totalPages: data.totalPages || 1,
+            totalItems: data.dishes.length,
+            hasNextPage: false,
+            hasPrevPage: false
+          }
+        },
+        searchType: 'text'
+      };
+    } else if (data.stories) {
+      return {
+        success: true,
+        data: {
+          stories: data.stories,
+          pagination: data.pagination || {
+            currentPage: parseInt(options.page || 1),
+            totalPages: data.totalPages || 1,
+            totalItems: data.stories.length,
+            hasNextPage: false,
+            hasPrevPage: false
+          }
+        },
+        searchType: 'text'
+      };
+    } else if (data.users) {
+      return {
+        success: true,
+        data: {
+          users: data.users,
+          pagination: data.pagination || {
+            currentPage: parseInt(options.page || 1),
+            totalPages: data.totalPages || 1,
+            totalItems: data.users.length,
+            hasNextPage: false,
+            hasPrevPage: false
+          }
+        },
+        searchType: 'text'
+      };
+    } else {
+      return {
+        success: true,
+        data: data,
+        searchType: 'text'
+      };
+    }
   }
 }
 

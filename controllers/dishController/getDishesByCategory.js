@@ -59,11 +59,18 @@ const getDishesByCategory = async (req, res) => {
       return res.status(400).json({ message: "Category is required" });
     }
 
-    // Find dishes by category and populate chef information with locations
+    // Find dishes by category (support legacy single `category` and new `categories` array)
     // Performance optimization: use indexed query and limit fields
     const dishes = await Dish.find({
-      category: { $regex: new RegExp(category, "i") }, // Case-insensitive search
-      visible: { $ne: false }, // Only visible dishes
+      $and: [
+        { visible: { $ne: false } },
+        {
+          $or: [
+            { category: { $regex: new RegExp(category, "i") } },
+            { categories: { $elemMatch: { $regex: new RegExp(category, "i") } } }
+          ]
+        }
+      ]
     })
       .select('name image price category user_id visible created_at') // Only select needed fields
       .populate("user_id", "fullName avatar bio locations chefSettings")
@@ -141,7 +148,7 @@ const getDishesByCategory = async (req, res) => {
               availability: chefAvailability,
               branchCount: chefBranches.length,
               currency: dish.user_id.chefSettings?.currency || 'USD',
-              currencySymbol: dish.user_id.chefSettings?.currencySymbol || '$'
+              currencySymbol: dish.user_id.chefSettings?.currencySymbol || ''
             }
           : null,
         kmAway,

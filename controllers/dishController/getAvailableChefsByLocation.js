@@ -71,7 +71,7 @@ const getAvailableChefsByLocation = async (req, res) => {
           nearestBranch: branch,
           dishCount: dishCount,
           currency: branch.chef.chefSettings?.currency || 'USD',
-          currencySymbol: branch.chef.chefSettings?.currencySymbol || '$'
+          currencySymbol: branch.chef.chefSettings?.currencySymbol || ''
         });
       } else {
         // Add branch to existing chef and update nearest if closer
@@ -108,7 +108,7 @@ const getAvailableChefsByLocation = async (req, res) => {
           nearestBranch: branch,
           dishCount: dishCount,
           currency: branch.chef.chefSettings?.currency || 'USD',
-          currencySymbol: branch.chef.chefSettings?.currencySymbol || '$',
+          currencySymbol: branch.chef.chefSettings?.currencySymbol || '',
           operatingCities: [...new Set([branch.addressDetails.city])]
         });
       } else if (chefMap.get(chefId).availability === 'not_available_in_city') {

@@ -4,7 +4,10 @@ const DishSchema = new mongoose.Schema({
   id: { type: Number, required: true }, // Adding an explicit ID field
   name: { type: String, required: true },
   description: { type: String },
+  // Legacy single category field (kept for backward compatibility with existing queries/UI)
   category: { type: String, required: true }, // Category field for dish type
+  // New multi-category support
+  categories: [{ type: String }],
   section: { type: mongoose.Schema.Types.ObjectId, ref: "section" }, // Reference to section
   price: { type: Number, required: true },
   menu: { type: mongoose.Schema.Types.ObjectId, ref: "menu", required: true }, // Reference to menu
@@ -53,6 +56,7 @@ const DishSchema = new mongoose.Schema({
 // Add index for category search performance (add this near the schema definition)
 // Performance optimization indexes:
 DishSchema.index({ category: 1, visible: 1, created_at: -1 }); // Compound index for discover queries
+DishSchema.index({ categories: 1, visible: 1, created_at: -1 }); // Support multi-categories queries
 DishSchema.index({ user_id: 1, visible: 1 }); // Index for chef dishes queries
 DishSchema.index({ embedding: 1 }); // Index for semantic search
 DishSchema.index({ visible: 1, embedding: 1 }); // Compound index for semantic search with visibility

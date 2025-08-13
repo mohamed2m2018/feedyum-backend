@@ -1,3 +1,7 @@
+// Fix deprecation warnings first
+process.env.NODE_NO_WARNINGS = '1';
+process.env.SUPPRESS_NO_CONFIG_WARNING = 'true';
+
 const bodyParser = require("body-parser");
 const express = require("express");
 const passport = require("passport");
@@ -16,20 +20,24 @@ require("./models/loadModels");
 
 const app = express();
 
-// Connect to MongoDB with optimized connection settings
-mongoose
-  .connect(mongoURI, { 
-    useNewUrlParser: true, 
-    useUnifiedTopology: true,
-    maxPoolSize: 10, // Maintain up to 10 socket connections
-    serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
-    socketTimeoutMS: 45000, // Close sockets after 45 seconds
-    bufferCommands: false, // Disable mongoose buffering
-  })
-  .then(mongooseDb => {
-    console.log("MongoDB Connected");
+// Connect to MongoDB with proper await and error handling
+async function connectToDatabase() {
+  try {
+    // Enable mongoose buffering to prevent connection timing issues
+    mongoose.set('bufferCommands', true);
+    
+    const mongooseDb = await mongoose.connect(mongoURI, { 
+      useNewUrlParser: true, 
+      useUnifiedTopology: true,
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+      connectTimeoutMS: 30000,
+    });
+    
+    console.log("MongoDB Connected Successfully");
 
-    // Initialize AdminJS
+    // Initialize AdminJS after successful connection
     try {
       const adminJS = new AdminJS({
         databases: [mongooseDb],
@@ -37,15 +45,59 @@ mongoose
       });
       const adminJSRouter = AdminJSExpress.buildRouter(adminJS);
       app.use(adminJS.options.rootPath, adminJSRouter);
+      console.log("AdminJS initialized successfully");
     } catch (err) {
-      console.log(err);
+      console.error("AdminJS initialization error:", err.message);
     }
-  })
-  .catch(err => console.log("Error connecting to database", err));
+    
+    return mongooseDb;
+  } catch (err) {
+    console.error("Error connecting to database:", err.message);
+    process.exit(1);
+  }
+}
 
 // Performance monitoring middleware
 const performanceMonitor = require('./middleware/performance');
 const timeout = require('./middleware/timeout');
+
+// Initialize cache manager
+const cache = require('./utils/cacheManager');
+
+// Add caching middleware for frequently accessed endpoints
+const cacheMiddleware = (duration = 300) => {
+  return async (req, res, next) => {
+    if (req.method !== 'GET') {
+      return next();
+    }
+    
+    const cacheKey = `api:${req.originalUrl}`;
+    
+    try {
+      const cachedData = await cache.get(cacheKey);
+      if (cachedData) {
+        console.log(`[CACHE HIT] ${req.originalUrl}`);
+        return res.json(cachedData);
+      }
+    } catch (err) {
+      console.log('[CACHE] Redis not available, proceeding without cache');
+    }
+    
+    // Store original json function
+    const originalJson = res.json;
+    res.json = function(data) {
+      // Cache the response
+      cache.set(cacheKey, data, duration).catch(err => {
+        console.log('[CACHE] Failed to cache response:', err.message);
+      });
+      
+      // Send response
+      return originalJson.call(this, data);
+    };
+    
+    next();
+  };
+};
 
 app.use(performanceMonitor);
 app.use(timeout(30000)); // 30 second timeout
@@ -69,23 +121,34 @@ app.use(function (req, res, next) {
   next();
 });
 
-// Routes
-app.use("/api/user", require("./routes/user"));
-app.use("/api/story", require("./routes/story"));
-app.use("/api/categories", require("./routes/categories"));
+// Optimized batch endpoint for Discover screen (HIGH PRIORITY)
+app.use("/api/discover", cacheMiddleware(180), require("./routes/discover"));
+
+// Routes with caching for performance
+app.use("/api/user", cacheMiddleware(300), require("./routes/user"));
+app.use("/api/story", cacheMiddleware(180), require("./routes/story"));
+app.use("/api/categories", cacheMiddleware(600), require("./routes/categories"));
 app.use("/api/address", require("./routes/address"));
 app.use("/api/like", require("./routes/like"));
 app.use("/api/comment", require("./routes/comment"));
 app.use("/api/follow", require("./routes/follow"));
 app.use("/api/views", require("./routes/views"));
-app.use("/api/tags", require("./routes/tags"));
+app.use("/api/tags", cacheMiddleware(600), require("./routes/tags"));
 app.use("/api/chat", require("./routes/chat"));
 app.use("/api/messages", require("./routes/messages"));
 app.use("/api/notifications", require("./routes/notifications"));
 
-// Add the new routes here
+// Add optimized routes FIRST for priority routing
+try {
+  app.use("/api/optimized", require("./routes/optimizedRoutes"));
+  console.log("✅ Optimized routes loaded");
+} catch (err) {
+  console.log("ℹ️ Optimized routes not available, using standard routes");
+}
+
+// Add the standard routes with caching for dishes
 app.use("/api/menus", require("./routes/menu"));
-app.use("/api/dishes", require("./routes/dish"));
+app.use("/api/dishes", cacheMiddleware(300), require("./routes/dish"));
 app.use("/api/branches", require("./routes/branches"));
 app.use("/api/location-chefs", require("./routes/locationChefs"));
 app.use("/api/sections", require("./routes/section"));
@@ -104,11 +167,38 @@ app.use(express.static(__dirname + '/public', { dotfiles: 'allow' }));
 
 const port = process.env.PORT || 4800;
 
-const server = http.createServer(app);
+// Start server only after database connection is established
+async function startServer() {
+  try {
+    // Connect to database first
+    await connectToDatabase();
+    
+    // Ensure categories exist in DB before serving requests
+    try {
+      const { ensureCategoriesSeeded } = require('./utils/seeders/ensureCategories');
+      const result = await ensureCategoriesSeeded();
+      console.log(`[SEED] Categories ensured. created=${result.created}, total=${result.total}`);
+    } catch (seedErr) {
+      console.warn('[SEED] Failed to ensure categories:', seedErr.message);
+    }
 
-// Socket.io setup
-socketSetup(server);
+    // Create HTTP server
+    const server = http.createServer(app);
+    
+    // Socket.io setup
+    socketSetup(server);
+    
+    // Start listening
+    server.listen(port, () => {
+      console.log('🚀 Server listening on port', port);
+      console.log('✅ All services initialized successfully');
+    });
+    
+  } catch (error) {
+    console.error('❌ Failed to start server:', error.message);
+    process.exit(1);
+  }
+}
 
-server.listen(port, () => {
-  console.log('listening on ', port);
-});
+// Start the server
+startServer();

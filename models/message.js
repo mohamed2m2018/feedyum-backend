@@ -14,6 +14,7 @@ const messageSchema = new mongoose.Schema({
   },
   isRead: { type: Boolean, default: false }, // Track if message has been read
   readAt: { type: Date }, // When message was read
+  isEdited: { type: Boolean, default: false }, // Track if message has been edited
   isDeleted: { type: Boolean, default: false }, // Soft delete flag
   deletedAt: { type: Date }, // When message was deleted
   timestamp: { type: Date, default: Date.now }

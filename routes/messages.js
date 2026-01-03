@@ -40,4 +40,22 @@ router.post(
   messagesController.uploadAudio
 );
 
+// @route   POST /api/messages/upload-image
+// @desc    Upload image file for chat messages
+// @access  Private
+router.post(
+  '/upload-image',
+  passport.authenticate('jwt', { session: false }),
+  messagesController.uploadImage
+);
+
+// @route   PUT /api/messages/:messageId/edit
+// @desc    Edit a message
+// @access  Private
+router.put(
+  '/:messageId/edit',
+  passport.authenticate('jwt', { session: false }),
+  messagesController.editMessage
+);
+
 module.exports = router; 

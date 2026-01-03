@@ -9,13 +9,13 @@ const ChefBranchSchema = new mongoose.Schema({
   
   // Complete address information
   addressDetails: {
-    streetName: { type: String, required: true },
-    buildingNumber: { type: String, required: true },
-    area: { type: String, required: true },
-    city: { type: String, required: true },
-    state: { type: String, required: true },
+    streetName: { type: String },
+    buildingNumber: { type: String },
+    area: { type: String },
+    city: { type: String, required: true }, // Kept required for filtering
+    state: { type: String },
     country: { type: String, required: true },
-    postalCode: { type: String, required: true },
+    postalCode: { type: String },
     formattedAddress: { type: String, required: true }
   },
   

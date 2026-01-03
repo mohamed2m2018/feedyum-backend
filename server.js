@@ -125,7 +125,7 @@ app.use(function (req, res, next) {
 app.use("/api/discover", cacheMiddleware(180), require("./routes/discover"));
 
 // Routes with caching for performance
-app.use("/api/user", cacheMiddleware(300), require("./routes/user"));
+app.use("/api/user", require("./routes/user"));
 app.use("/api/story", cacheMiddleware(180), require("./routes/story"));
 app.use("/api/categories", cacheMiddleware(600), require("./routes/categories"));
 app.use("/api/address", require("./routes/address"));

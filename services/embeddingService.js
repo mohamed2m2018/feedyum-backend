@@ -1,4 +1,4 @@
-const { pipeline } = require('@xenova/transformers');
+let pipelineInstance = null;
 
 class EmbeddingService {
   constructor() {
@@ -22,7 +22,14 @@ class EmbeddingService {
     this.isInitializing = true;
     try {
       console.log('🤖 Loading local embedding model...');
-      this.model = await pipeline('feature-extraction', this.modelName);
+      
+      // Dynamically import the transformers module
+      if (!pipelineInstance) {
+        const transformers = await import('@xenova/transformers');
+        pipelineInstance = transformers.pipeline;
+      }
+      
+      this.model = await pipelineInstance('feature-extraction', this.modelName);
       console.log('✅ Local embedding model loaded successfully!');
     } catch (error) {
       console.error('❌ Failed to load local embedding model:', error.message);

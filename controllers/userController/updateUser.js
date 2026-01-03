@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 // Models
 const User = mongoose.model("user");
+const ChefBranch = require('../../models/chefBranch'); // Import ChefBranch model
 
 // Validations
 const validateEditUser = require("../../validations/EditUser");
@@ -59,7 +60,81 @@ const updateUser = (req, res) => {
       // Save the updated user document
       user
         .save()
-        .then((updatedUser) => {
+        .then(async (updatedUser) => {
+          
+          // Sync locations to ChefBranch if user is a chef
+          if (updatedUser.type === 'chef' && locationData) {
+            try {
+              // 1. Remove all existing branches for this chef (simplest sync strategy)
+              await ChefBranch.deleteMany({ chef: updatedUser._id });
+              
+              const branchesToCreate = [];
+              
+              // 2. Create new branches from locations
+              for (const loc of locationData) {
+                // Parse simple address string
+                // Format assumed: "Address, City, Country" or similar
+                const parts = loc.description.split(',').map(p => p.trim());
+                let city = 'Unknown';
+                let country = 'Unknown';
+                
+                // Heuristic parsing
+                if (parts.length >= 2) {
+                    country = parts[parts.length - 1];
+                    // Try to find city - usually before country or postal code
+                    const possibleCity = parts[parts.length - 2];
+                    if (!isNaN(possibleCity)) { // It's numeric (postal code)
+                       if (parts.length >= 3) {
+                           city = parts[parts.length - 3];
+                       }
+                    } else {
+                        city = possibleCity;
+                    }
+                } else if (parts.length === 1) {
+                    city = parts[0];
+                }
+
+                branchesToCreate.push({
+                  chef: updatedUser._id,
+                  branchName: city + ' Branch',
+                  addressDetails: {
+                    formattedAddress: loc.description,
+                    city: city,
+                    country: country
+                  },
+                  location: {
+                    lat: loc.lat,
+                    long: loc.long
+                  },
+                  contactInfo: {
+                    phoneNumber: updatedUser.phone || 'N/A',
+                    countryCode: '+20' // Default or extract
+                  },
+                  operatingHours: [
+                    { day: 'monday', isOpen: true, openTime: '09:00', closeTime: '22:00' },
+                    { day: 'tuesday', isOpen: true, openTime: '09:00', closeTime: '22:00' },
+                    { day: 'wednesday', isOpen: true, openTime: '09:00', closeTime: '22:00' },
+                    { day: 'thursday', isOpen: true, openTime: '09:00', closeTime: '22:00' },
+                    { day: 'friday', isOpen: true, openTime: '13:00', closeTime: '23:00' },
+                    { day: 'saturday', isOpen: true, openTime: '09:00', closeTime: '23:00' },
+                    { day: 'sunday', isOpen: true, openTime: '09:00', closeTime: '22:00' }
+                  ],
+                  isActive: true,
+                  isPrimary: branchesToCreate.length === 0 // First one is primary
+                });
+              }
+              
+              if (branchesToCreate.length > 0) {
+                  await ChefBranch.insertMany(branchesToCreate);
+                  console.log(`Synced ${branchesToCreate.length} branches for chef ${updatedUser._id}`);
+              }
+              
+            } catch (err) {
+              console.error('Error syncing chef branches:', err);
+              // Don't fail the user update request, just log error
+            }
+          }
+
           res.json({
             user: updatedUser,
             success: true,

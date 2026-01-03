@@ -29,6 +29,14 @@ router.get('/user/:userId',
   orderController.getOrdersByUser
 );
 
+// @route  GET api/orders/chef/stats
+// @desc   Get aggregated stats for chef dashboard
+// @access Private
+router.get('/chef/stats',
+  passport.authenticate('jwt', { session: false }),
+  orderController.getChefDashboardStats
+);
+
 // @route  GET api/orders/chef/:chefId
 // @desc   Get all orders for a chef
 // @access Private

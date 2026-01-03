@@ -33,6 +33,9 @@ const getUnreadCounts = async (userId) => {
     }
 };
 
+// Store io instance for use by other modules
+let ioInstance = null;
+
 module.exports = (server) => {
     const io = socketIo(server, {
         cors: {
@@ -40,6 +43,10 @@ module.exports = (server) => {
             methods: ["GET", "POST"]
         }
     });
+    
+    // Store io instance globally for access by routes
+    ioInstance = io;
+    module.exports.getIO = () => ioInstance;
 
     io.on('connection', (socket) => {
         console.log('New client connected');
@@ -145,10 +152,14 @@ module.exports = (server) => {
                 const receiverUnreadCounts = await getUnreadCounts(receiverId);
                 io.to(receiverId).emit('unreadCountsUpdate', receiverUnreadCounts);
                 
-                callback({ success: true, message: populatedMessage });
+                if (typeof callback === 'function') {
+                    callback({ success: true, message: populatedMessage });
+                }
             } catch (error) {
                 console.error('Error sending message:', error);
-                callback({ error: 'Message not sent' });
+                if (typeof callback === 'function') {
+                    callback({ error: 'Message not sent' });
+                }
             }
         });
 

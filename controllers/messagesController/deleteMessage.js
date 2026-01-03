@@ -38,6 +38,17 @@ const deleteMessage = async (req, res) => {
     message.deletedAt = new Date();
     await message.save();
 
+    // Populate sender and receiver for socket event
+    await message.populate('sender', 'fullName avatar');
+    await message.populate('receiver', 'fullName avatar');
+
+    const { getIO } = require('../../socket');
+    const io = getIO();
+    if (io) {
+      io.to(message.receiver._id.toString()).emit('messageDeleted', message._id);
+      io.to(message.sender._id.toString()).emit('messageDeleted', message._id);
+    }
+
     res.json({
       success: true,
       message: 'Message deleted successfully'

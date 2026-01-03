@@ -4,8 +4,8 @@ const EnhancedNotificationService = require('../../services/enhancedNotification
 
 const updateOrderStatus = async (req, res) => {
   try {
-    const { orderId } = req.params;
-    const { status, estimatedTime, notes } = req.body;
+    const { id: orderId } = req.params;
+    const { status, estimatedTime, notes, deliveryFee } = req.body;
     const chefId = req.user._id;
 
     // Validate status
@@ -37,7 +37,7 @@ const updateOrderStatus = async (req, res) => {
     const statusOrder = ['pending', 'confirmed', 'preparing', 'ready', 'completed'];
     const currentStatusIndex = statusOrder.indexOf(order.status);
     const newStatusIndex = statusOrder.indexOf(status);
-    
+
     if (status !== 'cancelled' && newStatusIndex < currentStatusIndex) {
       return res.status(400).json({
         message: 'Cannot move order backwards in status'
@@ -47,22 +47,26 @@ const updateOrderStatus = async (req, res) => {
     // Update order status
     const previousStatus = order.status;
     order.status = status;
-    
+
     if (estimatedTime) {
       order.estimatedDeliveryTime = estimatedTime;
     }
-    
+
     if (notes) {
       order.statusNotes = notes;
     }
-    
+
+    if (deliveryFee !== undefined) {
+      order.deliveryFee = deliveryFee;
+    }
+
     order.lastUpdated = new Date();
-    
+
     // Add to status history
     if (!order.statusHistory) {
       order.statusHistory = [];
     }
-    
+
     order.statusHistory.push({
       status: previousStatus,
       changedTo: status,

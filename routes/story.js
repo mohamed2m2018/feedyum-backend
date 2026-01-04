@@ -4,6 +4,7 @@ const passport = require("passport");
 const router = express.Router();
 
 const storyController = require("../controllers/storyController");
+const cacheMiddleware = require('../middleware/cache');
 
 // @route  POST api/user/add_story
 // @desc   User Signup - Create new story
@@ -54,8 +55,9 @@ router.delete(
 // @access private
 
 router.get("/author",
-passport.authenticate("jwt", { session: false }),
-storyController.getStoriesByUserId);
+  passport.authenticate("jwt", { session: false }),
+  cacheMiddleware(300),
+  storyController.getStoriesByUserId);
 
 // @route  GET api/story/following
 // @desc   Get story for following
@@ -67,20 +69,20 @@ router.get("/following", storyController.getFollowingStories);
 // @desc   Get stories based on category
 // @access Public
 
-router.get("/categories", storyController.getSubscribedCategoriesStories);
+router.get("/categories", cacheMiddleware(600), storyController.getSubscribedCategoriesStories);
 
 // @route  GET api/story/reviews
 // @desc   Get stories based on revies
 // @access Public
 
-router.get("/reviews", storyController.getReviewsStories);
+router.get("/reviews", cacheMiddleware(600), storyController.getReviewsStories);
 
 // @route  GET api/story/:id
 // @desc   Get story by ID
 // @access Public
 
 router.get("/:id", passport.authenticate("jwt", { session: false }),
-storyController.getStoryById);
+  storyController.getStoryById);
 
 // @route  PATCH api/story
 // @desc   Update logged in user
@@ -106,6 +108,7 @@ router.post(
 // @access Public
 router.get(
   "/reviews/dish/:dishId",
+  cacheMiddleware(300),
   storyController.getReviewStoriesByDish
 );
 

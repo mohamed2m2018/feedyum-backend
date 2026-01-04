@@ -16,7 +16,7 @@ router.get("/count", commentController.getCommentsCountByPostId);
 router.post(
   "/",
   passport.authenticate("jwt", { session: false }),
-commentController.addComment
+  commentController.addComment
 );
 
 router.post(
@@ -40,6 +40,24 @@ router.delete(
   "/:postId/:commentId",
   passport.authenticate("jwt", { session: false }),
   commentController.deleteComment
+);
+
+// @route  POST api/story/comment/like/:commentId
+// @desc   Like/Unlike a comment
+// @access Private
+router.post(
+  "/like/:commentId",
+  passport.authenticate("jwt", { session: false }),
+  commentController.toggleLikeComment
+);
+
+// @route  POST api/story/comment/reply/like/:replyId
+// @desc   Like/Unlike a reply
+// @access Private
+router.post(
+  "/reply/like/:replyId",
+  passport.authenticate("jwt", { session: false }),
+  commentController.toggleLikeReply
 );
 
 module.exports = router;

@@ -11,6 +11,7 @@ const Menu = mongoose.model("menu");
 
 // Services
 const embeddingService = require('../../services/embeddingService');
+const cacheManager = require('../../utils/cacheManager');
 
 const addStory = async (req, res) => {
   // Validate
@@ -21,12 +22,12 @@ const addStory = async (req, res) => {
 
   // Get the user creating the story
   const user = await User.findById(req.user._id);
-  
+
   // Check if user is a chef and validate menu requirement (skip for reviews)
   if (user.type === 'chef' && !req.body.reviewMode) {
     // Check if chef has a menu
     const chefMenu = await Menu.findOne({ chef: req.user._id }).populate('dishes');
-    
+
     if (!chefMenu) {
       errors.error = "Chef users must create a menu before posting. Please add your menu first.";
       return res.status(400).json(errors);
@@ -42,7 +43,7 @@ const addStory = async (req, res) => {
     if (req.body.dishes && req.body.dishes.length > 0) {
       const menuDishIds = chefMenu.dishes.map(dish => dish._id.toString());
       const selectedDishIds = req.body.dishes;
-      
+
       const invalidDishes = selectedDishIds.filter(dishId => !menuDishIds.includes(dishId));
       if (invalidDishes.length > 0) {
         errors.error = "Selected dishes must be from your menu.";
@@ -53,7 +54,7 @@ const addStory = async (req, res) => {
 
   // Handle dish IDs based on context
   let dishIds = [];
-  
+
   if (req.body.reviewMode) {
     // For reviews, use the dish IDs as-is (they reference dishes being reviewed)
     dishIds = req.body.dishes || [];
@@ -94,11 +95,11 @@ const addStory = async (req, res) => {
 
   // Handle categories - for review mode, we might get category names instead of IDs
   let finalCategoryIds = [];
-  
+
   try {
     if (req.body.category && req.body.category.length > 0) {
       const Category = mongoose.model("category");
-      
+
       for (const categoryItem of req.body.category) {
         if (mongoose.Types.ObjectId.isValid(categoryItem)) {
           // It's already an ObjectId
@@ -106,7 +107,7 @@ const addStory = async (req, res) => {
         } else {
           // It's a category name, find or create it
           let categoryDoc = await Category.findOne({ name: categoryItem });
-          
+
           if (!categoryDoc) {
             categoryDoc = new Category({
               name: categoryItem,
@@ -115,7 +116,7 @@ const addStory = async (req, res) => {
             await categoryDoc.save();
             console.log(`Created new category: ${categoryItem}`);
           }
-          
+
           finalCategoryIds.push(categoryDoc._id);
         }
       }
@@ -162,7 +163,7 @@ const addStory = async (req, res) => {
     reviewedMenu: req.body?.reviewedMenu,
     rating: req.body?.rating,
   });
-  
+
   await User.findByIdAndUpdate(req.user._id, { $inc: { postsNo: 1 } });
 
   newStory
@@ -175,7 +176,7 @@ const addStory = async (req, res) => {
           'caption',
           'description'
         ]);
-        
+
         if (text && text.trim().length > 0) {
           const embedding = await embeddingService.generateEmbedding(text);
           if (embedding) {
@@ -191,6 +192,15 @@ const addStory = async (req, res) => {
       } catch (error) {
         console.error(`❌ Error generating embedding for story ${story.title || story.caption || story._id}:`, error.message);
         // Don't fail the story creation if embedding generation fails
+      }
+
+      // Invalidate User Stories Cache (Write-Through)
+      try {
+        const userId = req.user._id.toString();
+        const deletedCount = await cacheManager.delPattern(`api:/api/story/author*:${userId}`);
+        console.log(`🗑️ Invalidated ${deletedCount} cache keys for user stories ${userId}`);
+      } catch (cacheErr) {
+        console.warn('⚠️ Failed to invalidate story cache:', cacheErr.message);
       }
 
       return res.json({ story, success: true });

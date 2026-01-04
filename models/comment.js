@@ -21,8 +21,14 @@ const commentSchema = new mongoose.Schema({
     default: Date.now
   },
   replies: [Reply.schema],
-  likesNo: Number,
-  
+  likesNo: {
+    type: Number,
+    default: 0
+  },
+  likes: [{ // Array of user IDs who liked the comment
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'user'
+  }]
 });
 
 const Comment = mongoose.model('comment', commentSchema);

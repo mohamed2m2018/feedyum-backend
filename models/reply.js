@@ -19,7 +19,14 @@ const replySchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
-  likesNo: Number,
+  likesNo: {
+    type: Number,
+    default: 0
+  },
+  likes: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'user'
+  }]
 });
 
 const Reply = mongoose.model('reply', replySchema);

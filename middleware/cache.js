@@ -1,52 +1,38 @@
-const NodeCache = require('node-cache');
+const cache = require('../utils/cacheManager');
 
-// Create cache instance with 5 minute TTL
-const cache = new NodeCache({ stdTTL: 300, checkperiod: 60 });
-
+// Add caching middleware for frequently accessed endpoints
 const cacheMiddleware = (duration = 300) => {
-  return (req, res, next) => {
-    // Only cache GET requests
+  return async (req, res, next) => {
     if (req.method !== 'GET') {
       return next();
     }
 
-    const key = req.originalUrl;
-    const cachedResponse = cache.get(key);
+    const cacheKey = `api:${req.originalUrl}${req.user ? ':' + req.user._id : ''}`;
 
-    if (cachedResponse) {
-      console.log(`Cache hit for: ${key}`);
-      return res.json(cachedResponse);
+    try {
+      const cachedData = await cache.get(cacheKey);
+      if (cachedData) {
+        console.log(`[CACHE HIT] ${req.originalUrl}`);
+        return res.json(cachedData);
+      }
+    } catch (err) {
+      console.log('[CACHE] Redis not available, proceeding without cache');
     }
 
-    // Store original json method
+    // Store original json function
     const originalJson = res.json;
+    res.json = function (data) {
+      // Cache the response
+      cache.set(cacheKey, data, duration).catch(err => {
+        console.log('[CACHE] Failed to cache response:', err.message);
+      });
 
-    // Override json method to cache response
-    res.json = function(data) {
-      // Cache successful responses only
-      if (res.statusCode === 200) {
-        cache.set(key, data, duration);
-        console.log(`Cached response for: ${key}`);
-      }
-      
-      // Call original json method
-      originalJson.call(this, data);
+      // Send response
+      return originalJson.call(this, data);
     };
 
     next();
   };
 };
 
-// Function to clear cache for specific patterns
-const clearCache = (pattern) => {
-  const keys = cache.keys();
-  const keysToDelete = keys.filter(key => key.includes(pattern));
-  
-  keysToDelete.forEach(key => {
-    cache.del(key);
-  });
-  
-  console.log(`Cleared ${keysToDelete.length} cache entries matching: ${pattern}`);
-};
-
-module.exports = { cacheMiddleware, clearCache };
+module.exports = cacheMiddleware;

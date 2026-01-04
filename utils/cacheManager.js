@@ -57,7 +57,7 @@ class CacheManager {
   // Get cached data
   async get(key) {
     if (!this.isConnected) return null;
-    
+
     try {
       const data = await this.client.get(key);
       return data ? JSON.parse(data) : null;
@@ -70,7 +70,7 @@ class CacheManager {
   // Set cached data
   async set(key, data, ttl = this.defaultTTL) {
     if (!this.isConnected) return false;
-    
+
     try {
       await this.client.setEx(key, ttl, JSON.stringify(data));
       return true;
@@ -83,7 +83,7 @@ class CacheManager {
   // Delete cached data
   async del(key) {
     if (!this.isConnected) return false;
-    
+
     try {
       await this.client.del(key);
       return true;
@@ -93,17 +93,34 @@ class CacheManager {
     }
   }
 
+  // Delete patterns (wildcard)
+  async delPattern(pattern) {
+    if (!this.isConnected) return false;
+
+    try {
+      const keys = await this.client.keys(pattern);
+      if (keys.length > 0) {
+        await this.client.del(keys);
+        return keys.length;
+      }
+      return 0;
+    } catch (error) {
+      console.error('Cache delete pattern error:', error);
+      return false;
+    }
+  }
+
   // Get or set pattern - common caching pattern
   async getOrSet(key, fetchFunction, ttl = this.defaultTTL) {
     let data = await this.get(key);
-    
+
     if (data === null) {
       data = await fetchFunction();
       if (data !== null && data !== undefined) {
         await this.set(key, data, ttl);
       }
     }
-    
+
     return data;
   }
 
@@ -186,12 +203,12 @@ class CacheManager {
   // Health check
   async healthCheck() {
     if (!this.isConnected) return { status: 'disconnected' };
-    
+
     try {
       const start = Date.now();
       await this.client.ping();
       const latency = Date.now() - start;
-      
+
       return {
         status: 'connected',
         latency: `${latency}ms`

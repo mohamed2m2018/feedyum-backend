@@ -3,33 +3,8 @@
     "apps": [],
     "details": [
       {
-        "appID": "TEAM_ID.com.foodtok.app",
-        "paths": [
-          "/reel/*",
-          "/profile/*",
-          "/user/*",
-          "/u/*",
-          "/chef/*",
-          "/chef/*/menu",
-          "/menu/*",
-          "/menu/*/item/*",
-          "/dish/*",
-          "/discover",
-          "/discover/*",
-          "/trending",
-          "/search",
-          "/search/*",
-          "/hashtag/*",
-          "/live",
-          "/live/*",
-          "/post/*",
-          "/sound/*",
-          "/order/*/track",
-          "/chat",
-          "/chat/*",
-          "/story/*",
-          "/review-reel/*"
-        ]
+        "appID": "<TEAM_ID>.com.feedyum.app",
+        "paths": ["*"]
       }
     ]
   }

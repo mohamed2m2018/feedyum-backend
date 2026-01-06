@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.feedyum",
+      "sha256_cert_fingerprints": [
+        "A0:00:0B:F9:E9:55:97:FA:62:EF:4D:D6:00:0C:2D:BC:E6:BF:30:F5:47:7B:BF:C4:E9:39:8F:70:8A:BC:C5:F1"
+      ]
+    }
+  }
+]

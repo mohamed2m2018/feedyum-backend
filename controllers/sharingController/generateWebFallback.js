@@ -329,7 +329,7 @@ const generateWebFallback = async (req, res) => {
             
             if (isAndroid) {
                 // Android: Use intent with fallback to Play Store
-                const intentUrl = 'intent://' + appUrl.replace('feedyum://', '') + '#Intent;scheme=feedyum;package=com.foodtok;S.browser_fallback_url=' + encodeURIComponent('${playStoreUrl}') + ';end';
+                const intentUrl = 'intent://' + appUrl.replace('feedyum://', '') + '#Intent;scheme=feedyum;package=com.feedyum;S.browser_fallback_url=' + encodeURIComponent('${playStoreUrl}') + ';end';
                 
                 window.location = intentUrl;
                 

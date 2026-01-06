@@ -22,25 +22,25 @@ class CacheManager {
       });
 
       this.client.on('connect', () => {
-        console.log('Redis connected');
+        // Silent: Redis connected
         this.isConnected = true;
       });
 
-      this.client.on('error', (err) => {
-        console.error('Redis error:', err);
+      this.client.on('error', () => {
+        // Silent: Redis error (non-critical, app works without cache)
         this.isConnected = false;
       });
 
       // Connect to Redis with better error handling
       if (!this.client.isOpen) {
-        await this.client.connect().catch(err => {
-          console.warn('Redis connection failed, running without cache:', err.message);
+        await this.client.connect().catch(() => {
+          // Silent: Redis connection failed (non-critical)
           this.isConnected = false;
         });
       }
 
     } catch (error) {
-      console.warn('Cache initialization failed, running without cache:', error.message);
+      // Silent: Cache initialization failed (non-critical)
     }
   }
 

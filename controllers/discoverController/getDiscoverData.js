@@ -4,7 +4,7 @@ const Dish = require('../../models/dish');
 const Rating = require('../../models/rating');
 const Story = require('../../models/story');
 
-// Redis cache for performance
+// Redis cache for performance (silent - logs disabled)
 let redisClient = null;
 try {
   const redis = require('redis');
@@ -12,45 +12,45 @@ try {
     url: process.env.REDIS_URL || `redis://${process.env.REDIS_HOST || 'localhost'}:${process.env.REDIS_PORT || 6379}`,
     password: process.env.REDIS_PASSWORD || undefined,
   });
-  
-  redisClient.on('error', (err) => {
-    console.log('Redis Client Error (non-critical):', err.message);
-    redisClient = null; // Disable Redis if connection fails
+
+  redisClient.on('error', () => {
+    // Silent: Redis error (non-critical, app works without cache)
+    redisClient = null;
   });
-  
+
   // Connect to Redis
-  redisClient.connect().catch((err) => {
-    console.log('Redis connection failed (non-critical):', err.message);
+  redisClient.connect().catch(() => {
+    // Silent: Redis connection failed (non-critical)
     redisClient = null;
   });
 } catch (error) {
-  console.log('Redis not available, continuing without cache');
+  // Silent: Redis not available
 }
 
 // Single optimized endpoint for ALL Discover screen data
 const getDiscoverData = async (req, res) => {
   const startTime = Date.now();
-  
+
   try {
     const { lat, long, userId } = req.query;
-    
+
     console.log(`[DISCOVER BATCH] Starting batch data fetch for user ${userId}`);
-    
+
     // Define all categories we need
     const categories = [
-      'Coupons', 'Homemade', 'Desserts', 'Fast food', 
+      'Coupons', 'Homemade', 'Desserts', 'Fast food',
       'Burger', 'Chicken', 'Bakery', 'Main Courses', 'Pizza'
     ];
-    
+
     // Create coordinate object if provided
     const coordinates = lat && long ? { lat: parseFloat(lat), long: parseFloat(long) } : null;
-    
+
     // Create cache key based on location (rounded to reduce cache fragmentation)
-    const locationKey = coordinates 
+    const locationKey = coordinates
       ? `${Math.round(coordinates.lat * 100) / 100}_${Math.round(coordinates.long * 100) / 100}`
       : 'no_location';
     const cacheKey = `discover_batch_${locationKey}`;
-    
+
     // Try to get from cache first
     if (redisClient) {
       try {
@@ -69,26 +69,26 @@ const getDiscoverData = async (req, res) => {
         console.log('[DISCOVER BATCH] Cache read error (non-critical):', cacheError.message);
       }
     }
-    
+
     // Batch fetch all data in parallel using Promise.all
     const [usersData, dishesData, ratingsData] = await Promise.all([
       // 1. Get users for all categories in one aggregation
       getUsersForAllCategories(categories, coordinates),
-      
+
       // 2. Get dishes for all categories in one aggregation  
       getDishesForAllCategories(categories, coordinates),
-      
+
       // 3. Get ratings for performance (batch fetch)
       getRatingsForUsers(coordinates)
     ]);
-    
+
     // Organize data by category
     const result = {
       success: true,
       data: {},
       loadTime: Date.now() - startTime
     };
-    
+
     // Structure the response
     categories.forEach(category => {
       result.data[category] = {
@@ -96,12 +96,12 @@ const getDiscoverData = async (req, res) => {
         dishes: dishesData[category] || []
       };
     });
-    
+
     // Add ratings to users
     if (ratingsData.length > 0) {
       addRatingsToUsers(result.data, ratingsData);
     }
-    
+
     // Cache the result for 3 minutes
     if (redisClient) {
       try {
@@ -111,11 +111,11 @@ const getDiscoverData = async (req, res) => {
         console.log('[DISCOVER BATCH] Cache write error (non-critical):', cacheError.message);
       }
     }
-    
+
     console.log(`[DISCOVER BATCH] Completed in ${result.loadTime}ms - fetched data for ${categories.length} categories`);
-    
+
     res.json(result);
-    
+
   } catch (error) {
     console.error('[DISCOVER BATCH] Error:', error);
     res.status(500).json({
@@ -132,31 +132,31 @@ async function getUsersForAllCategories(categories, coordinates) {
     // First, get the ObjectIds for all category names
     const Tag = require('../../models/tag');
     const tagDocs = await Tag.find({ name: { $in: categories } }).select('_id name').lean();
-    
+
     if (tagDocs.length === 0) {
       console.log('[DISCOVER BATCH] No matching tags found for categories:', categories);
       return {};
     }
-    
+
     const tagIds = tagDocs.map(tag => tag._id);
     const tagNameMap = {};
     tagDocs.forEach(tag => {
       tagNameMap[tag._id.toString()] = tag.name;
     });
-    
+
     console.log(`[DISCOVER BATCH] Found ${tagDocs.length} tags for categories:`, tagDocs.map(t => t.name));
-    
+
     const pipeline = [
       // Match users who have any of our target tag ObjectIds
-      { 
-        $match: { 
+      {
+        $match: {
           tags: { $in: tagIds },
           type: 'chef',
           // Only include active chefs with recent activity
           date: { $gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) } // Last 90 days
-        } 
+        }
       },
-      
+
       // Add distance calculation if coordinates provided
       ...(coordinates ? [{
         $addFields: {
@@ -170,7 +170,7 @@ async function getUsersForAllCategories(categories, coordinates) {
           }
         }
       }] : []),
-      
+
       // Lookup stories for each user
       {
         $lookup: {
@@ -198,12 +198,12 @@ async function getUsersForAllCategories(categories, coordinates) {
           ]
         }
       },
-      
+
       // Sort by distance (if coordinates) or by creation date
-      { 
+      {
         $sort: coordinates ? { distance: 1, date: -1 } : { date: -1 }
       },
-      
+
       // Project needed fields
       {
         $project: {
@@ -221,10 +221,10 @@ async function getUsersForAllCategories(categories, coordinates) {
         }
       }
     ];
-    
+
     const users = await User.aggregate(pipeline);
     console.log(`[DISCOVER BATCH] Found ${users.length} users with matching tags`);
-    
+
     // Fetch stories for each user (similar to individual API)
     for (let user of users) {
       try {
@@ -239,13 +239,13 @@ async function getUsersForAllCategories(categories, coordinates) {
         user.stories = [];
       }
     }
-    
+
     // Group users by their matching categories
     const usersData = {};
     categories.forEach(category => {
       usersData[category] = [];
     });
-    
+
     users.forEach(user => {
       // Find which categories this user belongs to
       user.tags.forEach(tagId => {
@@ -270,14 +270,14 @@ async function getUsersForAllCategories(categories, coordinates) {
         }
       });
     });
-    
+
     // Log results for debugging
     categories.forEach(category => {
       console.log(`[DISCOVER BATCH] Category "${category}": ${usersData[category].length} users`);
     });
-    
+
     return usersData;
-    
+
   } catch (error) {
     console.error('[DISCOVER BATCH] Error fetching users:', error);
     return {};
@@ -289,15 +289,15 @@ async function getDishesForAllCategories(categories, coordinates) {
   try {
     const pipeline = [
       // Match dishes in our categories that are available
-      { 
-        $match: { 
+      {
+        $match: {
           category: { $in: categories },
           visible: true,
           // Only include recent dishes for better relevance
           created_at: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } // Last 30 days
-        } 
+        }
       },
-      
+
       // Lookup chef information using user_id field
       {
         $lookup: {
@@ -318,14 +318,14 @@ async function getDishesForAllCategories(categories, coordinates) {
           ]
         }
       },
-      
+
       // Add chef data
       {
         $addFields: {
           chef: { $arrayElemAt: ['$chefInfo', 0] }
         }
       },
-      
+
       // Add distance calculation if coordinates provided
       ...(coordinates ? [{
         $addFields: {
@@ -339,12 +339,12 @@ async function getDishesForAllCategories(categories, coordinates) {
           }
         }
       }] : []),
-      
+
       // Sort by distance or creation date
-      { 
+      {
         $sort: coordinates ? { distance: 1, created_at: -1 } : { created_at: -1 }
       },
-      
+
       // Group by category and limit dishes per category  
       {
         $group: {
@@ -367,7 +367,7 @@ async function getDishesForAllCategories(categories, coordinates) {
           }
         }
       },
-      
+
       // Limit to 20 dishes per category
       {
         $addFields: {
@@ -375,17 +375,17 @@ async function getDishesForAllCategories(categories, coordinates) {
         }
       }
     ];
-    
+
     const results = await Dish.aggregate(pipeline);
-    
+
     // Convert to object with category keys
     const dishesData = {};
     results.forEach(result => {
       dishesData[result._id] = result.dishes;
     });
-    
+
     return dishesData;
-    
+
   } catch (error) {
     console.error('[DISCOVER BATCH] Error fetching dishes:', error);
     return {};
@@ -410,9 +410,9 @@ async function getRatingsForUsers(coordinates) {
       },
       { $limit: 1000 } // Reasonable limit
     ];
-    
+
     return await Rating.aggregate(pipeline);
-    
+
   } catch (error) {
     console.error('[DISCOVER BATCH] Error fetching ratings:', error);
     return [];
@@ -429,7 +429,7 @@ function addRatingsToUsers(data, ratingsData) {
       totalRatings: rating.total_ratings
     };
   });
-  
+
   // Add ratings to each user in each category
   Object.keys(data).forEach(category => {
     if (data[category].users) {

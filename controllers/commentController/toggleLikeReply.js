@@ -23,19 +23,24 @@ const toggleLikeReply = async (req, res) => {
 
     // Check if user already liked
     const isLiked = reply.likes.includes(userId);
+    console.log(`[DEBUG] Current userId: ${userId}, Reply Likes: ${reply.likes}, IsLiked: ${isLiked}`);
 
     if (isLiked) {
       // Unlike
       reply.likes = reply.likes.filter(id => id.toString() !== userId.toString());
       reply.likesNo = Math.max(0, (reply.likesNo || 1) - 1);
+      console.log('[DEBUG] Action: Unliked');
     } else {
       // Like
       reply.likes.push(userId);
       reply.likesNo = (reply.likesNo || 0) + 1;
+      console.log('[DEBUG] Action: Liked');
     }
 
     // Save the PARENT document (Comment)
+    comment.markModified('replies');
     await comment.save();
+    console.log('[DEBUG] Saved parent comment (marked modified).');
 
     return res.status(200).json({
       success: true,

@@ -210,7 +210,7 @@ const addFakeDataForChefMario = async () => {
 
       // Add deep linking data
       notification.data = {
-        deepLink: `foodtok://${notif.type}/${notification.targetId || 'general'}`,
+        deepLink: `feedyum://${notif.type}/${notification.targetId || 'general'}`,
         chefId: chefMario._id.toString(),
         timestamp: notification.createdAt.toISOString(),
       };

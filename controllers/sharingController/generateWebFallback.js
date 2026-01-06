@@ -37,7 +37,7 @@ const generateWebFallback = async (req, res) => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FoodTok - ${getContentTitle(type, contentId)}</title>
+    <title>FeedYum - ${getContentTitle(type, contentId)}</title>
     
     <!-- Open Graph Meta Tags for Social Sharing -->
     <meta property="og:title" content="${getOGTitle(type, contentId)}">
@@ -207,22 +207,22 @@ const generateWebFallback = async (req, res) => {
 <body>
     <div class="container">
         <div class="logo">🍽️</div>
-        <h1>FoodTok</h1>
+        <h1>FeedYum</h1>
         <div class="badge">🔥 Food & Recipe Platform</div>
         <p>${getContentDescription(type, contentId)}</p>
         
         <!-- Try to open the app first -->
         <a href="${appSchemeUrl}" class="download-btn open-app-btn" id="openAppBtn">
-            <span>📱</span>&nbsp;&nbsp;Open in FoodTok App
+            <span>📱</span>&nbsp;&nbsp;Open in FeedYum App
         </a>
         
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            <p>Opening FoodTok...</p>
+            <p>Opening FeedYum...</p>
         </div>
         
         <div class="download-buttons" id="downloadButtons" style="display: none;">
-            <p>Don't have FoodTok yet? Download now and discover amazing recipes!</p>
+            <p>Don't have FeedYum yet? Download now and discover amazing recipes!</p>
             
             <!-- Primary: Google Play Store for Android -->
             <a href="${playStoreUrl}" class="download-btn playstore-btn" onclick="trackDownload('android')">
@@ -264,7 +264,7 @@ const generateWebFallback = async (req, res) => {
         </div>
         
         <div class="fallback-content">
-            <h2>What is FoodTok?</h2>
+            <h2>What is FeedYum?</h2>
             <p>Discover amazing recipes, connect with talented chefs, and explore delicious food content. Join thousands of food enthusiasts sharing their culinary creations!</p>
             <div style="margin-top: 20px; font-size: 14px; opacity: 0.8;">
                 <p>🍽️ Recipe Videos • 👨‍🍳 Chef Profiles • 📋 Menus • 🔴 Live Cooking</p>
@@ -281,7 +281,7 @@ const generateWebFallback = async (req, res) => {
         if (typeof(Storage) !== "undefined") {
             localStorage.setItem('foodtok_deferred_link', JSON.stringify(deferredData));
             localStorage.setItem('foodtok_deferred_token', deferredToken);
-            console.log('🔗 Saved deferred link data for FoodTok:', deferredData);
+            console.log('🔗 Saved deferred link data for FeedYum:', deferredData);
         }
         
         // Track analytics
@@ -294,7 +294,7 @@ const generateWebFallback = async (req, res) => {
                     platform: platform,
                     content_type: '${type}',
                     content_id: '${contentId}',
-                    app_name: 'FoodTok'
+                    app_name: 'FeedYum'
                 });
             }
             
@@ -308,7 +308,7 @@ const generateWebFallback = async (req, res) => {
                     contentId: '${contentId}',
                     userAgent: navigator.userAgent,
                     timestamp: Date.now(),
-                    appName: 'FoodTok'
+                    appName: 'FeedYum'
                 })
             }).catch(console.error);
         }
@@ -321,7 +321,7 @@ const generateWebFallback = async (req, res) => {
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
             const isAndroid = /Android/.test(navigator.userAgent);
             
-            console.log('🚀 Attempting to open FoodTok app...');
+            console.log('🚀 Attempting to open FeedYum app...');
             
             // Show loading state
             document.getElementById('loading').style.display = 'block';
@@ -329,7 +329,7 @@ const generateWebFallback = async (req, res) => {
             
             if (isAndroid) {
                 // Android: Use intent with fallback to Play Store
-                const intentUrl = 'intent://' + appUrl.replace('foodtok://', '') + '#Intent;scheme=foodtok;package=com.foodtok;S.browser_fallback_url=' + encodeURIComponent('${playStoreUrl}') + ';end';
+                const intentUrl = 'intent://' + appUrl.replace('feedyum://', '') + '#Intent;scheme=feedyum;package=com.foodtok;S.browser_fallback_url=' + encodeURIComponent('${playStoreUrl}') + ';end';
                 
                 window.location = intentUrl;
                 
@@ -361,13 +361,13 @@ const generateWebFallback = async (req, res) => {
         // Handle visibility change (app opened successfully)
         document.addEventListener('visibilitychange', function() {
             if (document.hidden) {
-                console.log('✅ User switched to FoodTok app');
+                console.log('✅ User switched to FeedYum app');
                 // User switched to the app, track success
                 if (typeof gtag !== 'undefined') {
                     gtag('event', 'app_opened_from_link', {
                         content_type: '${type}',
                         content_id: '${contentId}',
-                        app_name: 'FoodTok'
+                        app_name: 'FeedYum'
                     });
                 }
             }
@@ -384,10 +384,10 @@ const generateWebFallback = async (req, res) => {
         // Add page load analytics
         if (typeof gtag !== 'undefined') {
             gtag('event', 'page_view', {
-                page_title: 'FoodTok Deep Link',
+                page_title: 'FeedYum Deep Link',
                 content_type: '${type}',
                 content_id: '${contentId}',
-                app_name: 'FoodTok'
+                app_name: 'FeedYum'
             });
         }
     </script>
@@ -410,10 +410,10 @@ const generateWebFallback = async (req, res) => {
         res.status(500).send(`
       <!DOCTYPE html>
       <html>
-      <head><title>FoodTok</title></head>
+      <head><title>FeedYum</title></head>
       <body style="font-family: Arial; text-align: center; padding: 50px;">
-        <h1>FoodTok</h1>
-        <p>Download FoodTok from the Play Store to see this content!</p>
+        <h1>FeedYum</h1>
+        <p>Download FeedYum from the Play Store to see this content!</p>
         <a href="https://play.google.com/store/apps/details?id=com.foodtok" 
            style="background: #01875f; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px;">
           Download Now
@@ -436,21 +436,21 @@ function getContentTitle(type, contentId) {
         live: 'Live Cooking',
         story: 'Food Story'
     };
-    return titles[type] || 'FoodTok Content';
+    return titles[type] || 'FeedYum Content';
 }
 
 function getOGTitle(type, contentId) {
     const titles = {
-        reel: 'Check out this amazing food recipe on FoodTok!',
-        profile: 'Check out this chef profile on FoodTok!',
-        chefProfile: 'Check out this talented chef on FoodTok!',
-        chefMenu: 'Check out this delicious menu on FoodTok!',
-        menu: 'Browse this amazing menu on FoodTok!',
-        dish: 'Check out this delicious recipe on FoodTok!',
-        live: 'Join this live cooking session on FoodTok!',
-        story: 'Check out this food story on FoodTok!'
+        reel: 'Check out this amazing food recipe on FeedYum!',
+        profile: 'Check out this chef profile on FeedYum!',
+        chefProfile: 'Check out this talented chef on FeedYum!',
+        chefMenu: 'Check out this delicious menu on FeedYum!',
+        menu: 'Browse this amazing menu on FeedYum!',
+        dish: 'Check out this delicious recipe on FeedYum!',
+        live: 'Join this live cooking session on FeedYum!',
+        story: 'Check out this food story on FeedYum!'
     };
-    return titles[type] || 'Discover amazing food content on FoodTok!';
+    return titles[type] || 'Discover amazing food content on FeedYum!';
 }
 
 function getOGDescription(type) {
@@ -460,11 +460,11 @@ function getOGDescription(type) {
         chefProfile: 'Meet talented chefs and explore their culinary creations.',
         chefMenu: 'Explore delicious dishes and discover amazing recipes.',
         menu: 'Browse amazing food options and discover new recipes.',
-        dish: 'Discover this delicious recipe and many more on FoodTok.',
+        dish: 'Discover this delicious recipe and many more on FeedYum.',
         live: 'Join live cooking sessions and learn from expert chefs.',
         story: 'Follow food stories and cooking journeys from creators.'
     };
-    return descriptions[type] || 'Join the FoodTok community and discover amazing recipes and food content!';
+    return descriptions[type] || 'Join the FeedYum community and discover amazing recipes and food content!';
 }
 
 function getContentDescription(type, contentId) {
@@ -478,7 +478,7 @@ function getContentDescription(type, contentId) {
         live: 'Join this live cooking session and learn from the chef!',
         story: 'Follow this food story and discover the creator\'s journey!'
     };
-    return descriptions[type] || 'Discover amazing food content on FoodTok!';
+    return descriptions[type] || 'Discover amazing food content on FeedYum!';
 }
 
 module.exports = generateWebFallback; 

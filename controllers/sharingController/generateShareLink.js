@@ -94,7 +94,7 @@ async function generateReelShareLink(reelId, params = {}) {
   return {
     ...shareableLinks,
     shareText: params.shareText || 'Check out this amazing reel!',
-    hashtags: ['#FoodTok', '#Food', '#Cooking'],
+    hashtags: ['#FeedYum', '#Food', '#Cooking'],
   };
 }
 
@@ -107,8 +107,8 @@ async function generateProfileShareLink(profileId, params = {}) {
 
   return {
     ...shareableLinks,
-    shareText: params.shareText || 'Check out this profile on FoodTok!',
-    hashtags: ['#FoodTok', '#Profile'],
+    shareText: params.shareText || 'Check out this profile on FeedYum!',
+    hashtags: ['#FeedYum', '#Profile'],
   };
 }
 
@@ -121,8 +121,8 @@ async function generateChefProfileShareLink(chefId, params = {}) {
 
   return {
     ...shareableLinks,
-    shareText: params.shareText || 'Check out this amazing chef on FoodTok!',
-    hashtags: ['#FoodTok', '#Chef', '#Cooking'],
+    shareText: params.shareText || 'Check out this amazing chef on FeedYum!',
+    hashtags: ['#FeedYum', '#Chef', '#Cooking'],
   };
 }
 
@@ -136,7 +136,7 @@ async function generateChefMenuShareLink(chefId, params = {}) {
   return {
     ...shareableLinks,
     shareText: params.shareText || 'Check out this delicious menu!',
-    hashtags: ['#FoodTok', '#Menu', '#Delivery'],
+    hashtags: ['#FeedYum', '#Menu', '#Delivery'],
   };
 }
 
@@ -150,7 +150,7 @@ async function generateMenuShareLink(menuId, params = {}) {
   return {
     ...shareableLinks,
     shareText: params.shareText || 'Check out this amazing menu!',
-    hashtags: ['#FoodTok', '#Menu'],
+    hashtags: ['#FeedYum', '#Menu'],
   };
 }
 
@@ -164,7 +164,7 @@ async function generateDishShareLink(dishId, params = {}) {
   return {
     ...shareableLinks,
     shareText: params.shareText || 'Check out this delicious dish!',
-    hashtags: ['#FoodTok', '#Food', '#Delicious'],
+    hashtags: ['#FeedYum', '#Food', '#Delicious'],
   };
 }
 
@@ -177,8 +177,8 @@ async function generateLiveShareLink(liveId, params = {}) {
 
   return {
     ...shareableLinks,
-    shareText: params.shareText || 'Join me live on FoodTok!',
-    hashtags: ['#FoodTok', '#Live', '#Cooking'],
+    shareText: params.shareText || 'Join me live on FeedYum!',
+    hashtags: ['#FeedYum', '#Live', '#Cooking'],
   };
 }
 

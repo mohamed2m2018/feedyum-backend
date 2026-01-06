@@ -4,7 +4,7 @@ const { oneSignalAppId } = require("../config/keys");
 class EnhancedNotificationService {
   // Generate deep link URL
   static generateDeepLink(type, id, params = {}) {
-    const baseUrl = 'foodtok://'; // Your app's URL scheme (matches package name)
+    const baseUrl = 'feedyum://'; // Your app's URL scheme (matches package name)
     const queryString = new URLSearchParams(params).toString();
     const query = queryString ? `?${queryString}` : '';
 
@@ -16,7 +16,7 @@ class EnhancedNotificationService {
         return `${baseUrl}/chat/${id}${query}`;
       case 'chatList':
         return `${baseUrl}/chat${query}`;
-        
+
       // Reel/Video links
       case 'reel':
       case 'video':
@@ -27,14 +27,14 @@ class EnhancedNotificationService {
         return `${baseUrl}/review-reel/${id}${query}`;
       case 'reels':
         return `${baseUrl}/reels${query}`;
-        
+
       // Profile links
       case 'profile':
       case 'userProfile':
         return `${baseUrl}/profile/${id}${query}`;
       case 'profileByUsername':
         return `${baseUrl}/u/${id}${query}`;
-        
+
       // Chef links
       case 'chefProfile':
         return `${baseUrl}/chef/${id}${query}`;
@@ -44,7 +44,7 @@ class EnhancedNotificationService {
         return `${baseUrl}/chef/${id}/menu${query}`;
       case 'chefDashboard':
         return `${baseUrl}/chef/dashboard${query}`;
-        
+
       // Menu links
       case 'menu':
         return `${baseUrl}/menu/${id}${query}`;
@@ -53,7 +53,7 @@ class EnhancedNotificationService {
       case 'dish':
       case 'dishDetail':
         return `${baseUrl}/dish/${id}${query}`;
-        
+
       // Discovery links
       case 'discover':
         return `${baseUrl}/discover${query}`;
@@ -63,7 +63,7 @@ class EnhancedNotificationService {
         return `${baseUrl}/trending${query}`;
       case 'search':
         return `${baseUrl}/search${query}`;
-        
+
       // Social links
       case 'following':
         return `${baseUrl}/profile/${id}/following${query}`;
@@ -73,13 +73,13 @@ class EnhancedNotificationService {
         return `${baseUrl}/profile/${id}/likes${query}`;
       case 'posts':
         return `${baseUrl}/profile/${id}/posts${query}`;
-        
+
       // Live streaming
       case 'live':
         return `${baseUrl}/live/${id}${query}`;
       case 'liveStream':
         return `${baseUrl}/live${query}`;
-        
+
       // General links
       case 'post':
         return `${baseUrl}/post/${id}${query}`;
@@ -87,7 +87,7 @@ class EnhancedNotificationService {
         return `${baseUrl}/hashtag/${id}${query}`;
       case 'sound':
         return `${baseUrl}/sound/${id}${query}`;
-        
+
       default:
         return `${baseUrl}/${query}`;
     }
@@ -95,9 +95,9 @@ class EnhancedNotificationService {
 
   // Generate universal links for sharing
   static generateUniversalLink(type, id, params = {}) {
-    const baseUrl = 'https://food2k.com'; // Your web domain
+    const baseUrl = 'https://feedyum.com'; // Your web domain
     const deepLink = this.generateDeepLink(type, id, params);
-    return deepLink.replace('foodtok://', baseUrl);
+    return deepLink.replace('feedyum://', baseUrl);
   }
 
   // Generate shareable links with fallback
@@ -122,7 +122,7 @@ class EnhancedNotificationService {
   }) {
     try {
       const deepLink = this.generateDeepLink(type, targetId, additionalData);
-      
+
       const notification = {
         app_id: oneSignalAppId,
         headings: { en: title },
@@ -149,7 +149,7 @@ class EnhancedNotificationService {
       if (largeIcon) {
         notification.large_icon = largeIcon;
       }
-      
+
       if (bigPicture) {
         notification.big_picture = bigPicture;
       }
@@ -241,7 +241,7 @@ class EnhancedNotificationService {
     senderAvatar = null,
     messageType = 'text'
   }) {
-    const messagePreview = messageType === 'text' 
+    const messagePreview = messageType === 'text'
       ? (message.length > 50 ? `${message.substring(0, 50)}...` : message)
       : `Sent a ${messageType}`;
 
@@ -270,7 +270,7 @@ class EnhancedNotificationService {
     reelTitle = null,
     likerAvatar = null
   }) {
-    const message = reelTitle 
+    const message = reelTitle
       ? `${likerName} liked your reel "${reelTitle}"`
       : `${likerName} liked your reel`;
 
@@ -299,11 +299,11 @@ class EnhancedNotificationService {
     reelTitle = null,
     commenterAvatar = null
   }) {
-    const commentPreview = comment.length > 50 
-      ? `${comment.substring(0, 50)}...` 
+    const commentPreview = comment.length > 50
+      ? `${comment.substring(0, 50)}...`
       : comment;
 
-    const message = reelTitle 
+    const message = reelTitle
       ? `${commenterName} commented on "${reelTitle}": ${commentPreview}`
       : `${commenterName} commented: ${commentPreview}`;
 
@@ -333,7 +333,7 @@ class EnhancedNotificationService {
     sharerAvatar = null,
     shareMessage = null
   }) {
-    const message = reelTitle 
+    const message = reelTitle
       ? `${sharerName} shared your reel "${reelTitle}"`
       : `${sharerName} shared your reel`;
 
@@ -416,7 +416,7 @@ class EnhancedNotificationService {
     raterAvatar = null
   }) {
     const stars = '⭐'.repeat(rating);
-    const message = review 
+    const message = review
       ? `${raterName} rated your ${dishName} ${stars} (${rating}/5): "${review.substring(0, 50)}..."`
       : `${raterName} rated your ${dishName} ${stars} (${rating}/5)`;
 
@@ -447,7 +447,7 @@ class EnhancedNotificationService {
     followerType = 'user'
   }) {
     const title = followerType === 'chef' ? 'New Chef Follower! 👨‍🍳' : 'New Follower! 👤';
-    const message = followerType === 'chef' 
+    const message = followerType === 'chef'
       ? `Chef ${followerName} started following you`
       : `${followerName} started following you`;
 
@@ -497,7 +497,7 @@ class EnhancedNotificationService {
     contentTitle = null,
     mentionerAvatar = null
   }) {
-    const message = contentTitle 
+    const message = contentTitle
       ? `${mentionerName} mentioned you in "${contentTitle}"`
       : `${mentionerName} mentioned you in a ${contentType}`;
 
@@ -551,7 +551,7 @@ class EnhancedNotificationService {
     reviewerAvatar = null
   }) {
     const stars = '⭐'.repeat(rating);
-    const message = dishName 
+    const message = dishName
       ? `${reviewerName} rated your ${dishName} ${stars} (${rating}/5)`
       : `${reviewerName} gave you ${stars} (${rating}/5)`;
 
@@ -632,8 +632,8 @@ class EnhancedNotificationService {
     postType = 'post',
     commenterAvatar = null
   }) {
-    const commentPreview = comment.length > 50 
-      ? `${comment.substring(0, 50)}...` 
+    const commentPreview = comment.length > 50
+      ? `${comment.substring(0, 50)}...`
       : comment;
 
     return this.sendNotification({

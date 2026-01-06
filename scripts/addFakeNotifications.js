@@ -223,7 +223,7 @@ const addFakeNotifications = async () => {
 
         // Add some additional data for deep linking
         notification.data = {
-          deepLink: `foodtok://${fakeNotif.type}/${notification.targetId || 'general'}`,
+          deepLink: `feedyum://${fakeNotif.type}/${notification.targetId || 'general'}`,
           metadata: {
             notificationType: fakeNotif.type,
             timestamp: notification.createdAt.toISOString(),

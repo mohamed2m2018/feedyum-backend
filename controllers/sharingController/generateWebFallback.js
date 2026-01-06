@@ -1,37 +1,37 @@
 const EnhancedNotificationService = require('../../services/enhancedNotificationService');
 
 const generateWebFallback = async (req, res) => {
-  try {
-    const { type, contentId } = req.params;
-    const userAgent = req.get('User-Agent') || '';
-    const isIOS = /iPad|iPhone|iPod/.test(userAgent);
-    const isAndroid = /Android/.test(userAgent);
-    const isMobile = isIOS || isAndroid;
+    try {
+        const { type, contentId } = req.params;
+        const userAgent = req.get('User-Agent') || '';
+        const isIOS = /iPad|iPhone|iPod/.test(userAgent);
+        const isAndroid = /Android/.test(userAgent);
+        const isMobile = isIOS || isAndroid;
 
-    // Generate the deep link for after installation
-    const deepLink = EnhancedNotificationService.generateDeepLink(type, contentId, req.query);
-    
-    // App Store URLs - Using your actual Play Store URL
-    const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.foodtok';
-    const appStoreUrl = 'https://apps.apple.com/app/foodtok/idYOUR_APP_ID'; // Optional: Add when iOS app is ready
-    
-    // Try to open the app first (for users who have it installed)
-    const appSchemeUrl = deepLink;
+        // Generate the deep link for after installation
+        const deepLink = EnhancedNotificationService.generateDeepLink(type, contentId, req.query);
 
-    // Create deferred deep link data
-    const deferredData = {
-      type,
-      contentId,
-      deepLink,
-      timestamp: Date.now(),
-      ...req.query
-    };
+        // App Store URLs - Using your actual Play Store URL
+        const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.foodtok';
+        const appStoreUrl = 'https://apps.apple.com/app/foodtok/idYOUR_APP_ID'; // Optional: Add when iOS app is ready
 
-    // Generate a unique token for this deferred link
-    const deferredToken = Buffer.from(JSON.stringify(deferredData)).toString('base64url');
+        // Try to open the app first (for users who have it installed)
+        const appSchemeUrl = deepLink;
 
-    // Web fallback HTML page
-    const htmlContent = `
+        // Create deferred deep link data
+        const deferredData = {
+            type,
+            contentId,
+            deepLink,
+            timestamp: Date.now(),
+            ...req.query
+        };
+
+        // Generate a unique token for this deferred link
+        const deferredToken = Buffer.from(JSON.stringify(deferredData)).toString('base64url');
+
+        // Web fallback HTML page
+        const htmlContent = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -42,7 +42,7 @@ const generateWebFallback = async (req, res) => {
     <!-- Open Graph Meta Tags for Social Sharing -->
     <meta property="og:title" content="${getOGTitle(type, contentId)}">
     <meta property="og:description" content="${getOGDescription(type)}">
-    <meta property="og:image" content="https://food2k.com/images/og-image.jpg">
+    <meta property="og:image" content="https://feedyum.com/images/og-image.jpg">
     <meta property="og:url" content="${req.originalUrl}">
     <meta property="og:type" content="website">
     
@@ -50,7 +50,7 @@ const generateWebFallback = async (req, res) => {
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="${getOGTitle(type, contentId)}">
     <meta name="twitter:description" content="${getOGDescription(type)}">
-    <meta name="twitter:image" content="https://food2k.com/images/og-image.jpg">
+    <meta name="twitter:image" content="https://feedyum.com/images/og-image.jpg">
     
     <!-- iOS Smart App Banner (when iOS app is ready) -->
     ${appStoreUrl !== 'https://apps.apple.com/app/foodtok/idYOUR_APP_ID' ? `<meta name="apple-itunes-app" content="app-id=YOUR_APP_ID, app-argument=${encodeURIComponent(deepLink)}">` : ''}
@@ -403,11 +403,11 @@ const generateWebFallback = async (req, res) => {
 </body>
 </html>`;
 
-    res.send(htmlContent);
+        res.send(htmlContent);
 
-  } catch (error) {
-    console.error('Web fallback error:', error);
-    res.status(500).send(`
+    } catch (error) {
+        console.error('Web fallback error:', error);
+        res.status(500).send(`
       <!DOCTYPE html>
       <html>
       <head><title>FoodTok</title></head>
@@ -421,64 +421,64 @@ const generateWebFallback = async (req, res) => {
       </body>
       </html>
     `);
-  }
+    }
 };
 
 // Helper functions for content-specific messaging
 function getContentTitle(type, contentId) {
-  const titles = {
-    reel: 'Amazing Food Recipe',
-    profile: 'Chef Profile',
-    chefProfile: 'Chef Profile', 
-    chefMenu: 'Chef Menu',
-    menu: 'Food Menu',
-    dish: 'Delicious Recipe',
-    live: 'Live Cooking',
-    story: 'Food Story'
-  };
-  return titles[type] || 'FoodTok Content';
+    const titles = {
+        reel: 'Amazing Food Recipe',
+        profile: 'Chef Profile',
+        chefProfile: 'Chef Profile',
+        chefMenu: 'Chef Menu',
+        menu: 'Food Menu',
+        dish: 'Delicious Recipe',
+        live: 'Live Cooking',
+        story: 'Food Story'
+    };
+    return titles[type] || 'FoodTok Content';
 }
 
 function getOGTitle(type, contentId) {
-  const titles = {
-    reel: 'Check out this amazing food recipe on FoodTok!',
-    profile: 'Check out this chef profile on FoodTok!',
-    chefProfile: 'Check out this talented chef on FoodTok!',
-    chefMenu: 'Check out this delicious menu on FoodTok!',
-    menu: 'Browse this amazing menu on FoodTok!',
-    dish: 'Check out this delicious recipe on FoodTok!',
-    live: 'Join this live cooking session on FoodTok!',
-    story: 'Check out this food story on FoodTok!'
-  };
-  return titles[type] || 'Discover amazing food content on FoodTok!';
+    const titles = {
+        reel: 'Check out this amazing food recipe on FoodTok!',
+        profile: 'Check out this chef profile on FoodTok!',
+        chefProfile: 'Check out this talented chef on FoodTok!',
+        chefMenu: 'Check out this delicious menu on FoodTok!',
+        menu: 'Browse this amazing menu on FoodTok!',
+        dish: 'Check out this delicious recipe on FoodTok!',
+        live: 'Join this live cooking session on FoodTok!',
+        story: 'Check out this food story on FoodTok!'
+    };
+    return titles[type] || 'Discover amazing food content on FoodTok!';
 }
 
 function getOGDescription(type) {
-  const descriptions = {
-    reel: 'Discover amazing recipes and cooking videos from talented food creators.',
-    profile: 'Connect with food creators and discover their delicious content.',
-    chefProfile: 'Meet talented chefs and explore their culinary creations.',
-    chefMenu: 'Explore delicious dishes and discover amazing recipes.',
-    menu: 'Browse amazing food options and discover new recipes.',
-    dish: 'Discover this delicious recipe and many more on FoodTok.',
-    live: 'Join live cooking sessions and learn from expert chefs.',
-    story: 'Follow food stories and cooking journeys from creators.'
-  };
-  return descriptions[type] || 'Join the FoodTok community and discover amazing recipes and food content!';
+    const descriptions = {
+        reel: 'Discover amazing recipes and cooking videos from talented food creators.',
+        profile: 'Connect with food creators and discover their delicious content.',
+        chefProfile: 'Meet talented chefs and explore their culinary creations.',
+        chefMenu: 'Explore delicious dishes and discover amazing recipes.',
+        menu: 'Browse amazing food options and discover new recipes.',
+        dish: 'Discover this delicious recipe and many more on FoodTok.',
+        live: 'Join live cooking sessions and learn from expert chefs.',
+        story: 'Follow food stories and cooking journeys from creators.'
+    };
+    return descriptions[type] || 'Join the FoodTok community and discover amazing recipes and food content!';
 }
 
 function getContentDescription(type, contentId) {
-  const descriptions = {
-    reel: 'Watch this amazing cooking video and discover more food content!',
-    profile: 'Check out this food creator\'s profile and their amazing recipes!',
-    chefProfile: 'Meet this talented chef and explore their culinary journey!',
-    chefMenu: 'Browse this chef\'s delicious menu and discover great recipes!',
-    menu: 'Explore this amazing menu and discover delicious recipes!',
-    dish: 'Check out this mouth-watering recipe and learn how to make it!',
-    live: 'Join this live cooking session and learn from the chef!',
-    story: 'Follow this food story and discover the creator\'s journey!'
-  };
-  return descriptions[type] || 'Discover amazing food content on FoodTok!';
+    const descriptions = {
+        reel: 'Watch this amazing cooking video and discover more food content!',
+        profile: 'Check out this food creator\'s profile and their amazing recipes!',
+        chefProfile: 'Meet this talented chef and explore their culinary journey!',
+        chefMenu: 'Browse this chef\'s delicious menu and discover great recipes!',
+        menu: 'Explore this amazing menu and discover delicious recipes!',
+        dish: 'Check out this mouth-watering recipe and learn how to make it!',
+        live: 'Join this live cooking session and learn from the chef!',
+        story: 'Follow this food story and discover the creator\'s journey!'
+    };
+    return descriptions[type] || 'Discover amazing food content on FoodTok!';
 }
 
 module.exports = generateWebFallback; 

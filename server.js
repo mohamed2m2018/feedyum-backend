@@ -125,11 +125,8 @@ app.use("/api/promocode", require("./routes/promocode"));
 app.use("/api/chef-wallet", require("./routes/chefWallet"));
 app.use("/api/reviews", require("./routes/review"));
 app.use("/api/favorites", require("./routes/favorites"));
-app.use("/api/sharing", require("./routes/sharing"));
-
-app.get('/post/:any', (req, res) => {
-  res.redirect('/index.html');
-});
+// Sharing routes for deep linking fallback (must be before static files)
+app.use("/", require("./routes/sharing"));
 
 app.use(express.static(__dirname + '/public', { dotfiles: 'allow' }));
 

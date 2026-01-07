@@ -1,0 +1,35 @@
+{
+  "name": "FeedYum - منصة فيديو للأكل",
+  "short_name": "FeedYum",
+  "description": "FeedYum منصة فيديو لعشاق الأكل - شاهد واطلب وقيم",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#181A20",
+  "theme_color": "#FF4D67",
+  "orientation": "portrait",
+  "lang": "ar",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "/images/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["food", "lifestyle", "social"],
+  "prefer_related_applications": true,
+  "related_applications": [
+    {
+      "platform": "play",
+      "url": "https://play.google.com/store/apps/details?id=com.feedyum",
+      "id": "com.feedyum"
+    }
+  ]
+}

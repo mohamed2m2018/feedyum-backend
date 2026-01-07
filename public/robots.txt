@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://feedyum.com/sitemap.xml
+
+# Host
+Host: https://feedyum.com
+
+# Crawl delay (optional - be careful with this)
+# Crawl-delay: 1
+
+# Disallow admin or private areas (add as needed)
+# Disallow: /admin/
+# Disallow: /api/

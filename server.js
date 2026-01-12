@@ -104,6 +104,7 @@ app.use("/api/tags", cacheMiddleware(600), require("./routes/tags"));
 app.use("/api/chat", require("./routes/chat"));
 app.use("/api/messages", require("./routes/messages"));
 app.use("/api/notifications", require("./routes/notifications"));
+app.use("/api/location", require("./routes/location"));
 
 // Add optimized routes FIRST for priority routing
 try {

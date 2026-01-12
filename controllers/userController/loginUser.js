@@ -45,7 +45,7 @@ const loginUser = (req, res) => {
         email: user.email,
       };
 
-      const {password, ...userData}  = user?._doc
+      const { password, ...userData } = user?._doc
 
       // Make JWT
       jwt.sign(
@@ -55,6 +55,11 @@ const loginUser = (req, res) => {
         (err, token) => {
           // Remove embeddings from response
           const cleanUserData = cleanResponseData(userData);
+          // Explicitly convert _id to string using the ORIGINAL user object
+          // deepRemoveEmbeddings might have corrupted the _id object by spreading it
+          if (user._id) {
+            cleanUserData._id = user._id.toString();
+          }
           return res.json({ user: cleanUserData, success: true, token: 'Bearer ' + token });
         }
       );

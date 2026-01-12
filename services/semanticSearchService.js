@@ -22,14 +22,14 @@ class SemanticSearchService {
     return arabicRegex.test(query);
   }
 
-    /**
-   * Enhance Arabic queries for better semantic search
-   * @param {string} text - Arabic text to enhance
-   * @returns {string} - Enhanced query
-   */
+  /**
+ * Enhance Arabic queries for better semantic search
+ * @param {string} text - Arabic text to enhance
+ * @returns {string} - Enhanced query
+ */
   enhanceArabicQuery(text) {
     console.log(`🌍 Processing Arabic query: "${text}"`);
-    
+
     // The multilingual model handles Arabic directly - no translation needed!
     console.log(`✨ Using multilingual model directly for: "${text}"`);
     return text.trim();
@@ -51,10 +51,10 @@ class SemanticSearchService {
         console.log(`Arabic dish search: "${searchQuery}" - Enhancing`);
         effectiveQuery = this.enhanceArabicQuery(searchQuery);
       }
-      
+
       // Generate embedding for search query
       const queryEmbedding = await embeddingService.generateEmbedding(effectiveQuery);
-      
+
       if (!queryEmbedding) {
         // Fallback to text search if embedding generation fails
         return this.fallbackTextSearch('dishes', searchQuery, options);
@@ -71,10 +71,10 @@ class SemanticSearchService {
           });
 
           const { results: vectorResults, pagination } = vectorSearchResult;
-          
+
           // Get full dish data from MongoDB using the IDs from Pinecone
           const dishIds = vectorResults.map(result => result.dishId);
-          
+
           if (dishIds.length === 0) {
             return {
               success: true,
@@ -97,8 +97,8 @@ class SemanticSearchService {
           };
 
           const dishes = await Dish.find(mongoFilter)
-          .populate('user_id', 'fullName avatar')
-          .lean();
+            .populate('user_id', 'fullName avatar')
+            .lean();
 
           // Merge Pinecone scores with MongoDB data, maintaining order
           const dishesWithScores = vectorResults
@@ -154,10 +154,10 @@ class SemanticSearchService {
       embedding: { $exists: true, $ne: null },
       ...filters
     })
-    .select('+embedding +embeddingGenerated')
-    .populate('user_id', 'fullName avatar')
-    .limit(this.maxResults * 2)
-    .lean();
+      .select('+embedding +embeddingGenerated')
+      .populate('user_id', 'fullName avatar')
+      .limit(this.maxResults * 2)
+      .lean();
 
     // Calculate similarity scores
     const dishesWithScores = dishes
@@ -210,7 +210,7 @@ class SemanticSearchService {
    * @returns {Promise<Object>} - Search results with similarity scores
    */
   async searchUsers(searchQuery, options = {}) {
-    const { cursor = null, limit = 10, currentUserId } = options;
+    const { cursor = null, limit = 10, currentUserId, filters = {} } = options;
 
     try {
       // Enhance Arabic queries for better semantic search
@@ -219,9 +219,9 @@ class SemanticSearchService {
         console.log(`Arabic user search: "${searchQuery}" - Enhancing`);
         effectiveQuery = this.enhanceArabicQuery(searchQuery);
       }
-      
+
       const queryEmbedding = await embeddingService.generateEmbedding(effectiveQuery);
-      
+
       if (!queryEmbedding) {
         return this.fallbackTextSearch('users', searchQuery, options);
       }
@@ -230,11 +230,12 @@ class SemanticSearchService {
       const users = await User.find({
         _id: { $ne: currentUserId },
         type: { $ne: "guest" },
-        embedding: { $exists: true, $ne: null }
+        embedding: { $exists: true, $ne: null },
+        ...filters
       })
-      .select('+embedding +embeddingGenerated') // Explicitly include embeddings
-      .limit(this.maxResults * 2)
-      .lean();
+        .select('+embedding +embeddingGenerated') // Explicitly include embeddings
+        .limit(this.maxResults * 2)
+        .lean();
 
       // Calculate similarity scores
       const usersWithScores = users
@@ -300,14 +301,14 @@ class SemanticSearchService {
         console.log(`Arabic semantic search: "${searchQuery}" - Enhancing`);
         effectiveQuery = this.enhanceArabicQuery(searchQuery);
       }
-      
+
       const queryEmbedding = await embeddingService.generateEmbedding(effectiveQuery);
-      
+
       if (!queryEmbedding) {
         console.log(`❌ Failed to generate embedding for "${effectiveQuery}" - falling back to text search`);
         return this.fallbackTextSearch('stories', searchQuery, options);
       }
-      
+
       console.log(`✅ Generated embedding for "${effectiveQuery}" successfully`);
 
       // Build query based on review filtering
@@ -343,7 +344,7 @@ class SemanticSearchService {
 
       // Calculate similarity scores
       console.log(`Found ${stories.length} stories with embeddings for comparison`);
-      
+
       const storiesWithScores = stories
         .map(story => {
           if (!story.embedding || !Array.isArray(story.embedding)) {
@@ -365,7 +366,7 @@ class SemanticSearchService {
 
       console.log(`Semantic search found ${storiesWithScores.length} stories for query: "${searchQuery}"`);
       console.log(`Similarity threshold: ${this.similarityThreshold}`);
-      
+
       // Log top 3 results with scores for debugging
       if (storiesWithScores.length > 0) {
         console.log('Top search results:');
@@ -374,13 +375,13 @@ class SemanticSearchService {
         });
       } else {
         console.log('❌ No stories found above similarity threshold. Checking if any stories have embeddings...');
-        
+
         // Debug: check if ANY stories have embeddings at all
         const allStoriesWithEmbeddings = await Story.countDocuments({
           embedding: { $exists: true, $ne: null }
         });
         console.log(`📊 Total stories with embeddings in database: ${allStoriesWithEmbeddings}`);
-        
+
         // Debug: show similarity scores of all stories (even below threshold)
         const allScores = stories
           .map(story => {
@@ -391,7 +392,7 @@ class SemanticSearchService {
           .filter(s => s)
           .sort((a, b) => b.score - a.score)
           .slice(0, 5);
-          
+
         console.log('📈 Top 5 similarity scores (regardless of threshold):');
         allScores.forEach((item, index) => {
           console.log(`${index + 1}. Score: ${item.score.toFixed(3)} - "${item.title}"`);
@@ -434,7 +435,7 @@ class SemanticSearchService {
   async hybridSearch(type, searchQuery, options = {}) {
     try {
       const trimmedQuery = searchQuery.trim();
-      
+
       // For very short queries, use text search only to avoid slow embedding
       if (trimmedQuery.length < 3) {
         console.log(`Short query "${trimmedQuery}" - using text search only`);
@@ -451,12 +452,12 @@ class SemanticSearchService {
       // Use Promise.allSettled to handle failures gracefully
       const [semanticResult, textResult] = await Promise.allSettled([
         this[`search${type.charAt(0).toUpperCase() + type.slice(1)}`](
-          effectiveQuery, 
+          effectiveQuery,
           { ...options, limit: Math.ceil(options.limit / 2) }
         ),
         this.fallbackTextSearch(
-          type, 
-          searchQuery, 
+          type,
+          searchQuery,
           { ...options, limit: Math.ceil(options.limit / 2) }
         )
       ]);
@@ -563,17 +564,17 @@ class SemanticSearchService {
           const searchDishes = require('../controllers/dishController/searchDishes');
           return await this.wrapControllerCall(searchDishes, searchQuery, options);
         }
-          
+
         case 'users': {
           const searchUser = require('../controllers/userController/searchUser');
           return await this.wrapControllerCall(searchUser, searchQuery, options);
         }
-          
+
         case 'stories': {
           const searchStories = require('../controllers/storyController/searchStories');
           return await this.wrapControllerCall(searchStories, searchQuery, options);
         }
-          
+
         default:
           throw new Error(`Unknown search type: ${type}`);
       }
@@ -582,8 +583,8 @@ class SemanticSearchService {
       return {
         success: false,
         error: 'Search temporarily unavailable',
-        data: { 
-          [type]: [], 
+        data: {
+          [type]: [],
           pagination: {
             currentPage: options.page || 1,
             totalPages: 0,
@@ -606,7 +607,7 @@ class SemanticSearchService {
   async wrapControllerCall(controller, searchQuery, options) {
     return new Promise((resolve) => {
       let resolved = false;
-      
+
       const mockReq = {
         query: {
           searchString: searchQuery,
@@ -626,7 +627,7 @@ class SemanticSearchService {
         status: (code) => ({
           json: (data) => {
             console.log('Text search response:', { code, data });
-            
+
             if (code === 200 && data) {
               let transformedData = this.transformSearchResponse(data, options);
               resolveOnce(transformedData);
@@ -726,7 +727,7 @@ class SemanticSearchService {
         };
       }
     }
-    
+
     // Handle direct data structure (legacy format)
     if (data.dishes) {
       return {
@@ -737,8 +738,8 @@ class SemanticSearchService {
             currentPage: parseInt(options.page || 1),
             totalPages: data.totalPages || 1,
             totalItems: data.dishes.length,
-            hasNextPage: false,
-            hasPrevPage: false
+            hasNextPage: (parseInt(options.page || 1)) < (data.totalPages || 1),
+            hasPrevPage: (parseInt(options.page || 1)) > 1
           }
         },
         searchType: 'text'
@@ -752,8 +753,8 @@ class SemanticSearchService {
             currentPage: parseInt(options.page || 1),
             totalPages: data.totalPages || 1,
             totalItems: data.stories.length,
-            hasNextPage: false,
-            hasPrevPage: false
+            hasNextPage: (parseInt(options.page || 1)) < (data.totalPages || 1),
+            hasPrevPage: (parseInt(options.page || 1)) > 1
           }
         },
         searchType: 'text'
@@ -767,8 +768,8 @@ class SemanticSearchService {
             currentPage: parseInt(options.page || 1),
             totalPages: data.totalPages || 1,
             totalItems: data.users.length,
-            hasNextPage: false,
-            hasPrevPage: false
+            hasNextPage: (parseInt(options.page || 1)) < (data.totalPages || 1),
+            hasPrevPage: (parseInt(options.page || 1)) > 1
           }
         },
         searchType: 'text'

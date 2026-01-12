@@ -84,26 +84,34 @@ const StorySchema = new Schema({
   reviewType: {
     type: String,
     enum: ['dish', 'menu'],
-    required: function() { return this.reviewMode; }
+    required: function () { return this.reviewMode; }
   },
   reviewedDish: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "dish",
-    required: function() { return this.reviewMode && this.reviewType === 'dish'; }
+    required: function () { return this.reviewMode && this.reviewType === 'dish'; }
   },
   reviewedMenu: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "menu",
-    required: function() { return this.reviewMode && this.reviewType === 'menu'; }
+    required: function () { return this.reviewMode && this.reviewType === 'menu'; }
   },
   rating: {
     type: Number,
     min: 1,
     max: 5,
-    required: function() { return this.reviewMode; }
+    required: function () { return this.reviewMode; }
   },
-  
-  // Semantic search embedding - excluded by default for performance
+
+  // New User Review Flow Fields
+  isReview: { type: Boolean, default: false },
+  reviewedChef: { type: mongoose.Schema.Types.ObjectId, ref: 'user' },
+  googlePlaceId: String,
+  restaurantName: String,
+  restaurantAddress: String,
+  dishName: String, // For manual dish entry (when not linked to a system dish)
+
+
   embedding: { type: [Number], default: null, select: false },
   embeddingGenerated: { type: Date, default: null, select: false },
 });

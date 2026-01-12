@@ -39,8 +39,8 @@ function getNearestLocation(targetLat, targetLong, locations) {
     const a =
       Math.sin(latDiff / 2) ** 2 +
       Math.cos(deg2rad(targetLat)) *
-        Math.cos(deg2rad(lat)) *
-        Math.sin(longDiff / 2) ** 2;
+      Math.cos(deg2rad(lat)) *
+      Math.sin(longDiff / 2) ** 2;
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const distance = earthRadius * c;
 
@@ -78,12 +78,12 @@ const getFollowingStories = async (req, res) => {
         $in: currentUserFollowing.map((follow) => follow.following_id),
       },
     };
-    
+
     if (categoryIds.length) {
       params.category = {
-        $in: categoryIds.split(',') 
+        $in: categoryIds.split(',')
       }
-    }    
+    }
 
     // Retrieve the count of stories of the users the current user is following
     const totalStories = await Story.countDocuments(params);
@@ -111,15 +111,24 @@ const getFollowingStories = async (req, res) => {
 
     const mappedStories = await Promise.all(
       followingStories.map(async (item) => {
-      // Check if the current user has liked the story
-      const currentUserLiked = await Like.exists({ post_id: item?._id, user_id: userId });
-          return {
+        // Check if the current user has liked the story
+        const currentUserLiked = await Like.exists({ post_id: item?._id, user_id: userId });
+
+        // Parity with getStories.js: Ensure avatarUri is populated for images
+        // This allows the frontend to correctly identify image stories and hide video controls
+        let finalAvatarUri = item.avatarUri;
+        if (!finalAvatarUri && item.poster) {
+          finalAvatarUri = item.poster;
+        }
+
+        return {
           ...item,
+          avatarUri: finalAvatarUri,
           kmAway: req?.query?.lat !== 'undefined' ? getNearestLocation(Number(req.query.lat), Number(req.query.long), item?.author?.locations)?.distance : undefined,
           currentUserLiked
-      };
+        };
       })
-  );
+    );
 
     // Performance optimization: Only compute ratings for unique authors
     const uniqueAuthorIds = [...new Set(mappedStories.map(s => s.author?._id?.toString()).filter(Boolean))];
@@ -143,7 +152,7 @@ const getFollowingStories = async (req, res) => {
             }
           }
         ]).exec();
-        
+
         const ratingMap = new Map(ratings.map(r => [r._id.toString(), r]));
         mappedStories.forEach(story => {
           if (story.author?._id) {

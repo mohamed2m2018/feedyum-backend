@@ -162,6 +162,14 @@ const addStory = async (req, res) => {
     reviewedDish: req.body?.reviewedDish,
     reviewedMenu: req.body?.reviewedMenu,
     rating: req.body?.rating,
+
+    // New User Review Flow Fields
+    isReview: req.body?.isReview,
+    reviewedChef: req.body?.reviewedChefId,
+    googlePlaceId: req.body?.googlePlaceId,
+    restaurantName: req.body?.restaurantName,
+    restaurantAddress: req.body?.restaurantAddress,
+    dishName: req.body?.dishName,
   });
 
   await User.findByIdAndUpdate(req.user._id, { $inc: { postsNo: 1 } });

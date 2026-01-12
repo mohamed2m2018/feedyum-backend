@@ -125,8 +125,17 @@ const getStories = async (req, res) => {
         stories.map(async (story) => {
           // Check if the current user has liked the story
           const currentUserLiked = await Like.exists({ post_id: story?._doc?._id, user_id: req.user?._id?.toString() });
+
+          // Parity with getStories.js & getFollowingStories.js: Ensure avatarUri is populated for images
+          // This allows the frontend to correctly identify image stories and hide video controls
+          let finalAvatarUri = story?._doc?.avatarUri;
+          if (!finalAvatarUri && story?._doc?.poster) {
+            finalAvatarUri = story._doc.poster;
+          }
+
           return {
             ...story?._doc,
+            avatarUri: finalAvatarUri,
             kmAway: req?.query?.lat !== 'undefined' ? getNearestLocation(Number(req.query.lat), Number(req.query.long), story?.author?.locations)?.distance : undefined,
             currentUserLiked
           };

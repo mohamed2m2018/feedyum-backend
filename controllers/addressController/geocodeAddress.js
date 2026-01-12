@@ -2,10 +2,10 @@ const axios = require('axios');
 
 const geocodeAddress = async (req, res) => {
   const errors = {};
-  
+
   try {
     const { lat, long } = req.body;
-    
+
     // Validation
     if (!lat || !long) {
       errors.error = "Latitude and longitude are required";
@@ -15,7 +15,7 @@ const geocodeAddress = async (req, res) => {
     // Validate coordinates format
     const latitude = parseFloat(lat);
     const longitude = parseFloat(long);
-    
+
     if (isNaN(latitude) || isNaN(longitude)) {
       errors.error = "Invalid latitude or longitude format";
       return res.status(400).json({ ...errors });
@@ -27,8 +27,9 @@ const geocodeAddress = async (req, res) => {
     }
 
     // Use Google Maps Geocoding API for reverse geocoding
-    const googleApiKey = process.env.GOOGLE_MAPS_API_KEY;
-    
+    const keys = require('../../config/keys');
+    const googleApiKey = keys.googleMapsApiKey;
+
     if (!googleApiKey) {
       // Fallback response when API key is not available
       const fallbackAddress = `Location at ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
@@ -47,7 +48,7 @@ const geocodeAddress = async (req, res) => {
     }
 
     const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${googleApiKey}&language=en`;
-    
+
     const response = await axios.get(geocodeUrl, {
       timeout: 10000 // 10 second timeout
     });
@@ -55,11 +56,11 @@ const geocodeAddress = async (req, res) => {
     if (response.data.status === 'OK' && response.data.results.length > 0) {
       const result = response.data.results[0];
       const addressComponents = {};
-      
+
       // Parse address components
       result.address_components.forEach(component => {
         const types = component.types;
-        
+
         if (types.includes('street_number')) {
           addressComponents.streetNumber = component.long_name;
         } else if (types.includes('route')) {
@@ -109,11 +110,11 @@ const geocodeAddress = async (req, res) => {
 
   } catch (err) {
     console.error('Geocoding error:', err);
-    
+
     // Provide fallback response on error
     const { lat, long } = req.body;
     const fallbackAddress = lat && long ? `Location at ${parseFloat(lat).toFixed(6)}, ${parseFloat(long).toFixed(6)}` : 'Unknown Location';
-    
+
     res.json({
       formattedAddress: fallbackAddress,
       addressComponents: {

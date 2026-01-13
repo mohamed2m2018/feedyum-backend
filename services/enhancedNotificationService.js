@@ -1,5 +1,6 @@
 const client = require("./oneSignalNotification");
 const { oneSignalAppId } = require("../config/keys");
+const trans = require("./notificationTranslations");
 
 class EnhancedNotificationService {
   // Generate deep link URL
@@ -123,10 +124,15 @@ class EnhancedNotificationService {
     try {
       const deepLink = this.generateDeepLink(type, targetId, additionalData);
 
+      // Handle multi-language titles and messages
+      // If title/message is a string, wrapper it; if object, use as is (assuming {en, ar})
+      const headings = typeof title === 'object' ? title : { en: title };
+      const contents = typeof message === 'object' ? message : { en: message };
+
       const notification = {
         app_id: oneSignalAppId,
-        headings: { en: title },
-        contents: { en: message },
+        headings: headings,
+        contents: contents,
         include_external_user_ids: userIds.map(id => id.toString()),
         data: {
           type,
@@ -172,28 +178,58 @@ class EnhancedNotificationService {
     orderDetails = {},
     estimatedTime = null
   }) {
-    const statusMessages = {
-      pending: `Your order is being reviewed by chef ${chefName}`,
-      confirmed: `${chefName} confirmed your order! Estimated time: ${estimatedTime || '30-45 mins'}`,
-      preparing: `${chefName} is preparing your delicious meal`,
-      ready: `Your order is ready for pickup/delivery!`,
-      completed: `Your order has been delivered. Enjoy your meal!`,
-      cancelled: `Unfortunately, your order has been cancelled by ${chefName}`
-    };
+    let messageObj = { en: '', ar: '' };
+    let titleObj = { en: '', ar: '' };
 
-    const statusTitles = {
-      pending: 'Order Received',
-      confirmed: 'Order Confirmed',
-      preparing: 'Order in Progress',
-      ready: 'Order Ready',
-      completed: 'Order Delivered',
-      cancelled: 'Order Cancelled'
-    };
+    switch (status) {
+      case 'pending':
+        titleObj = trans.orderReceived;
+        messageObj = {
+          en: trans.pendingMessage.en(chefName),
+          ar: trans.pendingMessage.ar(chefName)
+        };
+        break;
+      case 'confirmed':
+        titleObj = trans.orderConfirmed;
+        messageObj = {
+          en: trans.confirmedMessage.en(chefName, estimatedTime),
+          ar: trans.confirmedMessage.ar(chefName, estimatedTime)
+        };
+        break;
+      case 'preparing':
+        titleObj = trans.orderInProgress;
+        messageObj = {
+          en: trans.preparingMessage.en(chefName),
+          ar: trans.preparingMessage.ar(chefName)
+        };
+        break;
+      case 'ready':
+        titleObj = trans.orderReady;
+        messageObj = trans.readyMessage;
+        break;
+      case 'completed':
+        titleObj = trans.orderDelivered;
+        messageObj = trans.completedMessage;
+        break;
+      case 'cancelled':
+        titleObj = trans.orderCancelled;
+        messageObj = {
+          en: trans.cancelledMessage.en(chefName),
+          ar: trans.cancelledMessage.ar(chefName)
+        };
+        break;
+      default:
+        titleObj = trans.orderUpdate;
+        messageObj = {
+          en: trans.statusUpdateMessage.en(status),
+          ar: trans.statusUpdateMessage.ar(status)
+        };
+    }
 
     return this.sendNotification({
       userIds: [userId],
-      title: statusTitles[status] || 'Order Update',
-      message: statusMessages[status] || `Your order status has been updated to ${status}`,
+      title: titleObj,
+      message: messageObj,
       type: 'orderTracking',
       targetId: orderId,
       additionalData: {
@@ -216,8 +252,11 @@ class EnhancedNotificationService {
   }) {
     return this.sendNotification({
       userIds: [chefId],
-      title: 'New Order Received!',
-      message: `${customerName} placed an order for £${orderTotal} (${itemCount} items)`,
+      title: trans.newOrderTitle,
+      message: {
+        en: trans.newOrderMessage.en(customerName, orderTotal, itemCount),
+        ar: trans.newOrderMessage.ar(customerName, orderTotal, itemCount)
+      },
       type: 'chefDashboard',
       targetId: null,
       additionalData: {
@@ -241,13 +280,21 @@ class EnhancedNotificationService {
     senderAvatar = null,
     messageType = 'text'
   }) {
-    const messagePreview = messageType === 'text'
-      ? (message.length > 50 ? `${message.substring(0, 50)}...` : message)
-      : `Sent a ${messageType}`;
+    let messagePreview = { en: '', ar: '' };
+
+    if (messageType === 'text') {
+      const previewText = message.length > 50 ? `${message.substring(0, 50)}...` : message;
+      messagePreview = { en: previewText, ar: previewText };
+    } else {
+      messagePreview = {
+        en: trans.sentMedia.en(messageType),
+        ar: trans.sentMedia.ar(messageType)
+      };
+    }
 
     return this.sendNotification({
       userIds: [recipientId],
-      title: senderName,
+      title: { en: senderName, ar: senderName },
       message: messagePreview,
       type: 'chat',
       targetId: senderId,
@@ -270,14 +317,13 @@ class EnhancedNotificationService {
     reelTitle = null,
     likerAvatar = null
   }) {
-    const message = reelTitle
-      ? `${likerName} liked your reel "${reelTitle}"`
-      : `${likerName} liked your reel`;
-
     return this.sendNotification({
       userIds: [reelOwnerId],
-      title: 'New Like! 👍',
-      message,
+      title: trans.newLikeTitle,
+      message: {
+        en: trans.likedReelMessage.en(likerName, reelTitle),
+        ar: trans.likedReelMessage.ar(likerName, reelTitle)
+      },
       type: 'reel',
       targetId: reelId,
       additionalData: {
@@ -303,14 +349,13 @@ class EnhancedNotificationService {
       ? `${comment.substring(0, 50)}...`
       : comment;
 
-    const message = reelTitle
-      ? `${commenterName} commented on "${reelTitle}": ${commentPreview}`
-      : `${commenterName} commented: ${commentPreview}`;
-
     return this.sendNotification({
       userIds: [reelOwnerId],
-      title: 'New Comment! 💬',
-      message,
+      title: trans.newCommentTitle,
+      message: {
+        en: trans.commentedReelMessage.en(commenterName, reelTitle, commentPreview),
+        ar: trans.commentedReelMessage.ar(commenterName, reelTitle, commentPreview)
+      },
       type: 'reel',
       targetId: reelId,
       additionalData: {
@@ -333,14 +378,13 @@ class EnhancedNotificationService {
     sharerAvatar = null,
     shareMessage = null
   }) {
-    const message = reelTitle
-      ? `${sharerName} shared your reel "${reelTitle}"`
-      : `${sharerName} shared your reel`;
-
     return this.sendNotification({
       userIds: [reelOwnerId],
-      title: 'Reel Shared! 🔄',
-      message,
+      title: trans.reelSharedTitle,
+      message: {
+        en: trans.reelSharedMessage.en(sharerName, reelTitle),
+        ar: trans.reelSharedMessage.ar(sharerName, reelTitle)
+      },
       type: 'reel',
       targetId: reelId,
       additionalData: {
@@ -364,34 +408,49 @@ class EnhancedNotificationService {
     menuName = null,
     chefAvatar = null
   }) {
-    let title, message;
+    let titleObj, messageObj;
 
     switch (updateType) {
       case 'new_dish':
-        title = 'New Dish Available! 🍽️';
-        message = `${chefName} added a new dish: ${dishName}`;
+        titleObj = trans.newDishTitle;
+        messageObj = {
+          en: trans.newDishMessage.en(chefName, dishName),
+          ar: trans.newDishMessage.ar(chefName, dishName)
+        };
         break;
       case 'new_menu':
-        title = 'New Menu! 📋';
-        message = `${chefName} created a new menu: ${menuName}`;
+        titleObj = trans.newMenuTitle;
+        messageObj = {
+          en: trans.newMenuMessage.en(chefName, menuName),
+          ar: trans.newMenuMessage.ar(chefName, menuName)
+        };
         break;
       case 'menu_update':
-        title = 'Menu Updated! ✨';
-        message = `${chefName} updated their menu`;
+        titleObj = trans.menuUpdatedTitle;
+        messageObj = {
+          en: trans.menuUpdatedMessage.en(chefName),
+          ar: trans.menuUpdatedMessage.ar(chefName)
+        };
         break;
       case 'special_offer':
-        title = 'Special Offer! 🎉';
-        message = `${chefName} has a special offer on ${dishName || 'selected items'}`;
+        titleObj = trans.specialOfferTitle;
+        messageObj = {
+          en: trans.specialOfferMessage.en(chefName, dishName),
+          ar: trans.specialOfferMessage.ar(chefName, dishName)
+        };
         break;
       default:
-        title = 'Menu Update';
-        message = `${chefName} updated their menu`;
+        titleObj = trans.menuUpdatedTitle;
+        messageObj = {
+          en: trans.menuUpdatedMessage.en(chefName),
+          ar: trans.menuUpdatedMessage.ar(chefName)
+        };
     }
 
     return this.sendNotification({
       userIds: followerIds,
-      title,
-      message,
+      title: titleObj,
+      message: messageObj,
       type: 'chefMenu',
       targetId: chefId,
       additionalData: {
@@ -416,14 +475,15 @@ class EnhancedNotificationService {
     raterAvatar = null
   }) {
     const stars = '⭐'.repeat(rating);
-    const message = review
-      ? `${raterName} rated your ${dishName} ${stars} (${rating}/5): "${review.substring(0, 50)}..."`
-      : `${raterName} rated your ${dishName} ${stars} (${rating}/5)`;
+    const reviewText = review ? review.substring(0, 50) + (review.length > 50 ? '...' : '') : null;
 
     return this.sendNotification({
       userIds: [chefId],
-      title: 'New Rating! ⭐',
-      message,
+      title: trans.newRatingTitle,
+      message: {
+        en: trans.ratingMessage.en(raterName, dishName, stars, rating, reviewText),
+        ar: trans.ratingMessage.ar(raterName, dishName, stars, rating, reviewText)
+      },
       type: 'dish',
       targetId: dishId,
       additionalData: {
@@ -446,15 +506,15 @@ class EnhancedNotificationService {
     followerAvatar = null,
     followerType = 'user'
   }) {
-    const title = followerType === 'chef' ? 'New Chef Follower! 👨‍🍳' : 'New Follower! 👤';
-    const message = followerType === 'chef'
-      ? `Chef ${followerName} started following you`
-      : `${followerName} started following you`;
+    const titleObj = followerType === 'chef' ? trans.newChefFollowerTitle : trans.newFollowerTitle;
+    const messageObj = followerType === 'chef'
+      ? { en: trans.chefStartedFollowingMessage.en(followerName), ar: trans.chefStartedFollowingMessage.ar(followerName) }
+      : { en: trans.startedFollowingMessage.en(followerName), ar: trans.startedFollowingMessage.ar(followerName) };
 
     return this.sendNotification({
       userIds: [followedUserId],
-      title,
-      message,
+      title: titleObj,
+      message: messageObj,
       type: 'profile',
       targetId: followerId,
       additionalData: {
@@ -475,8 +535,11 @@ class EnhancedNotificationService {
   }) {
     return this.sendNotification({
       userIds: [profileOwnerId],
-      title: 'Profile View 👀',
-      message: `${viewerName} viewed your profile`,
+      title: trans.profileViewTitle,
+      message: {
+        en: trans.profileViewMessage.en(viewerName),
+        ar: trans.profileViewMessage.ar(viewerName)
+      },
       type: 'profile',
       targetId: viewerId,
       additionalData: {
@@ -497,14 +560,13 @@ class EnhancedNotificationService {
     contentTitle = null,
     mentionerAvatar = null
   }) {
-    const message = contentTitle
-      ? `${mentionerName} mentioned you in "${contentTitle}"`
-      : `${mentionerName} mentioned you in a ${contentType}`;
-
     return this.sendNotification({
       userIds: [mentionedUserId],
-      title: 'You were mentioned! 🏷️',
-      message,
+      title: trans.mentionTitle,
+      message: {
+        en: trans.mentionMessage.en(mentionerName, contentTitle, contentType),
+        ar: trans.mentionMessage.ar(mentionerName, contentTitle, contentType)
+      },
       type: contentType,
       targetId: contentId,
       additionalData: {
@@ -527,6 +589,8 @@ class EnhancedNotificationService {
     targetId = null,
     additionalData = {}
   }) {
+    // Assuming this general method might receive direct strings or objects
+    // If strings are passed, wrap them for 'en' default, or caller should pass multi-lang objects
     return this.sendNotification({
       userIds: [chefId],
       title,
@@ -551,14 +615,15 @@ class EnhancedNotificationService {
     reviewerAvatar = null
   }) {
     const stars = '⭐'.repeat(rating);
-    const message = dishName
-      ? `${reviewerName} rated your ${dishName} ${stars} (${rating}/5)`
-      : `${reviewerName} gave you ${stars} (${rating}/5)`;
+    const reviewText = comment?.substring(0, 100);
 
     return this.sendNotification({
       userIds: [chefId],
-      title: 'New Review!',
-      message,
+      title: trans.newReviewTitle,
+      message: {
+        en: trans.ratingMessage.en(reviewerName, dishName, stars, rating, reviewText),
+        ar: trans.ratingMessage.ar(reviewerName, dishName, stars, rating, reviewText)
+      },
       type: 'chefDashboard',
       targetId: null,
       additionalData: {
@@ -566,7 +631,7 @@ class EnhancedNotificationService {
         reviewerId,
         reviewerName,
         rating,
-        comment: comment?.substring(0, 100),
+        comment: reviewText,
         dishName
       },
       largeIcon: reviewerAvatar
@@ -583,8 +648,11 @@ class EnhancedNotificationService {
   }) {
     return this.sendNotification({
       userIds: followerIds,
-      title: '🔴 Going Live!',
-      message: `${streamerName} is now live: ${streamTitle}`,
+      title: trans.goingLiveTitle,
+      message: {
+        en: trans.goingLiveMessage.en(streamerName, streamTitle),
+        ar: trans.goingLiveMessage.ar(streamerName, streamTitle)
+      },
       type: 'live',
       targetId: streamerId,
       additionalData: {
@@ -608,8 +676,11 @@ class EnhancedNotificationService {
   }) {
     return this.sendNotification({
       userIds: [postOwnerId],
-      title: 'New Like!',
-      message: `${likerName} liked your ${postType}`,
+      title: trans.newLikeTitle,
+      message: {
+        en: trans.likedPostMessage.en(likerName, postType),
+        ar: trans.likedPostMessage.ar(likerName, postType)
+      },
       type: 'post',
       targetId: postId,
       additionalData: {
@@ -638,8 +709,11 @@ class EnhancedNotificationService {
 
     return this.sendNotification({
       userIds: [postOwnerId],
-      title: 'New Comment!',
-      message: `${commenterName}: ${commentPreview}`,
+      title: trans.newCommentTitle,
+      message: {
+        en: trans.commentedPostMessage.en(commenterName, commentPreview),
+        ar: trans.commentedPostMessage.ar(commenterName, commentPreview)
+      },
       type: 'post',
       targetId: postId,
       additionalData: {
@@ -665,8 +739,8 @@ class EnhancedNotificationService {
   }) {
     return this.sendNotification({
       userIds,
-      title,
-      message,
+      title, // Caller is responsible for passing {en: ..., ar: ...} or string
+      message, // Caller is responsible for passing {en: ..., ar: ...} or string
       type: targetType,
       targetId,
       additionalData: {
@@ -688,10 +762,13 @@ class EnhancedNotificationService {
     scheduleTime = null
   }) {
     try {
+      const headings = typeof title === 'object' ? title : { en: title };
+      const contents = typeof message === 'object' ? message : { en: message };
+
       const notification = {
         app_id: oneSignalAppId,
-        headings: { en: title },
-        contents: { en: message },
+        headings: headings,
+        contents: contents,
         filters,
         data: {
           type,
@@ -716,4 +793,4 @@ class EnhancedNotificationService {
   }
 }
 
-module.exports = EnhancedNotificationService; 
+module.exports = EnhancedNotificationService;

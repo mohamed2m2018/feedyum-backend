@@ -1,16 +1,9 @@
 const multer = require("multer");
-const AWS = require("aws-sdk");
 const path = require("path");
 const fs = require("fs");
 const ffmpeg = require("fluent-ffmpeg");
-const keys = require("../../config/keys");
+const { r2Client, R2_BUCKET, getPublicUrl } = require("../../utils/r2Client");
 
-// Configure AWS S3 with correct credentials
-const s3 = new AWS.S3({
-  accessKeyId: keys.aws_access_key_id,
-  secretAccessKey: keys.aws_secret_access_key,
-  region: keys.aws_region,
-});
 
 // Configure multer for file upload
 const storage = multer.memoryStorage();
@@ -148,23 +141,23 @@ const uploadAudio = async (req, res) => {
         // Generate filename for MP3
         const mp3FileName = `voice_messages/${userId}/${timestamp}_${randomString}.mp3`;
 
-        // Upload MP3 to S3
+        // Upload MP3 to Cloudflare R2
         const uploadParams = {
-          Bucket: keys.aws_s3_bucket,
+          Bucket: R2_BUCKET,
           Key: mp3FileName,
           Body: mp3Buffer,
           ContentType: "audio/mp3",
-          ACL: "public-read",
         };
 
-        console.log("Uploading MP3 to S3:", {
-          bucket: keys.aws_s3_bucket,
+        console.log("Uploading MP3 to R2:", {
+          bucket: R2_BUCKET,
           key: mp3FileName,
           contentType: "audio/mp3",
           size: mp3Stats.size,
         });
 
-        const uploadResult = await s3.upload(uploadParams).promise();
+        await r2Client.putObject(uploadParams).promise();
+        const publicUrl = getPublicUrl(mp3FileName);
 
         // Clean up temporary files
         try {
@@ -175,16 +168,16 @@ const uploadAudio = async (req, res) => {
           console.warn("Failed to clean up temporary files:", cleanupError);
         }
 
-        console.log("S3 upload successful:", {
-          location: uploadResult.Location,
-          key: uploadResult.Key,
+        console.log("R2 upload successful:", {
+          url: publicUrl,
+          key: mp3FileName,
         });
 
         // Return success response
         const responseData = {
           success: true,
-          url: uploadResult.Location,
-          key: uploadResult.Key,
+          url: publicUrl,
+          key: mp3FileName,
           size: file.size,
           duration: parseInt(req.body.duration) || 0,
           message: "Audio uploaded successfully",
@@ -193,7 +186,7 @@ const uploadAudio = async (req, res) => {
         console.log("Sending response:", responseData);
         res.json(responseData);
       } catch (uploadError) {
-        console.error("S3 upload error:", uploadError);
+        console.error("R2 upload error:", uploadError);
         res.status(500).json({
           success: false,
           message: "Failed to upload audio to storage",

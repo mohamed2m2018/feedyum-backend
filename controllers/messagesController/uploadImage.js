@@ -1,14 +1,7 @@
 const multer = require("multer");
-const AWS = require("aws-sdk");
 const path = require("path");
-const keys = require("../../config/keys");
+const { r2Client, R2_BUCKET, getPublicUrl } = require("../../utils/r2Client");
 
-// Configure AWS S3 with correct credentials
-const s3 = new AWS.S3({
-  accessKeyId: keys.aws_access_key_id,
-  secretAccessKey: keys.aws_secret_access_key,
-  region: keys.aws_region,
-});
 
 // Configure multer for file upload
 const storage = multer.memoryStorage();
@@ -93,7 +86,7 @@ const uploadImage = async (req, res) => {
         // Generate unique identifiers
         const timestamp = Date.now();
         const randomString = Math.random().toString(36).substring(2, 15);
-        
+
         // Determine file extension from mimetype
         let extension = ".jpg";
         if (file.mimetype === "image/png") extension = ".png";
@@ -103,34 +96,34 @@ const uploadImage = async (req, res) => {
         // Generate filename
         const imageFileName = `chat_images/${userId}/${timestamp}_${randomString}${extension}`;
 
-        // Upload to S3
+        // Upload to Cloudflare R2
         const uploadParams = {
-          Bucket: keys.aws_s3_bucket,
+          Bucket: R2_BUCKET,
           Key: imageFileName,
           Body: file.buffer,
           ContentType: file.mimetype || "image/jpeg",
-          ACL: "public-read",
         };
 
-        console.log("Uploading image to S3:", {
-          bucket: keys.aws_s3_bucket,
+        console.log("Uploading image to R2:", {
+          bucket: R2_BUCKET,
           key: imageFileName,
           contentType: file.mimetype,
           size: file.size,
         });
 
-        const uploadResult = await s3.upload(uploadParams).promise();
+        await r2Client.putObject(uploadParams).promise();
+        const publicUrl = getPublicUrl(imageFileName);
 
-        console.log("S3 upload successful:", {
-          location: uploadResult.Location,
-          key: uploadResult.Key,
+        console.log("R2 upload successful:", {
+          url: publicUrl,
+          key: imageFileName,
         });
 
         // Return success response
         const responseData = {
           success: true,
-          url: uploadResult.Location,
-          key: uploadResult.Key,
+          url: publicUrl,
+          key: imageFileName,
           size: file.size,
           message: "Image uploaded successfully",
         };
@@ -138,7 +131,7 @@ const uploadImage = async (req, res) => {
         console.log("Sending response:", responseData);
         res.json(responseData);
       } catch (uploadError) {
-        console.error("S3 upload error:", uploadError);
+        console.error("R2 upload error:", uploadError);
         res.status(500).json({
           success: false,
           message: "Failed to upload image to storage",

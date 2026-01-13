@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
 const multer = require("multer");
-const AWS = require("aws-sdk");
 
 const keys = require("../../config/keys");
 
@@ -16,13 +15,8 @@ const Category = mongoose.model("category");
 
 // Utils
 const cacheManager = require('../../utils/cacheManager');
+const { r2Client, R2_BUCKET, getPublicUrl } = require("../../utils/r2Client");
 
-// Configure AWS S3 with correct credentials
-const s3 = new AWS.S3({
-  accessKeyId: keys.aws_access_key_id,
-  secretAccessKey: keys.aws_secret_access_key,
-  region: keys.aws_region,
-});
 
 // Configure multer for file upload
 const upload = multer({
@@ -194,38 +188,37 @@ const createReviewReel = async (req, res) => {
           console.log("Using frontend-provided avatar URL as poster:", posterUrl);
         }
 
-        // Upload video to S3 if provided (legacy support for direct file uploads)
+        // Upload video to Cloudflare R2 if provided (legacy support for direct file uploads)
         if (req.file) {
           const videoKey = `review-reels/${Date.now()}-${req.file.originalname}`;
 
           const uploadParams = {
-            Bucket: keys.aws_s3_bucket,
+            Bucket: R2_BUCKET,
             Key: videoKey,
             Body: req.file.buffer,
             ContentType: req.file.mimetype,
-            ACL: "public-read",
           };
 
-          console.log("Uploading review video to S3:", {
-            bucket: keys.aws_s3_bucket,
+          console.log("Uploading review video to R2:", {
+            bucket: R2_BUCKET,
             key: videoKey,
             contentType: req.file.mimetype,
             size: req.file.size,
           });
 
           try {
-            const uploadResult = await s3.upload(uploadParams).promise();
-            videoUrl = uploadResult.Location;
+            await r2Client.putObject(uploadParams).promise();
+            videoUrl = getPublicUrl(videoKey);
 
-            console.log("S3 upload successful:", {
-              location: uploadResult.Location,
-              key: uploadResult.Key,
+            console.log("R2 upload successful:", {
+              url: videoUrl,
+              key: videoKey,
             });
 
             // Generate poster/thumbnail URL (you might want to implement video thumbnail generation)
             posterUrl = reviewedItem.image || videoUrl; // Use dish image or video as poster
           } catch (uploadError) {
-            console.error("S3 upload error:", uploadError);
+            console.error("R2 upload error:", uploadError);
             return res.status(500).json({
               error: "Failed to upload video",
               details: uploadError.message,

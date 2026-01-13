@@ -16,7 +16,7 @@ module.exports = {
   r2_secret_access_key: '***REMOVED***',
   r2_bucket: 'feedyum',
   r2_endpoint: 'https://3d5afc8657af28d0d91ec385fc42fb6b.r2.cloudflarestorage.com',
-  r2_public_url: 'https://pub-feedyum.r2.dev', // TODO: Update with actual R2.dev public URL after enabling
+  r2_public_url: 'https://cdn.feedyum.com', // Custom CDN domain for R2
 
   stripePublishableKey: '***REMOVED***',
   stripeSecretKey: '***REMOVED***',

@@ -23,15 +23,14 @@ class SemanticSearchService {
   }
 
   /**
- * Enhance Arabic queries for better semantic search
- * @param {string} text - Arabic text to enhance
- * @returns {string} - Enhanced query
- */
+   * Process Arabic queries for semantic search
+   * The multilingual E5 model handles Arabic natively
+   * @param {string} text - Arabic text
+   * @returns {string} - Processed query
+   */
+  
   enhanceArabicQuery(text) {
-    console.log(`🌍 Processing Arabic query: "${text}"`);
-
-    // The multilingual model handles Arabic directly - no translation needed!
-    console.log(`✨ Using multilingual model directly for: "${text}"`);
+    console.log(`🌍 Arabic query: "${text}" - using multilingual model directly`);
     return text.trim();
   }
 
@@ -52,8 +51,8 @@ class SemanticSearchService {
         effectiveQuery = this.enhanceArabicQuery(searchQuery);
       }
 
-      // Generate embedding for search query
-      const queryEmbedding = await embeddingService.generateEmbedding(effectiveQuery);
+      // Generate embedding for search query (using query prefix for E5 model)
+      const queryEmbedding = await embeddingService.generateQueryEmbedding(effectiveQuery);
 
       if (!queryEmbedding) {
         // Fallback to text search if embedding generation fails
@@ -151,7 +150,7 @@ class SemanticSearchService {
     // Get dishes that have embeddings
     const dishes = await Dish.find({
       visible: { $ne: false },
-      embedding: { $exists: true, $ne: null },
+      embedding: { $exists: true, $ne: null, $not: { $size: 0 } },
       ...filters
     })
       .select('+embedding +embeddingGenerated')
@@ -220,7 +219,7 @@ class SemanticSearchService {
         effectiveQuery = this.enhanceArabicQuery(searchQuery);
       }
 
-      const queryEmbedding = await embeddingService.generateEmbedding(effectiveQuery);
+      const queryEmbedding = await embeddingService.generateQueryEmbedding(effectiveQuery);
 
       if (!queryEmbedding) {
         return this.fallbackTextSearch('users', searchQuery, options);
@@ -230,7 +229,7 @@ class SemanticSearchService {
       const users = await User.find({
         _id: { $ne: currentUserId },
         type: { $ne: "guest" },
-        embedding: { $exists: true, $ne: null },
+        embedding: { $exists: true, $ne: null, $not: { $size: 0 } },
         ...filters
       })
         .select('+embedding +embeddingGenerated') // Explicitly include embeddings
@@ -292,7 +291,7 @@ class SemanticSearchService {
    * @returns {Promise<Object>} - Search results with similarity scores
    */
   async searchStories(searchQuery, options = {}) {
-    const { page = 1, limit = 10, excludeReviews, reviewsOnly } = options;
+    const { page = 1, limit = 10, excludeReviews, reviewsOnly, authorType } = options;
 
     try {
       // Enhance Arabic queries for better semantic search
@@ -302,20 +301,46 @@ class SemanticSearchService {
         effectiveQuery = this.enhanceArabicQuery(searchQuery);
       }
 
-      const queryEmbedding = await embeddingService.generateEmbedding(effectiveQuery);
+      const queryEmbedding = await embeddingService.generateQueryEmbedding(effectiveQuery);
 
       if (!queryEmbedding) {
-        console.log(`❌ Failed to generate embedding for "${effectiveQuery}" - falling back to text search`);
+        console.log(`❌ Failed to generate query embedding for "${effectiveQuery}" - falling back to text search`);
         return this.fallbackTextSearch('stories', searchQuery, options);
       }
 
-      console.log(`✅ Generated embedding for "${effectiveQuery}" successfully`);
+      console.log(`✅ Generated query embedding for "${effectiveQuery}" successfully`);
 
       // Build query based on review filtering
+      // Note: $ne: [] ensures we exclude empty embedding arrays
       let query = {
-        embedding: { $exists: true, $ne: null }
+        embedding: { $exists: true, $ne: null, $not: { $size: 0 } }
       };
 
+      // Author Type Filtering
+      if (authorType) {
+        try {
+          const User = require('../models/user');
+          let userQuery = {};
+
+          if (authorType === 'chef') {
+            userQuery = { type: 'chef' };
+          } else if (authorType === 'user') {
+            userQuery = { type: { $ne: 'chef' } };
+          }
+
+          // Find all users matching the type
+          const users = await User.find(userQuery).select('_id');
+          const userIds = users.map(u => u._id);
+
+          // Add author filter to story query
+          query.author = { $in: userIds };
+          console.log(`Semantic Search: Filtering for authorType: ${authorType}, found ${userIds.length} users`);
+        } catch (err) {
+          console.error('Semantic Search: Error filtering by author type:', err);
+        }
+      }
+
+      // Keep legacy review filtering if needed (though UI might stop sending it)
       if (excludeReviews === 'true') {
         query.$and = [{
           $or: [
@@ -378,9 +403,9 @@ class SemanticSearchService {
 
         // Debug: check if ANY stories have embeddings at all
         const allStoriesWithEmbeddings = await Story.countDocuments({
-          embedding: { $exists: true, $ne: null }
+          embedding: { $exists: true, $ne: null, $not: { $size: 0 } }
         });
-        console.log(`📊 Total stories with embeddings in database: ${allStoriesWithEmbeddings}`);
+        console.log(`📊 Total stories with non-empty embeddings in database: ${allStoriesWithEmbeddings}`);
 
         // Debug: show similarity scores of all stories (even below threshold)
         const allScores = stories

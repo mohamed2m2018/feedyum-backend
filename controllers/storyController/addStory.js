@@ -14,6 +14,9 @@ const embeddingService = require('../../services/embeddingService');
 const cacheManager = require('../../utils/cacheManager');
 
 const addStory = async (req, res) => {
+  console.log('--- DEBUG: addStory endpoint hit ---');
+  console.log('Request Body:', JSON.stringify(req.body, null, 2));
+
   // Validate
   const { errors, isValid } = validateStory(req.body);
   if (!isValid) {
@@ -88,8 +91,14 @@ const addStory = async (req, res) => {
 
   // Ensure poster field has a proper image URL
   let posterUrl = req.body?.poster;
+
+  // For image posts (isImage: true), use avatarUri as poster if poster not provided
+  if (!posterUrl && req.body?.avatarUri && req.body?.isImage) {
+    posterUrl = req.body.avatarUri;
+  }
+
   if (!posterUrl || !posterUrl.startsWith('http')) {
-    // If no poster URL provided or it's not a URL, use a random default food image
+    // If still no poster URL, use a random default food image
     posterUrl = defaultFoodImages[Math.floor(Math.random() * defaultFoodImages.length)];
   }
 

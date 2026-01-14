@@ -177,6 +177,22 @@ const createDish = async (req, res) => {
     // Populate section in response
     await dish.populate('section');
 
+    // Emit socket event to notify chef dashboard about the new dish
+    try {
+      const socketModule = require('../../socket');
+      const io = socketModule.getIO();
+      if (io) {
+        io.to(req.user._id.toString()).emit('chefDashboardUpdate', {
+          type: 'dishCreated',
+          dishId: dish._id.toString(),
+          dish: dish
+        });
+        console.log(`[SOCKET] Emitted chefDashboardUpdate (dishCreated) to chef: ${req.user._id}`);
+      }
+    } catch (socketError) {
+      console.error('[SOCKET] Failed to emit chefDashboardUpdate:', socketError.message);
+    }
+
     res.status(201).json(dish);
   } catch (error) {
     res.status(500).json({ error: error.message });

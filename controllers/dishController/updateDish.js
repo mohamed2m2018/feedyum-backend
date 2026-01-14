@@ -175,6 +175,22 @@ const updateDish = async (req, res) => {
       console.warn('⚠️ Failed to invalidate cache:', cacheErr.message);
     }
 
+    // Emit socket event to notify chef dashboard about the dish update
+    try {
+      const socketModule = require('../../socket');
+      const io = socketModule.getIO();
+      if (io) {
+        io.to(req.user._id.toString()).emit('chefDashboardUpdate', {
+          type: 'dishUpdated',
+          dishId: dish._id.toString(),
+          dish: dish
+        });
+        console.log(`[SOCKET] Emitted chefDashboardUpdate (dishUpdated) to chef: ${req.user._id}`);
+      }
+    } catch (socketError) {
+      console.error('[SOCKET] Failed to emit chefDashboardUpdate:', socketError.message);
+    }
+
     res.status(200).json(dish);
   } catch (error) {
     console.error('Update Dish Error:', error);

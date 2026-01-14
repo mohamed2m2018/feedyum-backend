@@ -7,7 +7,9 @@ const semanticSearchUser = async (req, res) => {
       page = 1,
       limit = 10,
       currentUserId,
-      searchType = 'hybrid' // 'semantic', 'text', or 'hybrid'
+      searchType = 'hybrid', // 'semantic', 'text', or 'hybrid'
+      filters,
+      ...rest
     } = req.query;
 
     console.log('Semantic search users called with:', {
@@ -15,22 +17,36 @@ const semanticSearchUser = async (req, res) => {
       page,
       limit,
       currentUserId,
-      searchType
+      searchType,
+      filters
     });
+
+    // Parse filters if it's a string (e.g. from query params)
+    let parsedFilters = {};
+    if (typeof filters === 'string') {
+      try {
+        parsedFilters = JSON.parse(filters);
+      } catch (e) {
+        console.warn('Failed to parse filters json', e);
+      }
+    } else if (typeof filters === 'object') {
+      parsedFilters = filters;
+    }
 
     // If no search string, use fallback text search to get all results
     if (!searchString || searchString.trim() === '') {
       console.log('Empty search string - returning all users');
-      
+
       const options = {
         page: parseInt(page),
         limit: parseInt(limit),
-        currentUserId
+        currentUserId,
+        filters: parsedFilters
       };
-      
+
       // Use fallback text search with empty string to get all results
       const searchResults = await semanticSearchService.fallbackTextSearch('users', '', options);
-      
+
       // Ensure consistent response format
       if (!searchResults.success) {
         return res.status(500).json({
@@ -48,15 +64,15 @@ const semanticSearchUser = async (req, res) => {
           }
         });
       }
-      
+
       // Remove embedding from response to reduce size (if any)
       const usersWithoutEmbeddings = searchResults.data.users.map(user => {
         const { embedding, embeddingGenerated, ...userWithoutEmbedding } = user;
         return userWithoutEmbedding;
       });
-      
+
       console.log(`Empty search returned ${usersWithoutEmbeddings.length} users`);
-      
+
       return res.status(200).json({
         success: true,
         data: {
@@ -76,7 +92,8 @@ const semanticSearchUser = async (req, res) => {
     const options = {
       page: parseInt(page),
       limit: parseInt(limit),
-      currentUserId
+      currentUserId,
+      filters: parsedFilters
     };
 
     let searchResults;
@@ -118,7 +135,7 @@ const semanticSearchUser = async (req, res) => {
       return userWithoutEmbedding;
     });
 
-    console.log(`Semantic user search found ${usersWithoutEmbeddings.length} users for query: "${searchString}"`);
+    console.log(`Semantic user search found ${usersWithoutEmbeddings.length} users for query: "${searchString}" with filters:`, parsedFilters);
 
     return res.status(200).json({
       ...searchResults,

@@ -10,7 +10,16 @@ const getWalletInfo = async (req, res) => {
       .populate('transactions.orderId', 'totalPrice created_at');
 
     if (!wallet) {
-      wallet = new ChefWallet({ chef: chefId });
+      wallet = new ChefWallet({
+        chef: chefId,
+        balance: 500, // Initial balance from platform
+        transactions: [{
+          type: 'initial_bonus',
+          amount: 500,
+          description: 'Welcome bonus from platform',
+          timestamp: new Date()
+        }]
+      });
       await wallet.save();
       await wallet.populate('chef', 'fullName username avatar');
     }

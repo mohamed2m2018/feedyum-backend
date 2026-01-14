@@ -70,43 +70,93 @@ const createOrder = async (req, res) => {
     // Geographic validation: Check if chef has branches in delivery city
     if (deliveryAddress) {
       let clientCity;
-      
+      let clientState;
+
       // Extract city from delivery address with better fallback logic
       if (deliveryAddress.city) {
         clientCity = deliveryAddress.city;
       } else if (deliveryAddress.streetDetails?.area) {
         clientCity = deliveryAddress.streetDetails.area;
-      } else if (deliveryAddress.streetDetails?.city) {
-        clientCity = deliveryAddress.streetDetails.city;
-      } else if (deliveryAddress.nameLine) {
+      }
+
+      if (deliveryAddress.state) {
+        clientState = deliveryAddress.state;
+      } else if (deliveryAddress.streetDetails?.state || deliveryAddress.streetDetails?.city) {
+        // Some maps providers put state in city field when using components
+        clientState = deliveryAddress.streetDetails.state || deliveryAddress.streetDetails.city;
+      }
+
+      if (!clientCity && deliveryAddress.nameLine) {
         const addressParts = deliveryAddress.nameLine.split(',');
         // Try to extract city from different positions in the address
         if (addressParts.length > 2) {
           clientCity = addressParts[addressParts.length - 2].trim();
+          clientState = addressParts[addressParts.length - 1].trim();
         } else if (addressParts.length > 1) {
           clientCity = addressParts[1].trim();
         }
       }
-      
+
+      // Map common districts to governorates if state is missing
+      if (!clientState && clientCity) {
+        const cairoDistricts = [
+          'nasr city', 'مدينة نصر', 'maadi', 'المعادي', 'heliopolis', 'مصر الجديدة',
+          'new cairo', 'القاهرة الجديدة', 'zamalek', 'الزمالك', 'shoubra', 'shubra', 'shobra', 'shebra', 'شبرا',
+          'mokattam', 'المقطم', 'rehab', 'الرحاب', 'madinaty', 'مدينتي', 'sheraton', 'شيراتون'
+        ];
+
+        const gizaDistricts = [
+          'dokki', 'الدقي', 'mohandessin', 'mohandeseen', 'المهندسين', 'haram', 'al haram', 'pyramids', 'الهرم',
+          'faisal', 'فيصل', 'october', '6 october', '6th of october', 'أكتوبر', 'السادس من أكتوبر',
+          'sheikh zayed', 'zayed', 'الشيخ زايد'
+        ];
+
+        const lowerCity = clientCity.toLowerCase();
+        if (cairoDistricts.some(d => lowerCity.includes(d))) {
+          clientState = 'Cairo';
+        } else if (gizaDistricts.some(d => lowerCity.includes(d))) {
+          clientState = 'Giza';
+        }
+      }
+
       // Clean up city name (remove extra text)
       if (clientCity) {
         clientCity = clientCity.replace(/\b(city|governorate|gov)\b/gi, '').trim();
       }
-      
-      if (clientCity) {
+      if (clientState) {
+        clientState = clientState.replace(/\b(city|governorate|gov)\b/gi, '').trim();
+      }
+
+      if (clientCity || clientState) {
+        const orConditions = [];
+        if (clientCity) orConditions.push({ 'addressDetails.city': new RegExp(clientCity, 'i') });
+        if (clientState) orConditions.push({ 'addressDetails.city': new RegExp(clientState, 'i') });
+
         // Check if chef has active branches in the delivery city
         const chefBranches = await ChefBranch.find({
           chef: chefId,
           isActive: true,
-          'addressDetails.city': new RegExp(clientCity, 'i')
+          $or: orConditions
         });
-        
+
         if (chefBranches.length === 0) {
+          // Fetch all active branches to tell the user where the chef delivers
+          const allActiveBranches = await ChefBranch.find({
+            chef: chefId,
+            isActive: true
+          });
+
+          const validCities = [...new Set(allActiveBranches.map(b => b.addressDetails?.city).filter(Boolean))];
+          const validCitiesString = validCities.length > 0
+            ? validCities.join(', ')
+            : 'other locations';
+
           return res.status(400).json({
-            message: `This chef does not deliver to ${clientCity}. Please select a different chef or delivery address.`,
+            message: `This chef does not deliver to ${clientCity}. They deliver to: ${validCitiesString}`,
             error: 'delivery_area_not_supported',
             chefId: chefId,
-            deliveryCity: clientCity
+            deliveryCity: clientCity,
+            supportedCities: validCities
           });
         }
       }
@@ -168,6 +218,22 @@ const createOrder = async (req, res) => {
     } catch (notificationError) {
       console.error('Failed to send order notifications:', notificationError);
       // Don't fail the order creation if notifications fail
+    }
+
+    // Emit socket event to notify chef about the new order
+    try {
+      const socketModule = require('../../socket');
+      const io = socketModule.getIO();
+      if (io) {
+        io.to(chefId.toString()).emit('chefDashboardUpdate', {
+          type: 'newOrder',
+          orderId: order._id.toString(),
+          order: order
+        });
+        console.log(`[SOCKET] Emitted chefDashboardUpdate (newOrder) to chef: ${chefId}`);
+      }
+    } catch (socketError) {
+      console.error('[SOCKET] Failed to emit chefDashboardUpdate:', socketError.message);
     }
 
     res.status(201).json({

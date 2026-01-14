@@ -1,5 +1,6 @@
 const Order = require('../../models/order');
 const User = require('../../models/user');
+const ChefWallet = require('../../models/chefWallet');
 const EnhancedNotificationService = require('../../services/enhancedNotificationService');
 
 const updateOrderStatus = async (req, res) => {
@@ -76,6 +77,37 @@ const updateOrderStatus = async (req, res) => {
 
     await order.save();
 
+    // Handle commission deduction when order is confirmed
+    if (status === 'confirmed' && previousStatus !== 'confirmed') {
+      try {
+        let wallet = await ChefWallet.findOne({ chef: chefId });
+
+        // If wallet doesn't exist, create it with initial balance
+        if (!wallet) {
+          wallet = new ChefWallet({
+            chef: chefId,
+            balance: 500, // Initial balance from platform
+            transactions: [{
+              type: 'initial_bonus',
+              amount: 500,
+              description: 'Welcome bonus from platform',
+              timestamp: new Date()
+            }]
+          });
+        }
+
+        // Deduct 5% service fee
+        // Note: addServiceFee handles the saving of the wallet
+        await wallet.addServiceFee(order._id, order.totalPrice);
+        console.log(`[WALLET] Deducted service fee for order ${order._id} from chef ${chefId}`);
+
+      } catch (walletError) {
+        console.error('[WALLET] Failed to process service fee:', walletError);
+        // We log but don't fail the order update to avoid blocking operations
+        // ideally this should be a transaction or have a retry mechanism
+      }
+    }
+
     // Send notification to customer about status change
     try {
       await EnhancedNotificationService.sendOrderStatusNotification({
@@ -95,6 +127,23 @@ const updateOrderStatus = async (req, res) => {
     } catch (notificationError) {
       console.error('Failed to send order status notification:', notificationError);
       // Don't fail the status update if notification fails
+    }
+
+    // Emit socket event to notify chef dashboard about the order update
+    try {
+      const socketModule = require('../../socket');
+      const io = socketModule.getIO();
+      if (io) {
+        io.to(chefId.toString()).emit('chefDashboardUpdate', {
+          type: 'orderStatusUpdate',
+          orderId: order._id.toString(),
+          status: status,
+          previousStatus: previousStatus
+        });
+        console.log(`[SOCKET] Emitted chefDashboardUpdate (orderStatusUpdate) to chef: ${chefId}`);
+      }
+    } catch (socketError) {
+      console.error('[SOCKET] Failed to emit chefDashboardUpdate:', socketError.message);
     }
 
     res.json({

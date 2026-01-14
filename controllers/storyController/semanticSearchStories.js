@@ -8,6 +8,7 @@ const semanticSearchStories = async (req, res) => {
       limit = 10,
       excludeReviews,
       reviewsOnly,
+      authorType, // 'chef' for kitchen posts, 'user' for reviews
       searchType = 'hybrid' // 'semantic', 'text', or 'hybrid'
     } = req.query;
 
@@ -17,6 +18,7 @@ const semanticSearchStories = async (req, res) => {
       limit,
       excludeReviews,
       reviewsOnly,
+      authorType,
       searchType
     });
 
@@ -28,7 +30,8 @@ const semanticSearchStories = async (req, res) => {
         page: parseInt(page),
         limit: parseInt(limit),
         excludeReviews,
-        reviewsOnly
+        reviewsOnly,
+        authorType
       };
       
       // Use fallback text search with empty string to get all results
@@ -92,7 +95,8 @@ const semanticSearchStories = async (req, res) => {
       page: parseInt(page),
       limit: parseInt(limit),
       excludeReviews,
-      reviewsOnly
+      reviewsOnly,
+      authorType
     };
 
     let searchResults;

@@ -16,6 +16,24 @@ router.post(
   storyController.addStory
 );
 
+// @route  POST api/story/upload-media
+// @desc   Upload media (image/video) for story creation
+// @access Private
+router.post(
+  "/upload-media",
+  passport.authenticate("jwt", { session: false }),
+  storyController.uploadStoryMedia
+);
+
+// @route  GET api/story/get-upload-url
+// @desc   Get presigned URL for direct R2 upload
+// @access Private
+router.get(
+  "/get-upload-url",
+  passport.authenticate("jwt", { session: false }),
+  storyController.getUploadUrl
+);
+
 router.post(
   "/report_story", storyController.reportStory
 );

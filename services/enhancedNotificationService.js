@@ -44,6 +44,9 @@ class EnhancedNotificationService {
       case 'chefMenu':
         return `${baseUrl}/chef/${id}/menu${query}`;
       case 'chefDashboard':
+        if (params && params.orderId) {
+          return `${baseUrl}/orders${query}`;
+        }
         return `${baseUrl}/chef/dashboard${query}`;
 
       // Menu links
@@ -150,6 +153,41 @@ class EnhancedNotificationService {
         priority: 10,
         ttl: 86400 // 24 hours
       };
+
+      // Configure high-priority notifications for chef orders (new orders)
+      if (type === 'chefDashboard') {
+        // Android: Use urgent notification channel with sound and vibration
+        notification.android_channel_id = 'order_channel_urgent_v2';
+        notification.android_visibility = 1; // Public visibility on lock screen
+        notification.android_sound = 'order_notification'; // Custom sound file
+        notification.android_led_color = 'FFFF0000'; // Red LED
+        notification.android_accent_color = 'FFFF6B00'; // Orange accent
+        
+        // iOS: Time-sensitive notification with sound and badge
+        notification.ios_sound = 'order_notification.wav'; // Custom sound file
+        notification.ios_interruption_level = 'time-sensitive'; // Breaks through Focus/DND
+        notification.ios_relevance_score = 1.0; // Highest relevance
+        notification.ios_badgeType = 'Increase';
+        notification.ios_badgeCount = 1;
+        
+        // Ensure highest priority
+        notification.priority = 10;
+      }
+
+      // Configure order status notifications for customers
+      if (type === 'orderTracking') {
+        notification.android_channel_id = 'order_status_channel';
+        notification.ios_sound = 'default';
+        notification.ios_interruption_level = 'active';
+        notification.ios_badgeType = 'Increase';
+        notification.ios_badgeCount = 1;
+      }
+
+      // Configure chat notifications
+      if (type === 'chat') {
+        notification.android_channel_id = 'chat_channel';
+        notification.ios_sound = 'default';
+      }
 
       // Add media if provided
       if (largeIcon) {

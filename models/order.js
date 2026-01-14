@@ -31,6 +31,17 @@ const OrderSchema = new mongoose.Schema({
     default: Date.now,
   },
   status: { type: String, default: "pending" },
+  cancelledBy: { type: String, enum: ['user', 'chef', null], default: null },
+  cancellationReason: { type: String, default: null },
+  lastUpdated: { type: Date },
+  statusHistory: [{
+    status: String,
+    changedTo: String,
+    timestamp: Date,
+    notes: String
+  }],
+  statusNotes: { type: String },
+  estimatedDeliveryTime: { type: Date },
 });
 
 // Add indexes for better query performance

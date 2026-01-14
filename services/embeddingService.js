@@ -3,12 +3,17 @@ let pipelineInstance = null;
 class EmbeddingService {
   constructor() {
     this.model = null;
-    this.modelName = 'Xenova/multilingual-e5-small'; // Multilingual model for Arabic + English content
+    this.modelName = 'Xenova/multilingual-e5-base'; // Larger multilingual model - better cross-language understanding
     this.maxTokens = 512; // Max tokens for the local model
     this.isInitializing = false;
     this.embeddingCache = new Map(); // Cache for embeddings
     this.maxCacheSize = 1000; // Maximum cache entries
     this.pendingEmbeddings = new Map(); // Track pending embedding requests
+    
+    // E5 model prefixes - REQUIRED for proper semantic search
+    // See: https://huggingface.co/intfloat/multilingual-e5-small
+    this.queryPrefix = 'query: ';
+    this.passagePrefix = 'passage: ';
   }
 
   /**
@@ -42,26 +47,33 @@ class EmbeddingService {
   /**
    * Generate embeddings for a given text using local model
    * @param {string} text - Text to generate embeddings for
+   * @param {string} type - Type of text: 'query' for search queries, 'passage' for documents/content (default)
    * @returns {Promise<number[]>} - Array of embedding values
    */
-  async generateEmbedding(text) {
+  async generateEmbedding(text, type = 'passage') {
     if (!text || typeof text !== 'string') {
       console.warn('Invalid text input for embedding generation:', text);
       return null;
     }
 
-    const truncatedText = this.truncateText(text, this.maxTokens);
-    const cacheKey = truncatedText.toLowerCase().trim();
+    // E5 models REQUIRE prefixes for proper semantic search
+    // - "query: " for search queries (user input)
+    // - "passage: " for documents/content being searched
+    const prefix = type === 'query' ? this.queryPrefix : this.passagePrefix;
+    const prefixedText = `${prefix}${text}`;
+    
+    const truncatedText = this.truncateText(prefixedText, this.maxTokens);
+    const cacheKey = `${type}:${truncatedText.toLowerCase().trim()}`;
 
     // Check cache first
     if (this.embeddingCache.has(cacheKey)) {
-      console.log(`Cache hit for embedding: "${truncatedText.substring(0, 50)}..."`);
+      console.log(`Cache hit for ${type} embedding: "${text.substring(0, 50)}..."`);
       return this.embeddingCache.get(cacheKey);
     }
 
     // Check if embedding is already being generated
     if (this.pendingEmbeddings.has(cacheKey)) {
-      console.log(`Waiting for pending embedding: "${truncatedText.substring(0, 50)}..."`);
+      console.log(`Waiting for pending ${type} embedding: "${text.substring(0, 50)}..."`);
       return await this.pendingEmbeddings.get(cacheKey);
     }
 
@@ -82,6 +94,26 @@ class EmbeddingService {
       // Clean up pending request
       this.pendingEmbeddings.delete(cacheKey);
     }
+  }
+
+  /**
+   * Generate embedding specifically for search queries
+   * Uses the E5 "query: " prefix for optimal cross-language semantic matching
+   * @param {string} queryText - Search query text
+   * @returns {Promise<number[]>} - Array of embedding values
+   */
+  async generateQueryEmbedding(queryText) {
+    return this.generateEmbedding(queryText, 'query');
+  }
+
+  /**
+   * Generate embedding specifically for documents/passages
+   * Uses the E5 "passage: " prefix for optimal semantic indexing
+   * @param {string} passageText - Document/passage text
+   * @returns {Promise<number[]>} - Array of embedding values
+   */
+  async generatePassageEmbedding(passageText) {
+    return this.generateEmbedding(passageText, 'passage');
   }
 
   /**

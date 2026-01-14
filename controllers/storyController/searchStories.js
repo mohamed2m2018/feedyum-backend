@@ -6,14 +6,15 @@ const Story = mongoose.model("story");
 var ObjectId = require("mongoose").Types.ObjectId;
 
 const searchStories = async (req, res) => {
-  const { page = 1, limit = 10, searchString, excludeReviews, reviewsOnly, ...rest } = req.query;
-  
+  const { page = 1, limit = 10, searchString, excludeReviews, reviewsOnly, authorType, ...rest } = req.query;
+
   console.log('Traditional story search called with:', {
     searchString,
     page,
     limit,
     excludeReviews,
     reviewsOnly,
+    authorType,
     rest
   });
 
@@ -25,13 +26,13 @@ const searchStories = async (req, res) => {
 
   // Build base query
   let baseQuery;
-  
+
   if (searchString && searchString.trim() !== '') {
     const string = new RegExp(searchString.trim(), 'i');
     baseQuery = {
       $or: [
-        { caption: string }, 
-        { description: string }, 
+        { caption: string },
+        { description: string },
         { title: string }
       ],
       ...rest,
@@ -42,7 +43,34 @@ const searchStories = async (req, res) => {
     };
   }
 
-  // Add review filtering logic
+  // Handle author type filtering (Kitchen Posts vs Reviews)
+  if (authorType) {
+    try {
+      const User = mongoose.model("user");
+      let userQuery = {};
+
+      if (authorType === 'chef') {
+        userQuery = { type: 'chef' };
+      } else if (authorType === 'user') {
+        userQuery = { type: { $ne: 'chef' } };
+      }
+
+      // Find all users matching the type
+      const users = await User.find(userQuery).select('_id');
+      const userIds = users.map(u => u._id);
+
+      // Add author filter to story query
+      baseQuery.author = { $in: userIds };
+
+      console.log(`Filtering for authorType: ${authorType}, found ${userIds.length} users`);
+    } catch (err) {
+      console.error('Error filtering by author type:', err);
+      // Continue without author filter if it fails, or return error?
+      // For now, let's log and continue, effectively ignoring the filter if it breaks
+    }
+  }
+
+  // Add review filtering logic (keep as optional fallback or secondary filter)
   if (excludeReviews === 'true') {
     // Exclude review posts (posts without rating or reviewType)
     baseQuery.$and = baseQuery.$and || [];
@@ -85,7 +113,7 @@ const searchStories = async (req, res) => {
       const storyObj = story.toObject();
       delete storyObj.embedding;
       delete storyObj.embeddingGenerated;
-      
+
       // Also remove embeddings from populated dishes
       if (storyObj.dishes && Array.isArray(storyObj.dishes)) {
         storyObj.dishes = storyObj.dishes.map(dish => {
@@ -95,7 +123,7 @@ const searchStories = async (req, res) => {
           return dishObj;
         });
       }
-      
+
       return storyObj;
     });
 

@@ -54,21 +54,20 @@ router.put('/:id/status',
   orderController.updateOrderStatus
 );
 
+// @route  PUT api/orders/:id/cancel
+// @desc   Cancel order by user (only when status is pending/confirmed)
+// @access Private
+router.put('/:id/cancel',
+  passport.authenticate('jwt', { session: false }),
+  orderController.cancelOrderByUser
+);
+
 // @route  GET api/orders/:id
 // @desc   Get a single order by ID
 // @access Private
 router.get('/:id',
   passport.authenticate('jwt', { session: false }),
   orderController.getOrderById
-);
-
-// @route  PUT api/orders/:id/status
-// @desc   Update order status
-// @access Private
-router.put('/:id/status',
-  passport.authenticate('jwt', { session: false }),
-  checkChefPaymentStatus,
-  orderController.updateOrderStatus
 );
 
 module.exports = router;

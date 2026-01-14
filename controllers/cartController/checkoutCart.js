@@ -8,10 +8,10 @@ const ChefWallet = require('../../models/chefWallet');
 const checkoutCart = async (req, res) => {
   try {
     const { deliveryAddress, specialInstructions, promocode } = req.body;
-    
+
     // Import models for geographic validation
     const ChefBranch = mongoose.model("chefBranch");
-    
+
     let cart = await Cart.findOne({ user: req.user._id }).populate({
       path: "items.dish",
       populate: {
@@ -33,14 +33,14 @@ const checkoutCart = async (req, res) => {
 
     // Get the chef ID with proper error handling and fallback
     let chefId, chefName;
-    
+
     const firstItem = cart.items[0];
     if (firstItem && firstItem.dish) {
       // Try to get chef from populated menu first
       if (firstItem.dish.menu && firstItem.dish.menu.chef) {
         chefId = firstItem.dish.menu.chef._id;
         chefName = firstItem.dish.menu.chef.fullName || firstItem.dish.menu.chef.username;
-      } 
+      }
       // Fallback to user_id if menu.chef is not populated
       else if (firstItem.dish.user_id) {
         chefId = firstItem.dish.user_id;
@@ -48,20 +48,20 @@ const checkoutCart = async (req, res) => {
         const chef = await User.findById(chefId).select('fullName username');
         chefName = chef ? (chef.fullName || chef.username) : 'Chef';
       } else {
-        return res.status(400).json({ 
-          message: 'Unable to identify chef for cart items' 
+        return res.status(400).json({
+          message: 'Unable to identify chef for cart items'
         });
       }
     } else {
-      return res.status(400).json({ 
-        message: 'Invalid cart structure' 
+      return res.status(400).json({
+        message: 'Invalid cart structure'
       });
     }
 
     // Verify all items are from the same chef (with error handling)
     const allSameChef = cart.items.every(item => {
       if (!item.dish) return false;
-      
+
       let itemChefId;
       if (item.dish.menu && item.dish.menu.chef) {
         itemChefId = item.dish.menu.chef._id.toString();
@@ -70,20 +70,21 @@ const checkoutCart = async (req, res) => {
       } else {
         return false;
       }
-      
+
       return itemChefId === chefId.toString();
     });
 
     if (!allSameChef) {
-      return res.status(400).json({ 
-        message: 'All items in cart must be from the same chef' 
+      return res.status(400).json({
+        message: 'All items in cart must be from the same chef'
       });
     }
 
     // Geographic validation: Check if chef has branches in delivery city
     if (deliveryAddress) {
       let clientCity;
-      
+      let clientState;
+
       // Extract city from delivery address
       if (deliveryAddress.streetDetails?.area) {
         clientCity = deliveryAddress.streetDetails.area;
@@ -91,21 +92,160 @@ const checkoutCart = async (req, res) => {
         const addressParts = deliveryAddress.nameLine.split(',');
         clientCity = addressParts.length > 1 ? addressParts[addressParts.length - 2].trim() : null;
       }
-      
-      if (clientCity) {
-        // Check if chef has active branches in the delivery city
+
+      // Extract state
+      if (deliveryAddress.state) {
+        clientState = deliveryAddress.state;
+      } else if (deliveryAddress.streetDetails?.state) {
+        clientState = deliveryAddress.streetDetails.state;
+      }
+
+      // Provide fallback state extraction from nameLine if missing
+      if (!clientState && deliveryAddress.nameLine) {
+        const addressParts = deliveryAddress.nameLine.split(',');
+        if (addressParts.length > 2) {
+          clientState = addressParts[addressParts.length - 1].trim();
+        }
+      }
+
+      // Map common districts to governorates if state is missing
+      if (!clientState && clientCity) {
+        const cairoDistricts = [
+          'nasr city', 'مدينة نصر', 'maadi', 'المعادي', 'heliopolis', 'مصر الجديدة',
+          'new cairo', 'القاهرة الجديدة', 'zamalek', 'الزمالك', 'shoubra', 'shubra', 'shobra', 'shebra', 'شبرا',
+          'mokattam', 'المقطم', 'rehab', 'الرحاب', 'madinaty', 'مدينتي', 'sheraton', 'شيراتون'
+        ];
+
+        const gizaDistricts = [
+          'dokki', 'الدقي', 'mohandessin', 'mohandeseen', 'المهندسين', 'haram', 'al haram', 'pyramids', 'الهرم',
+          'faisal', 'فيصل', 'october', '6 october', '6th of october', 'أكتوبر', 'السادس من أكتوبر',
+          'sheikh zayed', 'zayed', 'الشيخ زايد'
+        ];
+
+        const lowerCity = clientCity.toLowerCase();
+        if (cairoDistricts.some(d => lowerCity.includes(d))) {
+          clientState = 'Cairo';
+        } else if (gizaDistricts.some(d => lowerCity.includes(d))) {
+          clientState = 'Giza';
+        }
+      }
+
+      if (clientCity || clientState) {
+        const orConditions = [];
+        const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+        if (clientCity) orConditions.push({ 'addressDetails.city': new RegExp(escapeRegExp(clientCity), 'i') });
+        if (clientState) orConditions.push({ 'addressDetails.city': new RegExp(escapeRegExp(clientState), 'i') });
+
+        // Check if chef has active branches in the delivery city OR state
         const chefBranches = await ChefBranch.find({
           chef: chefId,
           isActive: true,
-          'addressDetails.city': new RegExp(clientCity, 'i')
+          $or: orConditions
         });
-        
+
         if (chefBranches.length === 0) {
+          // Fetch all active branches to tell the user where the chef delivers
+          const allActiveBranches = await ChefBranch.find({
+            chef: chefId,
+            isActive: true
+          });
+
+          const validCities = [...new Set(allActiveBranches.map(b => b.addressDetails?.city).filter(Boolean))];
+          const validCitiesString = validCities.length > 0
+            ? validCities.join(', ')
+            : 'other locations';
+
           return res.status(400).json({
-            message: `This chef does not deliver to ${clientCity}. Please select a different chef or delivery address.`,
+            message: `This chef does not deliver to ${clientCity}. They deliver to: ${validCitiesString}`,
             error: 'delivery_area_not_supported',
             chefId: chefId,
-            deliveryCity: clientCity
+            deliveryCity: clientCity,
+            supportedCities: validCities
+          });
+        }
+      }
+    }
+    let clientCity;
+
+    // Extract city from delivery address
+    if (deliveryAddress.streetDetails?.area) {
+      let clientState;
+
+      // Extract city and state from delivery address
+      if (deliveryAddress.streetDetails?.area) {
+        clientCity = deliveryAddress.streetDetails.area;
+      }
+
+      if (deliveryAddress.state) {
+        clientState = deliveryAddress.state;
+      } else if (deliveryAddress.streetDetails?.state) {
+        clientState = deliveryAddress.streetDetails.state;
+      }
+
+      if (!clientCity && deliveryAddress.nameLine) {
+        const addressParts = deliveryAddress.nameLine.split(',');
+        clientCity = addressParts.length > 1 ? addressParts[addressParts.length - 2].trim() : null;
+        // Try to guess state from address parts if not explicitly provided
+        if (addressParts.length > 2) {
+          clientState = addressParts[addressParts.length - 1].trim();
+        }
+      }
+
+      // Map common districts to governorates if state is missing
+      if (!clientState && clientCity) {
+        const cairoDistricts = [
+          'nasr city', 'مدينة نصر', 'maadi', 'المعادي', 'heliopolis', 'مصر الجديدة',
+          'new cairo', 'القاهرة الجديدة', 'zamalek', 'الزمالك', 'shoubra', 'shubra', 'shobra', 'shebra', 'شبرا',
+          'mokattam', 'المقطم', 'rehab', 'الرحاب', 'madinaty', 'مدينتي', 'sheraton', 'شيراتون'
+        ];
+
+        const gizaDistricts = [
+          'dokki', 'الدقي', 'mohandessin', 'mohandeseen', 'المهندسين', 'haram', 'al haram', 'pyramids', 'الهرم',
+          'faisal', 'فيصل', 'october', '6 october', '6th of october', 'أكتوبر', 'السادس من أكتوبر',
+          'sheikh zayed', 'zayed', 'الشيخ زايد'
+        ];
+
+        const lowerCity = clientCity.toLowerCase();
+        if (cairoDistricts.some(d => lowerCity.includes(d))) {
+          clientState = 'Cairo';
+        } else if (gizaDistricts.some(d => lowerCity.includes(d))) {
+          clientState = 'Giza';
+        }
+      }
+
+      if (clientCity || clientState) {
+        const orConditions = [];
+        const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+        if (clientCity) orConditions.push({ 'addressDetails.city': new RegExp(escapeRegExp(clientCity), 'i') });
+        if (clientState) orConditions.push({ 'addressDetails.city': new RegExp(escapeRegExp(clientState), 'i') });
+
+        // Check if chef has active branches in the delivery city OR state
+        const chefBranches = await ChefBranch.find({
+          chef: chefId,
+          isActive: true,
+          $or: orConditions
+        });
+
+        if (chefBranches.length === 0) {
+          // Fetch all active branches to tell the user where the chef delivers
+          const allActiveBranches = await ChefBranch.find({
+            chef: chefId,
+            isActive: true
+          });
+
+          const validCities = [...new Set(allActiveBranches.map(b => b.addressDetails?.city).filter(Boolean))];
+          const validCitiesString = validCities.length > 0
+            ? validCities.join(', ')
+            : 'other locations';
+
+          return res.status(400).json({
+            message: `This chef does not deliver to ${clientCity}. They deliver to: ${validCitiesString}`,
+            error: 'delivery_area_not_supported',
+            chefId: chefId,
+            deliveryCity: clientCity,
+            supportedCities: validCities
           });
         }
       }
@@ -115,13 +255,13 @@ const checkoutCart = async (req, res) => {
     const subtotal = cart.items.reduce((total, item) => total + item.dish.price * item.quantity, 0);
     const serviceFee = subtotal * 0.05; // 5% service fee
     const tax = subtotal * 0.1; // 10% tax
-    
+
     let discountAmount = 0;
     let promocodeData = null;
-    
+
     // Apply promocode if provided
     if (promocode && promocode.code) {
-      const promoCodeDoc = await PromoCode.findOne({ 
+      const promoCodeDoc = await PromoCode.findOne({
         code: promocode.code.toUpperCase(),
         isActive: true
       });
@@ -133,9 +273,9 @@ const checkoutCart = async (req, res) => {
           if (!promoCodeDoc.usageLimit || promoCodeDoc.usedCount < promoCodeDoc.usageLimit) {
             if (subtotal >= promoCodeDoc.minOrderAmount) {
               // Check if applicable to chef
-              if (promoCodeDoc.applicableToChefs.length === 0 || 
-                  promoCodeDoc.applicableToChefs.includes(chefId)) {
-                
+              if (promoCodeDoc.applicableToChefs.length === 0 ||
+                promoCodeDoc.applicableToChefs.includes(chefId)) {
+
                 // Calculate discount
                 if (promoCodeDoc.discountType === 'percentage') {
                   discountAmount = (subtotal * promoCodeDoc.discountValue) / 100;
@@ -145,18 +285,18 @@ const checkoutCart = async (req, res) => {
                 } else {
                   discountAmount = promoCodeDoc.discountValue;
                 }
-                
+
                 // Ensure discount doesn't exceed subtotal
                 if (discountAmount > subtotal) {
                   discountAmount = subtotal;
                 }
-                
+
                 promocodeData = {
                   code: promoCodeDoc.code,
                   discountAmount: parseFloat(discountAmount.toFixed(2)),
                   discountType: promoCodeDoc.discountType
                 };
-                
+
                 // Increment usage count
                 promoCodeDoc.usedCount += 1;
                 await promoCodeDoc.save();
@@ -166,7 +306,7 @@ const checkoutCart = async (req, res) => {
         }
       }
     }
-    
+
     const totalPrice = subtotal + serviceFee + tax - discountAmount; // No delivery fee until chef accepts
 
     // Create the order (without delivery fee - chef will set it when accepting)
@@ -244,9 +384,9 @@ I'll review your order and confirm the delivery fee. Thank you! 🙏`;
 
   } catch (error) {
     console.error('Checkout error:', error);
-    res.status(500).json({ 
-      message: 'Failed to process checkout', 
-      error: error.message 
+    res.status(500).json({
+      message: 'Failed to process checkout',
+      error: error.message
     });
   }
 };

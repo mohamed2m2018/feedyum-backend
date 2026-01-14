@@ -39,7 +39,8 @@ const searchUser = (req, res) => {
     ? {
       $or: [
         { fullName: string },
-        { username: string }],
+        { username: string },
+        { email: string }],
       _id: { $ne: currentUserId },
       type: { $ne: "guest" },
       ...rest,

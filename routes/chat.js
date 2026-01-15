@@ -5,6 +5,7 @@ const Message = require('../models/message');
 const User = require('../models/user');
 const Order = require('../models/order');
 const messagesController = require('../controllers/messagesController');
+const EnhancedNotificationService = require('../services/enhancedNotificationService');
 
 // Middleware to get current user ID from authenticated user
 const getCurrentUserId = (req) => req.user?._id;
@@ -32,59 +33,113 @@ router.get('/order-chats',
     passport.authenticate('jwt', { session: false }),
     async (req, res) => {
         const userId = getCurrentUserId(req);
+        const { page = 1, limit = 10 } = req.query;
+
+        const pageNumber = parseInt(page);
+        const pageSize = parseInt(limit);
 
         try {
-            console.log('Order-chats: Fetching for user:', userId);
+            console.log('Order-chats: Fetching for user:', userId, 'Page:', pageNumber);
 
-            // Get all orders for the current user (as customer OR chef)
-            const userOrders = await Order.find({
-                $or: [
-                    { user: userId },
-                    { chef: userId }
-                ]
-            })
-                .populate('chef', 'fullName username avatar')
-                .populate('user', 'fullName username avatar')
-                .sort({ created_at: -1 })
-                .lean();
+            const mongoose = require('mongoose');
+            const userObjectId = new mongoose.Types.ObjectId(userId);
 
-            console.log('Order-chats: Found orders count:', userOrders.length);
+            // Use aggregation to get orders sorted by latest message timestamp globally
+            const aggregationResult = await Order.aggregate([
+                // Match orders where user is customer or chef
+                {
+                    $match: {
+                        $or: [
+                            { user: userObjectId },
+                            { chef: userObjectId }
+                        ]
+                    }
+                },
+                // Lookup latest message for each order
+                {
+                    $lookup: {
+                        from: 'messages',
+                        let: { orderId: '$_id' },
+                        pipeline: [
+                            {
+                                $match: {
+                                    $expr: { $eq: ['$order', '$$orderId'] }
+                                }
+                            },
+                            { $sort: { timestamp: -1 } },
+                            { $limit: 1 }
+                        ],
+                        as: 'latestMessageArr'
+                    }
+                },
+                // Add a sortTime field: use latest message timestamp if exists, otherwise order created_at
+                {
+                    $addFields: {
+                        latestMessage: { $arrayElemAt: ['$latestMessageArr', 0] },
+                        sortTime: {
+                            $cond: {
+                                if: { $gt: [{ $size: '$latestMessageArr' }, 0] },
+                                then: { $arrayElemAt: ['$latestMessageArr.timestamp', 0] },
+                                else: '$created_at'
+                            }
+                        }
+                    }
+                },
+                // Sort by sortTime descending (newest messages first)
+                { $sort: { sortTime: -1 } },
+                // Facet to get total count and paginated results
+                {
+                    $facet: {
+                        metadata: [{ $count: 'total' }],
+                        data: [
+                            { $skip: (pageNumber - 1) * pageSize },
+                            { $limit: pageSize }
+                        ]
+                    }
+                }
+            ]);
 
-            // Get latest message for each order (only order-specific messages)
+            const totalOrders = aggregationResult[0]?.metadata[0]?.total || 0;
+            const totalPages = Math.ceil(totalOrders / pageSize);
+            const ordersWithMessages = aggregationResult[0]?.data || [];
+
+            console.log('Order-chats: Found orders count:', ordersWithMessages.length);
+
+            // Populate chef and user info, and format response
             const orderChats = await Promise.all(
-                userOrders.map(async (order) => {
-                    // Determine the other party (chat partner)
-                    // If current user is the chef, the partner is the user (customer)
-                    // If current user is the user (customer), the partner is the chef
+                ordersWithMessages.map(async (orderData) => {
+                    // Populate chef and user
+                    const order = await Order.findById(orderData._id)
+                        .populate('chef', 'fullName username avatar')
+                        .populate('user', 'fullName username avatar')
+                        .lean();
+
+                    if (!order) return null;
+
+                    // Determine the chat partner
                     const isCurrentUserChef = order.chef && order.chef._id.toString() === userId.toString();
                     const chatPartner = isCurrentUserChef ? order.user : order.chef;
 
-                    // If partner is missing (e.g. deleted user), handle gracefully
                     if (!chatPartner) {
                         console.log(`Order-chats: Missing partner for order ${order._id}`);
                         return null;
                     }
 
-                    const latestMessage = await Message.findOne({
-                        $and: [
-                            {
-                                $or: [
-                                    { sender: userId, receiver: chatPartner._id },
-                                    { sender: chatPartner._id, receiver: userId }
-                                ]
-                            },
-                            { order: order._id } // Only order-specific messages
-                        ]
-                    })
-                        .sort({ timestamp: -1 })
-                        .lean();
+                    // Populate sender/receiver info in latest message if exists
+                    let latestMessage = orderData.latestMessage || null;
+                    if (latestMessage) {
+                        latestMessage = await Message.findById(latestMessage._id)
+                            .populate('sender', 'username avatar fullName')
+                            .populate('receiver', 'username avatar fullName')
+                            .lean();
+                    }
 
                     console.log(`Order-chats: Order ${order._id} has message:`, !!latestMessage);
 
                     return {
                         orderId: order._id,
                         order: order,
-                        chef: chatPartner, // Mapping 'chef' to the chat partner for frontend compatibility
+                        chef: chatPartner,
                         latestMessage: latestMessage
                     };
                 })
@@ -93,19 +148,13 @@ router.get('/order-chats',
             // Filter out nulls
             const validChats = orderChats.filter(chat => chat !== null);
 
-            // Sort by latest message timestamp
-            // Sort by latest message timestamp
-            validChats.sort((a, b) => {
-                const aTime = a.latestMessage?.timestamp ? new Date(a.latestMessage.timestamp) : new Date(a.order.created_at);
-                const bTime = b.latestMessage?.timestamp ? new Date(b.latestMessage.timestamp) : new Date(b.order.created_at);
-                return bTime - aTime;
-            });
-
             console.log('Order-chats: Returning chats count:', validChats.length);
 
             res.status(200).json({
                 orderChats: validChats,
-                totalChats: validChats.length
+                totalChats: totalOrders,
+                totalPages: totalPages,
+                currentPage: pageNumber
             });
         } catch (error) {
             console.error('Get order chats error:', error);
@@ -293,6 +342,27 @@ router.post('/message',
                 console.error('[SOCKET] Failed to emit newMessage:', socketError.message);
                 // Continue anyway - message is saved, just not real-time
             }
+
+            // --- PUSH NOTIFICATION INTEGRATION ---
+            try {
+                const senderInfo = populatedMessage.sender;
+                if (senderInfo) {
+                    await EnhancedNotificationService.sendChatNotification({
+                        recipientId: chatUserId.toString(),
+                        senderId: userId.toString(),
+                        senderName: senderInfo.fullName || senderInfo.username || 'User',
+                        message: content,
+                        chatId: userId.toString(), // Chat ID is usually the sender's ID for 1-on-1 from receiver perspective
+                        senderAvatar: senderInfo.avatar,
+                        messageType: 'text', // Assuming text for now as per this route's simple content
+                        orderId: orderId || null
+                    });
+                    console.log(`[HTTP] Chat notification sent from ${userId} to ${chatUserId}`);
+                }
+            } catch (notifError) {
+                console.error('[HTTP] Failed to send chat notification:', notifError);
+            }
+            // -------------------------------------
 
             res.status(201).json({
                 success: true,

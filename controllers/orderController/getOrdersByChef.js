@@ -27,9 +27,15 @@ const getOrdersByChef = async (req, res) => {
       .limit(limit)
       .lean();
 
+    const totalOrders = await Order.countDocuments({ chef: chefId });
+    const totalPages = Math.ceil(totalOrders / limit);
+
     res.json({
       success: true,
       orders: orders,
+      totalPages: totalPages,
+      currentPage: page,
+      totalOrders: totalOrders,
       message: 'Chef orders fetched successfully'
     });
 

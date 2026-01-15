@@ -1,5 +1,6 @@
 const Order = require('../../models/order');
 const Dish = require('../../models/dish');
+const ChefWallet = require('../../models/chefWallet');
 const mongoose = require('mongoose');
 
 const getChefDashboardStats = async (req, res) => {
@@ -12,6 +13,22 @@ const getChefDashboardStats = async (req, res) => {
     
     const endOfDay = new Date();
     endOfDay.setHours(23, 59, 59, 999);
+
+    // Fetch wallet - create with initial 500 EGP if doesn't exist
+    let wallet = await ChefWallet.findOne({ chef: chefId });
+    if (!wallet) {
+      wallet = new ChefWallet({
+        chef: chefId,
+        balance: 500, // Initial 500 EGP bonus
+        transactions: [{
+          type: 'initial_bonus',
+          amount: 500,
+          description: 'Welcome bonus from platform',
+          timestamp: new Date()
+        }]
+      });
+      await wallet.save();
+    }
 
     const [stats, dishCount] = await Promise.all([
       Order.aggregate([
@@ -81,7 +98,8 @@ const getChefDashboardStats = async (req, res) => {
       success: true,
       stats: {
         ...result,
-        totalDishes: dishCount
+        totalDishes: dishCount,
+        walletBalance: wallet.balance
       }
     });
 

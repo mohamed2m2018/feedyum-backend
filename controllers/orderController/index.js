@@ -5,6 +5,7 @@ const getCurrentUserOrders = require('./getCurrentUserOrders');
 const createOrder = require('./createOrder');
 const updateOrderStatus = require('./updateOrderStatus');
 const getChefDashboardStats = require('./getChefDashboardStats');
+const getChefAnalytics = require('./getChefAnalytics');
 const cancelOrderByUser = require('./cancelOrderByUser');
 
 module.exports = {
@@ -15,5 +16,6 @@ module.exports = {
   createOrder,
   updateOrderStatus,
   getChefDashboardStats,
+  getChefAnalytics,
   cancelOrderByUser,
 };

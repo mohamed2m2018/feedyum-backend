@@ -1,6 +1,8 @@
 const socketIo = require('socket.io');
 const Message = require('./models/message');
 
+console.log('✅ socket.js loaded with Push Notification support'); // Startup check
+
 // Helper function to get unread counts for a user
 const getUnreadCounts = async (userId) => {
     try {
@@ -43,7 +45,7 @@ module.exports = (server) => {
             methods: ["GET", "POST"]
         }
     });
-    
+
     // Store io instance globally for access by routes
     ioInstance = io;
     module.exports.getIO = () => ioInstance;
@@ -115,7 +117,7 @@ module.exports = (server) => {
 
         socket.on('sendMessage', async (data, callback) => {
             const { senderId, receiverId, content, audio, duration, orderId } = data;
-            
+
             // Create message object based on type
             const messageData = {
                 sender: senderId,
@@ -136,22 +138,54 @@ module.exports = (server) => {
                 messageData.messageType = 'text';
             }
 
-            const message = new Message(messageData);
-
             try {
-                const savedMessage = await message.save();
+                const savedMessage = await Message.create(messageData); // Changed from message.save() to Message.create(messageData)
+                console.log(`Message saved: ${savedMessage._id}`);
+
+                // Populate sender and receiver info for socket emission and notifications
                 const populatedMessage = await Message.findById(savedMessage._id)
                     .populate('sender', 'username avatar fullName') // Assuming avatar field is available
                     .populate('receiver', 'username avatar fullName') // Assuming avatar field is available
                     .populate('order', 'status created_at');
-                
+
                 io.to(receiverId).emit('newMessage', populatedMessage);
                 io.to(senderId).emit('newMessage', populatedMessage); // Send to sender to avoid frontend handling
-                
+
                 // Send updated unread counts to receiver
                 const receiverUnreadCounts = await getUnreadCounts(receiverId);
                 io.to(receiverId).emit('unreadCountsUpdate', receiverUnreadCounts);
-                
+
+                // --- PUSH NOTIFICATION INTEGRATION ---
+                try {
+                    // Get sender details (if not fully populated or to ensure we have them)
+                    // The populatedMessage already has sender info but let's be safe
+                    const senderInfo = populatedMessage.sender;
+                    console.log(`Sender info found: ${senderInfo ? 'yes' : 'no'} - ID: ${senderInfo?._id}`);
+
+                    if (senderInfo) {
+                        const EnhancedNotificationService = require('./services/enhancedNotificationService');
+                        console.log('Calling EnhancedNotificationService.sendChatNotification...');
+
+                        await EnhancedNotificationService.sendChatNotification({
+                            recipientId: receiverId.toString(),
+                            senderId: senderId.toString(),
+                            senderName: senderInfo.fullName || senderInfo.username || 'User',
+                            message: messageData.messageType === 'text' ? content : '',
+                            chatId: senderId.toString(),
+                            senderAvatar: senderInfo.avatar,
+                            messageType: messageData.messageType,
+                            orderId: messageData.order // Pass orderId if available (it was saved as message.order)
+                        });
+                        console.log(`Socket: Chat notification sent from ${senderId} to ${receiverId}`);
+                    } else {
+                        console.log('Sender info missing, skipping notification');
+                    }
+                } catch (notifError) {
+                    console.error('Socket: Failed to send chat notification:', notifError);
+                    // Don't fail the message flow for notification failure
+                }
+                // -------------------------------------
+
                 if (typeof callback === 'function') {
                     callback({ success: true, message: populatedMessage });
                 }
@@ -166,7 +200,7 @@ module.exports = (server) => {
         // Handle marking messages as read
         socket.on('markMessagesRead', async (data) => {
             const { userId, senderId, orderId } = data;
-            
+
             try {
                 let query = {
                     sender: senderId,

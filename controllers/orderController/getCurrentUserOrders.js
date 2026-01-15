@@ -20,9 +20,15 @@ const getCurrentUserOrders = async (req, res) => {
       .limit(limit)
       .lean();
 
+    const totalOrders = await Order.countDocuments({ user: userId });
+    const totalPages = Math.ceil(totalOrders / limit);
+
     res.json({
       success: true,
       orders: orders,
+      totalPages: totalPages,
+      currentPage: page,
+      totalOrders: totalOrders,
       message: 'Orders fetched successfully'
     });
 

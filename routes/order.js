@@ -37,6 +37,14 @@ router.get('/chef/stats',
   orderController.getChefDashboardStats
 );
 
+// @route  GET api/orders/chef/analytics
+// @desc   Get detailed analytics for chef
+// @access Private
+router.get('/chef/analytics',
+  passport.authenticate('jwt', { session: false }),
+  orderController.getChefAnalytics
+);
+
 // @route  GET api/orders/chef/:chefId
 // @desc   Get all orders for a chef
 // @access Private

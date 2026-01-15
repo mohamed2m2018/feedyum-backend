@@ -22,6 +22,19 @@ const getWalletInfo = async (req, res) => {
       });
       await wallet.save();
       await wallet.populate('chef', 'fullName username avatar');
+    } else {
+      // Check if existing wallet has initial_bonus, if not add it
+      const hasInitialBonus = wallet.transactions.some(t => t.type === 'initial_bonus');
+      if (!hasInitialBonus) {
+        wallet.transactions.push({
+          type: 'initial_bonus',
+          amount: 500,
+          description: 'Welcome bonus from platform',
+          timestamp: new Date()
+        });
+        wallet.balance += 500;
+        await wallet.save();
+      }
     }
 
     // Calculate summary statistics

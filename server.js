@@ -142,6 +142,15 @@ async function startServer() {
       console.warn('[SEED] Failed to ensure categories:', seedErr.message);
     }
 
+    // Ensure guest user exists for guest login
+    try {
+      const { ensureGuestUser } = require('./scripts/seedGuestUser');
+      const guestResult = await ensureGuestUser();
+      console.log(`[SEED] Guest user ensured. created=${guestResult.created}`);
+    } catch (seedErr) {
+      console.warn('[SEED] Failed to ensure guest user:', seedErr.message);
+    }
+
     // Create HTTP server
     const server = http.createServer(app);
 

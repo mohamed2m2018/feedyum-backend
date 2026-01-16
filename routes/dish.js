@@ -4,7 +4,7 @@ const router = express.Router();
 
 const dishController = require('../controllers/dishController');
 const requestTimeout = require('../middleware/requestTimeout');
-const cacheMiddleware = require('../middleware/cache');
+
 
 // @route  POST api/dishes
 // @desc   Create a new dish and add it to a menu
@@ -32,7 +32,6 @@ router.get('/chef/:chefId',
 // @desc   Get dishes by category
 // @access Public
 router.get('/category/:category',
-  cacheMiddleware(600), // Cache for 10 minutes
   dishController.getDishesByCategory
 );
 // @route  GET api/dishes/test
@@ -46,7 +45,6 @@ router.get('/test', (req, res) => {
 // @desc   Search dishes
 // @access Public
 router.get('/search',
-  cacheMiddleware(300), // Cache for 5 minutes
   dishController.searchDishes
 );
 
@@ -55,7 +53,6 @@ router.get('/search',
 // @access Public
 router.get('/semantic-search',
   requestTimeout(18000), // 18 second timeout (shorter than controller's 15s + buffer)
-  cacheMiddleware(300), // Cache for 5 minutes
   dishController.semanticSearchDishes
 );
 
@@ -63,7 +60,6 @@ router.get('/semantic-search',
 // @desc   Get all dishes
 // @access Public
 router.get('/',
-  cacheMiddleware(300), // Cache for 5 minutes
   dishController.getAllDishes
 );
 

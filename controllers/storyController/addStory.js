@@ -211,14 +211,8 @@ const addStory = async (req, res) => {
         // Don't fail the story creation if embedding generation fails
       }
 
-      // Invalidate User Stories Cache (Write-Through)
-      try {
-        const userId = req.user._id.toString();
-        const deletedCount = await cacheManager.delPattern(`api:/api/story/author*:${userId}`);
-        console.log(`🗑️ Invalidated ${deletedCount} cache keys for user stories ${userId}`);
-      } catch (cacheErr) {
-        console.warn('⚠️ Failed to invalidate story cache:', cacheErr.message);
-      }
+      // Cache invalidation removed - No caching used
+
 
       return res.json({ story, success: true });
     })

@@ -62,8 +62,7 @@ const performanceMonitor = require('./middleware/performance');
 const timeout = require('./middleware/timeout');
 
 // Initialize cache manager
-const cache = require('./utils/cacheManager');
-const cacheMiddleware = require('./middleware/cache');
+
 
 
 app.use(performanceMonitor);
@@ -94,25 +93,20 @@ app.use("/api/discover", require("./routes/discover"));
 // Routes with caching for performance
 app.use("/api/user", require("./routes/user"));
 app.use("/api/story", require("./routes/story"));
-app.use("/api/categories", cacheMiddleware(600), require("./routes/categories"));
+app.use("/api/categories", require("./routes/categories"));
 app.use("/api/address", require("./routes/address"));
 app.use("/api/like", require("./routes/like"));
 app.use("/api/comment", require("./routes/comment"));
 app.use("/api/follow", require("./routes/follow"));
 app.use("/api/views", require("./routes/views"));
-app.use("/api/tags", cacheMiddleware(600), require("./routes/tags"));
+app.use("/api/tags", require("./routes/tags"));
 app.use("/api/chat", require("./routes/chat"));
 app.use("/api/messages", require("./routes/messages"));
 app.use("/api/notifications", require("./routes/notifications"));
 app.use("/api/location", require("./routes/location"));
 
 // Add optimized routes FIRST for priority routing
-try {
-  app.use("/api/optimized", require("./routes/optimizedRoutes"));
-  console.log("✅ Optimized routes loaded");
-} catch (err) {
-  console.log("ℹ️ Optimized routes not available, using standard routes");
-}
+// Optimization routes removed - standard routes only
 
 // Add the standard routes with caching for dishes
 app.use("/api/menus", require("./routes/menu"));

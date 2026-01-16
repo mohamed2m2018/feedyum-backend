@@ -294,23 +294,9 @@ const getStories = async (req, res) => {
     let feedIds = [];
     let isCached = false;
 
-    // 1. Check Redis (Skip if refreshing)
-    if (cacheManager.isConnected && refresh !== 'true') {
-      const cachedFeed = await cacheManager.client.get(feedCacheKey);
-      if (cachedFeed) {
-        feedIds = JSON.parse(cachedFeed);
-        isCached = true;
-      }
-    }
-
-    // 2. Generate New Feed if needed
-    if (!isCached || feedIds.length === 0) {
+    // Generate New Feed if needed
+    if (feedIds.length === 0) {
       feedIds = await generateNewFeed(userId === 'anonymous' ? null : userId, categoryIds, lat, long);
-
-      // Cache for 15 minutes
-      if (cacheManager.isConnected && feedIds.length > 0) {
-        await cacheManager.client.setEx(feedCacheKey, 900, JSON.stringify(feedIds));
-      }
     }
 
     // 3. Pagination (O(1))

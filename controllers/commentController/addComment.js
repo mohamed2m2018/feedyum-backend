@@ -42,14 +42,7 @@ module.exports = async function addComment(req, res) {
     // Save the comment to the database
     await comment.save();
 
-    // Invalidate cache
-    const cacheManager = require('../../utils/cacheManager');
-    // Invalidate comments count
-    await cacheManager.del(`api:/comment/count?post_id=${postId}`);
-    // Invalidate comments list (matching api:/comment? post_id=...)
-    // The key pattern is typically api:{originalUrl}. URL contains /comment? and post_id inside query.
-    // So we match api:/comment*post_id=${postId}*
-    await cacheManager.delPattern(`api:/comment*post_id=${postId}*`);
+    // Cache invalidation removed
 
     res.status(201).json({ message: 'Comment added successfully' });
   } catch (error) {

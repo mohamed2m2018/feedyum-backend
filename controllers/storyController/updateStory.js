@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const Story = mongoose.model('story');
 
 // Services
-const cacheManager = require('../../utils/cacheManager');
+
 
 // Validations
 const validateStory = require('../../validations/EditStory');
@@ -26,14 +26,7 @@ const updateStory = (req, res) => {
         { new: true }
     )
         .then(async (story) => {
-            // Invalidate User Stories Cache (Write-Through)
-            try {
-                const userId = req.user._id.toString();
-                const deletedCount = await cacheManager.delPattern(`api:/api/story/author*:${userId}`);
-                console.log(`🗑️ Invalidated ${deletedCount} cache keys for user stories ${userId}`);
-            } catch (cacheErr) {
-                console.warn('⚠️ Failed to invalidate story cache:', cacheErr.message);
-            }
+            // Cache removed
             errors.id = 'Post does not exist, or you are not the author';
             if (!story) return res.status(404).json(errors);
             return res.json({

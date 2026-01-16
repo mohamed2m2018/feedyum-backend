@@ -14,7 +14,7 @@ const Menu = mongoose.model("menu");
 const Category = mongoose.model("category");
 
 // Utils
-const cacheManager = require('../../utils/cacheManager');
+
 const { r2Client, R2_BUCKET, getPublicUrl } = require("../../utils/r2Client");
 
 
@@ -295,14 +295,7 @@ const createReviewReel = async (req, res) => {
             message: "Review reel created successfully",
           });
 
-          // Invalidate User Stories Cache (Write-Through) - AFTER sending response
-          try {
-            const userId = req.user._id.toString();
-            const deletedCount = await cacheManager.delPattern(`api:/api/story/author*:${userId}`);
-            console.log(`🗑️ Invalidated ${deletedCount} cache keys for user stories ${userId}`);
-          } catch (cacheErr) {
-            console.warn('⚠️ Failed to invalidate story cache:', cacheErr.message);
-          }
+          // Cache removed
         } catch (saveError) {
           console.error("Review reel save error:", saveError);
 

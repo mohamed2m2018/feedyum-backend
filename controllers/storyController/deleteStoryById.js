@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const cacheManager = require('../../utils/cacheManager');
+
 
 // Models
 const Story = mongoose.model('story');
@@ -14,14 +14,7 @@ const deleteStoryById = (req, res) => {
         .then(async () => {
             await User.findByIdAndUpdate(req.user._id, { $inc: { postsNo: -1 } });
 
-            // Invalidate User Stories Cache (Write-Through)
-            try {
-                // Invalidate all author feed pages for this user
-                const deletedCount = await cacheManager.delPattern(`api:/api/story/author*:${userId}`);
-                console.log(`🗑️ Invalidated ${deletedCount} cache keys for user stories ${userId}`);
-            } catch (cacheErr) {
-                console.warn('⚠️ Failed to invalidate story cache:', cacheErr.message);
-            }
+            // Cache removed
 
             res.json({
                 message: 'Story deleted successfully'

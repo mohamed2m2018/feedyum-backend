@@ -1,12 +1,13 @@
 /**
  * Guest User Seeder
  * Ensures a guest user exists in the database for guest login functionality
+ * 
+ * Usage:
+ * - As module: require('./seedGuestUser').ensureGuestUser()
+ * - Standalone: node scripts/seedGuestUser.js
  */
 const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
-
-// Get User model
-const User = mongoose.model('user');
 
 const GUEST_USER_CONFIG = {
     email: 'guest@foodtok.com',
@@ -25,6 +26,9 @@ const GUEST_USER_CONFIG = {
  */
 async function ensureGuestUser() {
     try {
+        // Get User model (must be registered first)
+        const User = mongoose.model('user');
+
         // Check if guest user already exists
         let guestUser = await User.findOne({ email: GUEST_USER_CONFIG.email });
 
@@ -49,6 +53,26 @@ async function ensureGuestUser() {
         console.error('[SEED] Failed to ensure guest user:', error.message);
         throw error;
     }
+}
+
+// If run as standalone script
+if (require.main === module) {
+    const keys = require('../config/keys');
+
+    // Load models
+    require('../models/loadModels');
+
+    mongoose.connect(keys.mongoURI)
+        .then(async () => {
+            console.log('MongoDB Connected');
+            const result = await ensureGuestUser();
+            console.log('Result:', result.created ? 'Created' : 'Already exists');
+            process.exit(0);
+        })
+        .catch(err => {
+            console.error('Error:', err.message);
+            process.exit(1);
+        });
 }
 
 module.exports = { ensureGuestUser, GUEST_USER_CONFIG };

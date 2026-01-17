@@ -5,15 +5,15 @@ const embeddingService = require('../../services/embeddingService');
 
 const createDish = async (req, res) => {
   try {
-    const { 
-      name, 
-      description, 
-      price, 
-      menuId, 
-      category, 
+    const {
+      name,
+      description,
+      price,
+      menuId,
+      category,
       categories,
-      sectionId, 
-      sectionName, 
+      sectionId,
+      sectionName,
       image,
       ingredients,
       preparationTime,
@@ -28,7 +28,7 @@ const createDish = async (req, res) => {
     }
 
     let section = null;
-    
+
     // Handle section - either use existing sectionId or create new section from sectionName
     if (sectionId) {
       section = await Section.findById(sectionId);
@@ -37,19 +37,19 @@ const createDish = async (req, res) => {
       }
     } else if (sectionName && sectionName.trim()) {
       // Try to find existing section or create new one
-      section = await Section.findOne({ 
+      section = await Section.findOne({
         name: { $regex: new RegExp(`^${sectionName.trim()}$`, 'i') },
-        owner: req.user._id 
+        owner: req.user._id
       });
-      
+
       if (!section) {
-        section = new Section({ 
-          name: sectionName.trim(), 
+        section = new Section({
+          name: sectionName.trim(),
           description: '',
           owner: req.user._id
         });
         await section.save();
-        
+
         // Add the new section to the menu's sections array if it's not already there
         if (!menu.sections.includes(section._id)) {
           menu.sections.push(section._id);
@@ -60,7 +60,7 @@ const createDish = async (req, res) => {
 
     // Generate unique numeric ID for the dish
     const dishId = Math.floor(Math.random() * 1000000) + Date.now();
-    
+
     // Convert ObjectId to numeric menu_id
     const numericMenuId = parseInt(menuId.slice(-8), 16);
 
@@ -119,11 +119,11 @@ const createDish = async (req, res) => {
       normalizedCategories = [category.trim()];
     }
 
-    const dish = new Dish({ 
+    const dish = new Dish({
       id: dishId,
-      name, 
-      description, 
-      price, 
+      name,
+      description,
+      price,
       category: (category && category.trim()) || normalizedCategories[0] || 'Main Course',
       categories: normalizedCategories,
       section: section?._id,
@@ -140,36 +140,38 @@ const createDish = async (req, res) => {
       nutritionalInfo: nutritionalInfo || {},
       dietaryInfo: processedDietaryInfo,
     });
-    
+
     await dish.save();
 
-    // Generate embedding for the new dish
-    try {
-      const text = embeddingService.prepareTextForEmbedding(dish, [
-        'name',
-        'description', 
-        'category',
-        'categories',
-        'tags',
-        'ingredients',
-        'dietaryInfo'
-      ]);
-      
-      if (text && text.trim().length > 0) {
-        const embedding = await embeddingService.generateEmbedding(text);
-        if (embedding) {
-          dish.embedding = embedding;
-          dish.embeddingGenerated = new Date();
-          await dish.save();
-          console.log(`✅ Generated embedding for new dish: ${dish.name}`);
-        } else {
-          console.log(`⚠️ Failed to generate embedding for dish: ${dish.name}`);
+    // Generate embedding in background (non-blocking to avoid memory timeout)
+    setImmediate(async () => {
+      try {
+        const text = embeddingService.prepareTextForEmbedding(dish, [
+          'name',
+          'description',
+          'category',
+          'categories',
+          'tags',
+          'ingredients',
+          'dietaryInfo'
+        ]);
+
+        if (text && text.trim().length > 0) {
+          const embedding = await embeddingService.generateEmbedding(text);
+          if (embedding) {
+            await Dish.findByIdAndUpdate(dish._id, {
+              embedding: embedding,
+              embeddingGenerated: new Date()
+            });
+            console.log(`✅ Generated embedding for new dish: ${dish.name}`);
+          } else {
+            console.log(`⚠️ Failed to generate embedding for dish: ${dish.name}`);
+          }
         }
+      } catch (error) {
+        console.error(`❌ Error generating embedding for dish ${dish.name}:`, error.message);
       }
-    } catch (error) {
-      console.error(`❌ Error generating embedding for dish ${dish.name}:`, error.message);
-      // Don't fail the dish creation if embedding generation fails
-    }
+    });
 
     menu.dishes.push(dish._id);
     await menu.save();

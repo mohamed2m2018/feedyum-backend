@@ -3,13 +3,13 @@ let pipelineInstance = null;
 class EmbeddingService {
   constructor() {
     this.model = null;
-    this.modelName = 'Xenova/multilingual-e5-base'; // Larger multilingual model - better cross-language understanding
+    this.modelName = 'Xenova/multilingual-e5-small'; // Smaller multilingual model - better memory usage
     this.maxTokens = 512; // Max tokens for the local model
     this.isInitializing = false;
     this.embeddingCache = new Map(); // Cache for embeddings
     this.maxCacheSize = 1000; // Maximum cache entries
     this.pendingEmbeddings = new Map(); // Track pending embedding requests
-    
+
     // E5 model prefixes - REQUIRED for proper semantic search
     // See: https://huggingface.co/intfloat/multilingual-e5-small
     this.queryPrefix = 'query: ';
@@ -27,13 +27,13 @@ class EmbeddingService {
     this.isInitializing = true;
     try {
       console.log('🤖 Loading local embedding model...');
-      
+
       // Dynamically import the transformers module
       if (!pipelineInstance) {
         const transformers = await import('@xenova/transformers');
         pipelineInstance = transformers.pipeline;
       }
-      
+
       this.model = await pipelineInstance('feature-extraction', this.modelName);
       console.log('✅ Local embedding model loaded successfully!');
     } catch (error) {
@@ -61,7 +61,7 @@ class EmbeddingService {
     // - "passage: " for documents/content being searched
     const prefix = type === 'query' ? this.queryPrefix : this.passagePrefix;
     const prefixedText = `${prefix}${text}`;
-    
+
     const truncatedText = this.truncateText(prefixedText, this.maxTokens);
     const cacheKey = `${type}:${truncatedText.toLowerCase().trim()}`;
 
@@ -83,12 +83,12 @@ class EmbeddingService {
 
     try {
       const embedding = await embeddingPromise;
-      
+
       // Cache the result
       if (embedding) {
         this._addToCache(cacheKey, embedding);
       }
-      
+
       return embedding;
     } finally {
       // Clean up pending request
@@ -141,7 +141,7 @@ class EmbeddingService {
       }
 
       console.log(`Generating embedding for text: "${truncatedText.substring(0, 100)}${truncatedText.length > 100 ? '...' : ''}"`);
-      
+
       // Generate embedding using local model with timeout
       const embeddingPromise = this.model(truncatedText, { pooling: 'mean', normalize: true });
       const timeoutPromise = new Promise((_, reject) => {
@@ -149,11 +149,11 @@ class EmbeddingService {
       });
 
       const output = await Promise.race([embeddingPromise, timeoutPromise]);
-      
+
       // Convert tensor to array
       const embedding = Array.from(output.data);
       console.log(`Generated embedding with ${embedding.length} dimensions`);
-      
+
       return embedding;
     } catch (error) {
       console.error('Error generating local embedding:', error.message);
@@ -174,7 +174,7 @@ class EmbeddingService {
       const firstKey = this.embeddingCache.keys().next().value;
       this.embeddingCache.delete(firstKey);
     }
-    
+
     this.embeddingCache.set(key, embedding);
   }
 
@@ -198,7 +198,7 @@ class EmbeddingService {
         chunk.map(text => this.generateEmbedding(text))
       );
 
-      const embeddings = chunkResults.map(result => 
+      const embeddings = chunkResults.map(result =>
         result.status === 'fulfilled' ? result.value : null
       );
 
@@ -245,7 +245,7 @@ class EmbeddingService {
   truncateText(text, maxTokens) {
     // For local models, use more conservative approximation: 1 token ≈ 3 characters
     const maxChars = maxTokens * 3;
-    
+
     if (text.length <= maxChars) {
       return text;
     }
@@ -253,7 +253,7 @@ class EmbeddingService {
     // Truncate at word boundary
     const truncated = text.substring(0, maxChars);
     const lastSpaceIndex = truncated.lastIndexOf(' ');
-    
+
     return lastSpaceIndex > 0 ? truncated.substring(0, lastSpaceIndex) : truncated;
   }
 

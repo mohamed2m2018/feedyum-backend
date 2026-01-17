@@ -1,5 +1,5 @@
-# Use Node.js LTS Alpine for smaller image size
-FROM node:18-alpine
+# Use Node.js version 22.22.0
+FROM node:22.22.0
 
 # Set working directory
 WORKDIR /app
@@ -11,7 +11,7 @@ COPY package*.json ./
 RUN npm ci --only=production
 
 # Copy application code
-COPY . .
+COPY . /app
 
 # Cloud Run sets PORT environment variable
 ENV PORT=8080

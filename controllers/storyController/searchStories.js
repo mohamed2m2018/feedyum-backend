@@ -1,22 +1,27 @@
 const mongoose = require("mongoose");
-const { search } = require("../../routes/user");
 
 // Models
 const Story = mongoose.model("story");
-var ObjectId = require("mongoose").Types.ObjectId;
+const ObjectId = mongoose.Types.ObjectId;
 
+/**
+ * Search stories with location-based sorting
+ * Distance is calculated in MongoDB BEFORE pagination for correct results
+ */
 const searchStories = async (req, res) => {
-  const { page = 1, limit = 10, searchString, excludeReviews, reviewsOnly, authorType, ...rest } = req.query;
-
-  console.log('Traditional story search called with:', {
+  const {
+    page = 1,
+    limit = 10,
     searchString,
-    page,
-    limit,
     excludeReviews,
     reviewsOnly,
     authorType,
-    rest
-  });
+    lat,
+    lng,
+    ...rest
+  } = req.query;
+
+  console.log('Story search called with:', { searchString, page, limit, lat, lng, authorType });
 
   const errors = {};
   if (rest.category && !ObjectId.isValid(rest.category)) {
@@ -24,122 +29,240 @@ const searchStories = async (req, res) => {
     return res.status(500).json(errors);
   }
 
-  // Build base query
-  let baseQuery;
+  try {
+    const userLat = parseFloat(lat);
+    const userLng = parseFloat(lng);
+    const hasLocation = !isNaN(userLat) && !isNaN(userLng);
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
 
-  if (searchString && searchString.trim() !== '') {
-    const string = new RegExp(searchString.trim(), 'i');
-    baseQuery = {
-      $or: [
-        { caption: string },
-        { description: string },
-        { title: string }
-      ],
-      ...rest,
-    };
-  } else {
-    baseQuery = {
-      ...rest,
-    };
-  }
+    // Build match conditions
+    const matchConditions = { ...rest };
 
-  // Handle author type filtering (Kitchen Posts vs Reviews)
-  if (authorType) {
-    try {
+    // Text search
+    if (searchString && searchString.trim() !== '') {
+      const regex = new RegExp(searchString.trim(), 'i');
+      matchConditions.$or = [
+        { caption: regex },
+        { description: regex },
+        { title: regex }
+      ];
+    }
+
+    // Author type filtering
+    if (authorType) {
       const User = mongoose.model("user");
       let userQuery = {};
-
       if (authorType === 'chef') {
         userQuery = { type: 'chef' };
       } else if (authorType === 'user') {
         userQuery = { type: { $ne: 'chef' } };
       }
-
-      // Find all users matching the type
       const users = await User.find(userQuery).select('_id');
-      const userIds = users.map(u => u._id);
-
-      // Add author filter to story query
-      baseQuery.author = { $in: userIds };
-
-      console.log(`Filtering for authorType: ${authorType}, found ${userIds.length} users`);
-    } catch (err) {
-      console.error('Error filtering by author type:', err);
-      // Continue without author filter if it fails, or return error?
-      // For now, let's log and continue, effectively ignoring the filter if it breaks
+      matchConditions.author = { $in: users.map(u => u._id) };
     }
-  }
 
-  // Add review filtering logic (keep as optional fallback or secondary filter)
-  if (excludeReviews === 'true') {
-    // Exclude review posts (posts without rating or reviewType)
-    baseQuery.$and = baseQuery.$and || [];
-    baseQuery.$and.push({
-      $or: [
-        { rating: { $exists: false } },
-        { rating: null },
-        { reviewType: { $exists: false } },
-        { reviewType: null },
-        { reviewMode: { $ne: true } }
-      ]
-    });
-  } else if (reviewsOnly === 'true') {
-    // Only include review posts (posts with rating or reviewType or reviewMode)
-    baseQuery.$and = baseQuery.$and || [];
-    baseQuery.$and.push({
-      $or: [
-        { rating: { $exists: true, $ne: null } },
-        { reviewType: { $exists: true, $ne: null } },
-        { reviewMode: true }
-      ]
-    });
-  }
+    // Review filtering
+    if (excludeReviews === 'true') {
+      matchConditions.$and = matchConditions.$and || [];
+      matchConditions.$and.push({
+        $or: [
+          { rating: { $exists: false } },
+          { rating: null },
+          { reviewMode: { $ne: true } }
+        ]
+      });
+    } else if (reviewsOnly === 'true') {
+      matchConditions.$and = matchConditions.$and || [];
+      matchConditions.$and.push({
+        $or: [
+          { rating: { $exists: true, $ne: null } },
+          { reviewMode: true }
+        ]
+      });
+    }
 
-  console.log('Story search query:', JSON.stringify(baseQuery, null, 2));
+    let stories;
+    let totalCount;
 
-  try {
-    const stories = await Story.find(baseQuery)
-      .limit(limit * 1)
-      .populate('author', 'fullName avatar')
-      .populate("dishes")
-      .skip((page - 1) * limit)
-      .sort({ _id: -1 });
+    if (hasLocation) {
+      // MongoDB Aggregation Pipeline with distance calculation
+      const pipeline = [
+        { $match: matchConditions },
+        // Join with author to get their locations
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'author',
+            foreignField: '_id',
+            as: 'authorData'
+          }
+        },
+        { $unwind: { path: '$authorData', preserveNullAndEmptyArrays: true } },
+        // Calculate distance using Haversine formula in MongoDB
+        {
+          $addFields: {
+            distance: {
+              $cond: {
+                if: {
+                  $and: [
+                    { $isArray: "$authorData.locations" },
+                    { $gt: [{ $size: "$authorData.locations" }, 0] }
+                  ]
+                },
+                then: {
+                  $min: {
+                    $map: {
+                      input: "$authorData.locations",
+                      as: "loc",
+                      in: {
+                        $multiply: [
+                          6371, // Earth radius in km
+                          {
+                            $acos: {
+                              $min: [
+                                1,
+                                {
+                                  $add: [
+                                    {
+                                      $multiply: [
+                                        { $sin: { $degreesToRadians: userLat } },
+                                        { $sin: { $degreesToRadians: { $ifNull: ["$$loc.lat", 0] } } }
+                                      ]
+                                    },
+                                    {
+                                      $multiply: [
+                                        { $cos: { $degreesToRadians: userLat } },
+                                        { $cos: { $degreesToRadians: { $ifNull: ["$$loc.lat", 0] } } },
+                                        {
+                                          $cos: {
+                                            $subtract: [
+                                              { $degreesToRadians: { $ifNull: ["$$loc.long", 0] } },
+                                              { $degreesToRadians: userLng }
+                                            ]
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                else: 999999
+              }
+            }
+          }
+        },
+        // Round distance
+        { $addFields: { distance: { $round: ["$distance", 1] } } },
+        // Sort by distance BEFORE pagination
+        { $sort: { distance: 1 } },
+        // Facet for count + paginated data
+        {
+          $facet: {
+            metadata: [{ $count: "total" }],
+            data: [
+              { $skip: skip },
+              { $limit: limitNum },
+              {
+                $project: {
+                  _id: { $toString: "$_id" },
+                  caption: 1,
+                  description: 1,
+                  title: 1,
+                  poster: 1,
+                  video: 1,
+                  likesNo: 1,
+                  views: 1,
+                  reviewMode: 1,
+                  rating: 1,
+                  dishes: 1,
+                  category: 1,
+                  created_at: 1,
+                  distance: 1,
+                  author: {
+                    _id: { $toString: "$authorData._id" },
+                    fullName: "$authorData.fullName",
+                    username: "$authorData.username",
+                    avatar: "$authorData.avatar",
+                    locations: "$authorData.locations"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ];
 
-    // Get total count for pagination
-    const totalStories = await Story.countDocuments(baseQuery);
+      const result = await Story.aggregate(pipeline);
+      stories = result[0]?.data || [];
+      totalCount = result[0]?.metadata[0]?.total || 0;
 
-    // Remove embeddings from response to reduce size
-    const storiesWithoutEmbeddings = stories.map(story => {
-      const storyObj = story.toObject();
-      delete storyObj.embedding;
-      delete storyObj.embeddingGenerated;
+    } else {
+      // No location - simple query
+      stories = await Story.find(matchConditions)
+        .populate('author', 'fullName username avatar locations')
+        .populate('dishes')
+        .skip(skip)
+        .limit(limitNum)
+        .sort({ _id: -1 })
+        .lean();
 
-      // Also remove embeddings from populated dishes
-      if (storyObj.dishes && Array.isArray(storyObj.dishes)) {
-        storyObj.dishes = storyObj.dishes.map(dish => {
-          const dishObj = dish.toObject ? dish.toObject() : dish;
-          delete dishObj.embedding;
-          delete dishObj.embeddingGenerated;
-          return dishObj;
+      totalCount = await Story.countDocuments(matchConditions);
+
+      // Transform
+      stories = stories.map(story => ({
+        ...story,
+        _id: story._id?.toString(),
+        author: story.author ? {
+          _id: story.author._id?.toString(),
+          fullName: story.author.fullName,
+          username: story.author.username,
+          avatar: story.author.avatar,
+          locations: story.author.locations,
+        } : null,
+      }));
+    }
+
+    // Clean embeddings
+    stories = stories.map(story => {
+      delete story.embedding;
+      delete story.embeddingGenerated;
+      if (story.dishes && Array.isArray(story.dishes)) {
+        story.dishes = story.dishes.map(dish => {
+          if (dish) {
+            delete dish.embedding;
+            delete dish.embeddingGenerated;
+          }
+          return dish;
         });
       }
-
-      return storyObj;
+      return story;
     });
 
-    console.log(`Traditional search found ${storiesWithoutEmbeddings.length} stories for query: "${searchString}"`);
+    console.log(`Story search found ${stories.length} stories`);
 
     res.status(200).json({
       success: true,
       data: {
-        stories: storiesWithoutEmbeddings,
-        currentPage: parseInt(page),
-        totalPages: Math.ceil(totalStories / limit),
-        totalItems: totalStories,
-        hasNextPage: page < Math.ceil(totalStories / limit),
-        hasPrevPage: page > 1,
+        stories,
+        pagination: {
+          currentPage: pageNum,
+          totalPages: Math.ceil(totalCount / limitNum),
+          totalItems: totalCount,
+          hasNextPage: skip + stories.length < totalCount,
+          hasPrevPage: pageNum > 1,
+        }
       },
     });
+
   } catch (err) {
     console.error('Story search error:', err);
     return res.status(500).json({ success: false, error: 'Database error during search' });

@@ -1,54 +1,75 @@
+const OpenAI = require('openai');
 let pipelineInstance = null;
 
 class EmbeddingService {
   constructor() {
-    this.model = null;
-    this.modelName = 'Xenova/multilingual-e5-small'; // Smaller multilingual model - better memory usage
-    this.maxTokens = 512; // Max tokens for the local model
-    this.isInitializing = false;
-    this.embeddingCache = new Map(); // Cache for embeddings
-    this.maxCacheSize = 1000; // Maximum cache entries
-    this.pendingEmbeddings = new Map(); // Track pending embedding requests
+    // OpenAI client (primary) - using large model for better Arabic support
+    this.openai = null;
+    this.openaiModel = 'text-embedding-3-large';
+    this.openaiDimensions = 3072;
 
-    // E5 model prefixes - REQUIRED for proper semantic search
-    // See: https://huggingface.co/intfloat/multilingual-e5-small
+    // Local model (fallback)
+    this.localModel = null;
+    this.localModelName = 'Xenova/multilingual-e5-small';
+    this.isInitializingLocal = false;
+
+    // Common settings
+    this.maxTokens = 8191; // OpenAI limit
+    this.embeddingCache = new Map();
+    this.maxCacheSize = 1000;
+    this.pendingEmbeddings = new Map();
+
+    // E5 model prefixes (for local fallback)
     this.queryPrefix = 'query: ';
     this.passagePrefix = 'passage: ';
+
+    // Initialize OpenAI if API key available
+    this._initOpenAI();
   }
 
   /**
-   * Initialize the local embedding model
+   * Initialize OpenAI client
    */
-  async initializeModel() {
-    if (this.model || this.isInitializing) {
+  _initOpenAI() {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (apiKey) {
+      this.openai = new OpenAI({ apiKey });
+      console.log('✅ OpenAI embedding client initialized');
+    } else {
+      console.warn('⚠️ OPENAI_API_KEY not found, using local model only');
+    }
+  }
+
+  /**
+   * Initialize local embedding model (fallback)
+   */
+  async initializeLocalModel() {
+    if (this.localModel || this.isInitializingLocal) {
       return;
     }
 
-    this.isInitializing = true;
+    this.isInitializingLocal = true;
     try {
       console.log('🤖 Loading local embedding model...');
-
-      // Dynamically import the transformers module
       if (!pipelineInstance) {
         const transformers = await import('@xenova/transformers');
         pipelineInstance = transformers.pipeline;
       }
-
-      this.model = await pipelineInstance('feature-extraction', this.modelName);
+      this.localModel = await pipelineInstance('feature-extraction', this.localModelName);
       console.log('✅ Local embedding model loaded successfully!');
     } catch (error) {
       console.error('❌ Failed to load local embedding model:', error.message);
-      this.model = null;
+      this.localModel = null;
     } finally {
-      this.isInitializing = false;
+      this.isInitializingLocal = false;
     }
   }
 
   /**
-   * Generate embeddings for a given text using local model
+   * Generate embeddings - tries OpenAI first, falls back to local
    * @param {string} text - Text to generate embeddings for
-   * @param {string} type - Type of text: 'query' for search queries, 'passage' for documents/content (default)
-   * @returns {Promise<number[]>} - Array of embedding values
+   * @param {string} type - 'query' or 'passage'
+   * @returns {Promise<number[]>} - Embedding vector
    */
   async generateEmbedding(text, type = 'passage') {
     if (!text || typeof text !== 'string') {
@@ -56,139 +77,136 @@ class EmbeddingService {
       return null;
     }
 
-    // E5 models REQUIRE prefixes for proper semantic search
-    // - "query: " for search queries (user input)
-    // - "passage: " for documents/content being searched
-    const prefix = type === 'query' ? this.queryPrefix : this.passagePrefix;
-    const prefixedText = `${prefix}${text}`;
-
-    const truncatedText = this.truncateText(prefixedText, this.maxTokens);
-    const cacheKey = `${type}:${truncatedText.toLowerCase().trim()}`;
+    const cacheKey = `${type}:${text.toLowerCase().trim().substring(0, 200)}`;
 
     // Check cache first
     if (this.embeddingCache.has(cacheKey)) {
-      console.log(`Cache hit for ${type} embedding: "${text.substring(0, 50)}..."`);
+      console.log(`📦 Cache hit for ${type} embedding`);
       return this.embeddingCache.get(cacheKey);
     }
 
     // Check if embedding is already being generated
     if (this.pendingEmbeddings.has(cacheKey)) {
-      console.log(`Waiting for pending ${type} embedding: "${text.substring(0, 50)}..."`);
       return await this.pendingEmbeddings.get(cacheKey);
     }
 
-    // Create promise for this embedding generation
-    const embeddingPromise = this._generateEmbeddingInternal(truncatedText, cacheKey);
+    // Generate embedding
+    const embeddingPromise = this._generateEmbeddingInternal(text, type, cacheKey);
     this.pendingEmbeddings.set(cacheKey, embeddingPromise);
 
     try {
       const embedding = await embeddingPromise;
-
-      // Cache the result
       if (embedding) {
         this._addToCache(cacheKey, embedding);
       }
-
       return embedding;
     } finally {
-      // Clean up pending request
       this.pendingEmbeddings.delete(cacheKey);
     }
   }
 
   /**
-   * Generate embedding specifically for search queries
-   * Uses the E5 "query: " prefix for optimal cross-language semantic matching
-   * @param {string} queryText - Search query text
-   * @returns {Promise<number[]>} - Array of embedding values
+   * Internal embedding generation - OpenAI primary, local fallback
+   */
+  async _generateEmbeddingInternal(text, type, cacheKey) {
+    // Try OpenAI first (better Arabic semantic understanding)
+    if (this.openai) {
+      try {
+        const truncatedText = this.truncateText(text, this.maxTokens);
+        console.log(`🌐 OpenAI embedding for: "${truncatedText.substring(0, 60)}..."`);
+
+        const response = await this.openai.embeddings.create({
+          model: this.openaiModel,
+          input: truncatedText,
+        });
+
+        const embedding = response.data[0].embedding;
+        console.log(`✅ OpenAI embedding: ${embedding.length} dimensions`);
+        return embedding;
+      } catch (error) {
+        console.error('❌ OpenAI embedding failed, trying local:', error.message);
+      }
+    }
+
+    // Fallback to local model
+    return await this._generateLocalEmbedding(text, type);
+  }
+
+  /**
+   * Generate embedding using local model
+   */
+  async _generateLocalEmbedding(text, type) {
+    try {
+      if (!this.localModel && !this.isInitializingLocal) {
+        await this.initializeLocalModel();
+      }
+
+      let waitCount = 0;
+      while (this.isInitializingLocal && waitCount < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        waitCount++;
+      }
+
+      if (!this.localModel) {
+        console.warn('Local model not available');
+        return null;
+      }
+
+      const prefix = type === 'query' ? this.queryPrefix : this.passagePrefix;
+      const prefixedText = `${prefix}${text}`;
+      const truncatedText = this.truncateText(prefixedText, 512 * 3);
+
+      console.log(`🔧 Local embedding for: "${truncatedText.substring(0, 60)}..."`);
+
+      const embeddingPromise = this.localModel(truncatedText, { pooling: 'mean', normalize: true });
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout')), 10000)
+      );
+
+      const output = await Promise.race([embeddingPromise, timeoutPromise]);
+      const embedding = Array.from(output.data);
+      console.log(`✅ Local embedding: ${embedding.length} dimensions`);
+
+      return embedding;
+    } catch (error) {
+      console.error('Error generating local embedding:', error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Generate embedding for search queries
    */
   async generateQueryEmbedding(queryText) {
     return this.generateEmbedding(queryText, 'query');
   }
 
   /**
-   * Generate embedding specifically for documents/passages
-   * Uses the E5 "passage: " prefix for optimal semantic indexing
-   * @param {string} passageText - Document/passage text
-   * @returns {Promise<number[]>} - Array of embedding values
+   * Generate embedding for documents/passages
    */
   async generatePassageEmbedding(passageText) {
     return this.generateEmbedding(passageText, 'passage');
   }
 
   /**
-   * Internal method to generate embeddings
-   * @private
-   */
-  async _generateEmbeddingInternal(truncatedText, cacheKey) {
-    try {
-      // Initialize model if not already done
-      if (!this.model && !this.isInitializing) {
-        console.log('Initializing embedding model...');
-        await this.initializeModel();
-      }
-
-      // Wait for model to be ready if it's initializing
-      let waitCount = 0;
-      while (this.isInitializing && waitCount < 50) { // Max 5 seconds wait
-        await new Promise(resolve => setTimeout(resolve, 100));
-        waitCount++;
-      }
-
-      if (!this.model) {
-        console.warn('Local embedding model not available. Falling back to text search.');
-        return null;
-      }
-
-      console.log(`Generating embedding for text: "${truncatedText.substring(0, 100)}${truncatedText.length > 100 ? '...' : ''}"`);
-
-      // Generate embedding using local model with timeout
-      const embeddingPromise = this.model(truncatedText, { pooling: 'mean', normalize: true });
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Embedding generation timeout')), 10000); // 10 second timeout
-      });
-
-      const output = await Promise.race([embeddingPromise, timeoutPromise]);
-
-      // Convert tensor to array
-      const embedding = Array.from(output.data);
-      console.log(`Generated embedding with ${embedding.length} dimensions`);
-
-      return embedding;
-    } catch (error) {
-      console.error('Error generating local embedding:', error.message);
-      if (error.message === 'Embedding generation timeout') {
-        console.error('Embedding generation timed out - model may be overloaded');
-      }
-      return null;
-    }
-  }
-
-  /**
-   * Add embedding to cache with size management
-   * @private
+   * Add to cache with size management
    */
   _addToCache(key, embedding) {
-    // Remove oldest entries if cache is full
     if (this.embeddingCache.size >= this.maxCacheSize) {
       const firstKey = this.embeddingCache.keys().next().value;
       this.embeddingCache.delete(firstKey);
     }
-
     this.embeddingCache.set(key, embedding);
   }
 
   /**
-   * Generate embeddings for multiple texts in batch
-   * @param {string[]} texts - Array of texts to generate embeddings for
-   * @returns {Promise<(number[]|null)[]>} - Array of embedding arrays
+   * Generate batch embeddings
    */
   async generateBatchEmbeddings(texts) {
     if (!Array.isArray(texts)) {
       throw new Error('Input must be an array of texts');
     }
 
-    // Process in chunks to avoid API limits
     const chunkSize = 100;
     const results = [];
 
@@ -209,10 +227,7 @@ class EmbeddingService {
   }
 
   /**
-   * Calculate cosine similarity between two embeddings
-   * @param {number[]} embedding1 - First embedding vector
-   * @param {number[]} embedding2 - Second embedding vector
-   * @returns {number} - Similarity score between 0 and 1
+   * Calculate cosine similarity
    */
   calculateCosineSimilarity(embedding1, embedding2) {
     if (!embedding1 || !embedding2 || embedding1.length !== embedding2.length) {
@@ -237,33 +252,59 @@ class EmbeddingService {
   }
 
   /**
-   * Truncate text to fit within token limits for local model
-   * @param {string} text - Text to truncate
-   * @param {number} maxTokens - Maximum number of tokens
-   * @returns {string} - Truncated text
+   * Truncate text to token limit
    */
   truncateText(text, maxTokens) {
-    // For local models, use more conservative approximation: 1 token ≈ 3 characters
     const maxChars = maxTokens * 3;
-
     if (text.length <= maxChars) {
       return text;
     }
-
-    // Truncate at word boundary
     const truncated = text.substring(0, maxChars);
     const lastSpaceIndex = truncated.lastIndexOf(' ');
-
     return lastSpaceIndex > 0 ? truncated.substring(0, lastSpaceIndex) : truncated;
   }
 
   /**
-   * Prepare text for embedding by cleaning and combining relevant fields
-   * @param {Object} item - Object containing text fields
-   * @param {string[]} fields - Field names to combine
-   * @returns {string} - Combined and cleaned text
+   * Prepare text for embedding
    */
   prepareTextForEmbedding(item, fields) {
+    // Arabic food category & brand keywords for better semantic matching
+    const arabicFoodKeywords = {
+      // Fast food + brands
+      'burger': 'فاست فود وجبات سريعة برجر همبرجر ماكدونالدز ماك هارديز fast food mcdonalds',
+      'برجر': 'فاست فود وجبات سريعة برجر همبرجر ماكدونالدز ماك هارديز fast food mcdonalds',
+      'ماكدونالدز': 'burger برجر همبرجر فاست فود وجبات سريعة ماك mcdonalds fast food',
+      'ماك': 'burger برجر همبرجر فاست فود وجبات سريعة ماكدونالدز mcdonalds fast food',
+      'هارديز': 'burger برجر همبرجر فاست فود وجبات سريعة hardees fast food',
+      'كنتاكي': 'chicken فراخ دجاج مقلي فاست فود kfc fried',
+      'kfc': 'chicken فراخ دجاج مقلي فاست فود كنتاكي fried',
+      'pizza': 'بيتزا فاست فود إيطالي بيتزا هت دومينوز fast food',
+      'بيتزا': 'بيتزا فاست فود إيطالي بيتزا هت دومينوز pizza fast food',
+      'sandwich': 'ساندويتش سندوتش وجبات سريعة صب واي',
+      'سندوتش': 'ساندويتش سندوتش وجبات سريعة صب واي sandwich',
+      'fried': 'مقلي قلي مقرمش كنتاكي crispy kfc',
+      // Sweets
+      'cake': 'كيك حلويات تورتة باسكن روبنز dessert',
+      'كيك': 'كيك حلويات تورتة dessert cake',
+      'dessert': 'حلويات حلو سكر كيك sweet',
+      // Healthy
+      'salad': 'سلطة صحي دايت healthy diet',
+      'سلطة': 'سلطة صحي دايت salad healthy diet',
+      // Main courses
+      'chicken': 'فراخ دجاج فرخة كنتاكي مقلي',
+      'دجاج': 'فراخ دجاج فرخة كنتاكي مقلي chicken kfc',
+      'meat': 'لحم لحمة ستيك كباب',
+      'لحم': 'لحم لحمة ستيك كباب meat steak',
+      'rice': 'أرز رز كشري',
+      'أرز': 'أرز رز كشري rice',
+      // Drinks
+      'juice': 'عصير مشروب شراب',
+      'عصير': 'عصير مشروب شراب juice drink',
+      'coffee': 'قهوة كافيه ستاربكس',
+      'قهوة': 'قهوة كافيه ستاربكس coffee starbucks',
+      'ستاربكس': 'coffee قهوة كافيه starbucks',
+    };
+
     const textParts = fields
       .map(field => {
         const value = item[field];
@@ -274,8 +315,18 @@ class EmbeddingService {
       })
       .filter(text => text.trim().length > 0);
 
-    return textParts.join(' ').trim();
+    let fullText = textParts.join(' ').trim();
+
+    // Add relevant Arabic keywords based on content
+    const lowerText = fullText.toLowerCase();
+    Object.entries(arabicFoodKeywords).forEach(([keyword, arabicTerms]) => {
+      if (lowerText.includes(keyword.toLowerCase())) {
+        fullText += ' ' + arabicTerms;
+      }
+    });
+
+    return fullText;
   }
 }
 
-module.exports = new EmbeddingService(); 
+module.exports = new EmbeddingService();

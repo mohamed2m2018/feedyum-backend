@@ -304,11 +304,104 @@ const getStories = async (req, res) => {
     const pageIds = feedIds.slice(startIndex, startIndex + pageSize);
 
     if (pageIds.length === 0) {
+      // TIER 2/3 FALLBACK: User exhausted hot content, fetch extended/archive
+      console.log('[FEED] Tier 1 exhausted, switching to Tier 2/3 fallback');
+
+      const tier1Size = feedIds.length;
+      const fallbackOffset = startIndex - tier1Size; // How far into fallback tiers
+
+      // Use aggregation for distance-sorted extended content
+      const userLat = lat ? parseFloat(lat) : null;
+      const userLong = long ? parseFloat(long) : null;
+      const hasLocation = userLat && userLong && !isNaN(userLat) && !isNaN(userLong);
+
+      // Build fallback query (exclude already-shown IDs if possible)
+      const excludeIds = feedIds.map(id => new mongoose.Types.ObjectId(id));
+
+      let fallbackStories = [];
+
+      if (hasLocation) {
+        // Tier 2/3: Distance-sorted via aggregation
+        const pipeline = [
+          { $match: { _id: { $nin: excludeIds } } },
+          { $lookup: { from: 'users', localField: 'author', foreignField: '_id', as: 'authorData' } },
+          { $unwind: { path: '$authorData', preserveNullAndEmptyArrays: true } },
+          {
+            $addFields: {
+              distance: {
+                $cond: {
+                  if: { $and: [{ $isArray: "$authorData.locations" }, { $gt: [{ $size: "$authorData.locations" }, 0] }] },
+                  then: {
+                    $min: {
+                      $map: {
+                        input: "$authorData.locations",
+                        as: "loc",
+                        in: {
+                          $multiply: [
+                            6371,
+                            {
+                              $acos: {
+                                $min: [1, {
+                                  $add: [
+                                    { $multiply: [{ $sin: { $degreesToRadians: userLat } }, { $sin: { $degreesToRadians: { $ifNull: ["$$loc.lat", 0] } } }] },
+                                    {
+                                      $multiply: [{ $cos: { $degreesToRadians: userLat } }, { $cos: { $degreesToRadians: { $ifNull: ["$$loc.lat", 0] } } },
+                                      { $cos: { $subtract: [{ $degreesToRadians: { $ifNull: ["$$loc.long", 0] } }, { $degreesToRadians: userLong }] } }
+                                      ]
+                                    }
+                                  ]
+                                }]
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  else: 999999
+                }
+              }
+            }
+          },
+          { $sort: { distance: 1 } },
+          { $skip: Math.max(0, fallbackOffset) },
+          { $limit: pageSize },
+          { $lookup: { from: 'dishes', localField: 'dishes', foreignField: '_id', as: 'dishes' } }
+        ];
+
+        fallbackStories = await Story.aggregate(pipeline);
+      } else {
+        // No location - just date sorted
+        fallbackStories = await Story.find({ _id: { $nin: excludeIds } })
+          .populate('author')
+          .populate('dishes')
+          .sort({ created_at: -1 })
+          .skip(Math.max(0, fallbackOffset))
+          .limit(pageSize)
+          .lean();
+      }
+
+      if (fallbackStories.length === 0) {
+        return res.json({
+          stories: [],
+          totalPages: Math.ceil(tier1Size / pageSize) + 1,
+          currentPage: page,
+          message: "You've seen everything! Check back later for new content."
+        });
+      }
+
+      // Hydrate fallback stories
+      const hydratedFallback = fallbackStories.map(s => ({
+        ...s,
+        author: s.authorData || s.author,
+        kmAway: s.distance,
+      }));
+
       return res.json({
-        stories: [],
-        totalPages: Math.ceil(feedIds.length / pageSize),
+        stories: hydratedFallback,
+        totalPages: 999, // Unknown total for archive
         currentPage: page,
-        message: "No more stories"
+        tier: 'extended'
       });
     }
 

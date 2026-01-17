@@ -6,6 +6,8 @@
   "scripts": {
     "start": "nodemon server.js",
     "server": "nodemon server.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
     "test-data": "node scripts/generateTestData.js",
     "test-data:generate": "node scripts/generateTestData.js generate",
     "test-data:clean": "node scripts/generateTestData.js clean",
@@ -56,6 +58,7 @@
     "node-cache": "^5.1.2",
     "node-cron": "^3.0.3",
     "onesignal-node": "^3.4.0",
+    "openai": "^6.16.0",
     "passport": "^0.4.0",
     "passport-jwt": "^4.0.0",
     "redis": "^4.7.1",
@@ -66,6 +69,7 @@
   },
   "devDependencies": {
     "eslint": "^8.41.0",
+    "jest": "^30.2.0",
     "nodemon": "^1.18.9"
   }
 }

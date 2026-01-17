@@ -1,3 +1,4 @@
+require('dotenv').config();
 const mongoose = require('mongoose');
 const embeddingService = require('../services/embeddingService');
 const keys = require('../config/keys');
@@ -30,19 +31,26 @@ async function connectDB() {
  */
 async function generateDishEmbeddings() {
   console.log('Starting dish embeddings generation...');
-  
+
+  const forceRegenerate = process.argv.includes('--force');
+  if (forceRegenerate) {
+    console.log('⚠️  Force mode: regenerating ALL embeddings');
+  }
+
   try {
-    // Get dishes without embeddings
-    const dishes = await Dish.find({
+    // Get dishes - either all (force) or only those without embeddings
+    const query = forceRegenerate ? {} : {
       $or: [
         { embedding: null },
         { embedding: { $exists: false } },
         { embeddingGenerated: null },
         { embeddingGenerated: { $exists: false } }
       ]
-    })
-    .select('+embedding +embeddingGenerated') // Explicitly include embeddings to check their status
-    .limit(100); // Process in batches
+    };
+
+    const dishes = await Dish.find(query)
+      .select('+embedding +embeddingGenerated') // Explicitly include embeddings to check their status
+      .limit(500); // Process in batches
 
     console.log(`Found ${dishes.length} dishes to process`);
 
@@ -68,7 +76,7 @@ async function generateDishEmbeddings() {
 
         // Generate embedding
         const embedding = await embeddingService.generateEmbedding(text);
-        
+
         if (embedding) {
           // Update dish with embedding
           await Dish.findByIdAndUpdate(dish._id, {
@@ -105,7 +113,7 @@ async function generateDishEmbeddings() {
  */
 async function generateUserEmbeddings() {
   console.log('Starting user embeddings generation...');
-  
+
   try {
     // Get users without embeddings
     const users = await User.find({
@@ -117,8 +125,8 @@ async function generateUserEmbeddings() {
       ],
       type: { $ne: 'guest' }
     })
-    .select('+embedding +embeddingGenerated') // Explicitly include embeddings to check their status
-    .limit(100); // Process in batches
+      .select('+embedding +embeddingGenerated') // Explicitly include embeddings to check their status
+      .limit(100); // Process in batches
 
     console.log(`Found ${users.length} users to process`);
 
@@ -142,7 +150,7 @@ async function generateUserEmbeddings() {
 
         // Generate embedding
         const embedding = await embeddingService.generateEmbedding(text);
-        
+
         if (embedding) {
           // Update user with embedding
           await User.findByIdAndUpdate(user._id, {
@@ -179,7 +187,7 @@ async function generateUserEmbeddings() {
  */
 async function generateStoryEmbeddings() {
   console.log('Starting story embeddings generation...');
-  
+
   try {
     // Get stories without embeddings
     const stories = await Story.find({
@@ -190,8 +198,8 @@ async function generateStoryEmbeddings() {
         { embeddingGenerated: { $exists: false } }
       ]
     })
-    .select('+embedding +embeddingGenerated') // Explicitly include embeddings to check their status
-    .limit(100); // Process in batches
+      .select('+embedding +embeddingGenerated') // Explicitly include embeddings to check their status
+      .limit(100); // Process in batches
 
     console.log(`Found ${stories.length} stories to process`);
 
@@ -214,7 +222,7 @@ async function generateStoryEmbeddings() {
 
         // Generate embedding
         const embedding = await embeddingService.generateEmbedding(text);
-        
+
         if (embedding) {
           // Update story with embedding
           await Story.findByIdAndUpdate(story._id, {
@@ -280,10 +288,10 @@ async function main() {
     console.log(`Dishes: ${totalStats.dishes.processed} processed, ${totalStats.dishes.errors} errors`);
     console.log(`Users: ${totalStats.users.processed} processed, ${totalStats.users.errors} errors`);
     console.log(`Stories: ${totalStats.stories.processed} processed, ${totalStats.stories.errors} errors`);
-    
+
     const totalProcessed = totalStats.dishes.processed + totalStats.users.processed + totalStats.stories.processed;
     const totalErrors = totalStats.dishes.errors + totalStats.users.errors + totalStats.stories.errors;
-    
+
     console.log(`\nTotal: ${totalProcessed} processed, ${totalErrors} errors`);
     console.log('\n✨ Embedding generation completed!');
 

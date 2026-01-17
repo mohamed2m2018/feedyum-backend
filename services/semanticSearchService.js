@@ -1,13 +1,12 @@
 const embeddingService = require('./embeddingService');
-const vectorSearchService = require('./vectorSearchService');
 const Dish = require('../models/dish');
 const User = require('../models/user');
 const Story = require('../models/story');
 
 class SemanticSearchService {
   constructor() {
-    this.similarityThreshold = 0.2; // Temporarily lowered for debugging Arabic search
-    this.maxResults = 50; // Maximum number of results to consider
+    this.similarityThreshold = 0.3; // Threshold for matching
+    this.maxResults = 50;
   }
 
   /**
@@ -24,182 +23,121 @@ class SemanticSearchService {
 
   /**
    * Process Arabic queries for semantic search
-   * The multilingual E5 model handles Arabic natively
+   * Expands Arabic brand names to associated food terms
    * @param {string} text - Arabic text
-   * @returns {string} - Processed query
+   * @returns {string} - Expanded query
    */
-  
   enhanceArabicQuery(text) {
-    console.log(`🌍 Arabic query: "${text}" - using multilingual model directly`);
-    return text.trim();
+    // Arabic brand/query expansion map
+    const expansions = {
+      'ماكدونالدز': 'burger برجر همبرجر فاست فود',
+      'ماك': 'burger برجر همبرجر ماكدونالدز فاست فود',
+      'هارديز': 'burger برجر همبرجر فاست فود',
+      'كنتاكي': 'chicken فراخ دجاج مقلي fried',
+      'بيتزا هت': 'pizza بيتزا',
+      'دومينوز': 'pizza بيتزا',
+      'ستاربكس': 'coffee قهوة كافيه',
+      'صب واي': 'sandwich سندوتش ساندويتش',
+      'فاست فود': 'burger pizza chicken برجر بيتزا فراخ وجبات سريعة',
+      'وجبات سريعة': 'burger pizza chicken برجر بيتزا فراخ فاست فود',
+    };
+
+    let expandedQuery = text.trim();
+
+    // Check if query contains any known brands and expand
+    Object.entries(expansions).forEach(([brand, expansion]) => {
+      if (text.includes(brand)) {
+        expandedQuery += ' ' + expansion;
+      }
+    });
+
+    console.log(`🌍 Arabic query expanded: "${text}" → "${expandedQuery}"`);
+    return expandedQuery;
   }
 
   /**
-   * Perform semantic search for dishes using Pinecone
+   * Perform semantic search for dishes using MongoDB
    * @param {string} searchQuery - User's search query
-   * @param {Object} options - Search options (cursor, limit, filters)
+   * @param {Object} options - Search options (limit, filters)
    * @returns {Promise<Object>} - Search results with similarity scores
    */
   async searchDishes(searchQuery, options = {}) {
-    const { cursor = null, limit = 10, filters = {} } = options;
+    const { limit = 10, filters = {} } = options;
 
     try {
-      // Enhance Arabic queries for better semantic search
-      let effectiveQuery = searchQuery;
-      if (this.isArabicQuery(searchQuery)) {
-        console.log(`Arabic dish search: "${searchQuery}" - Enhancing`);
-        effectiveQuery = this.enhanceArabicQuery(searchQuery);
-      }
+      console.log(`🔍 Semantic dish search: "${searchQuery}"`);
 
-      // Generate embedding for search query (using query prefix for E5 model)
-      const queryEmbedding = await embeddingService.generateQueryEmbedding(effectiveQuery);
+      // Generate embedding for search query
+      const queryEmbedding = await embeddingService.generateQueryEmbedding(searchQuery);
 
       if (!queryEmbedding) {
-        // Fallback to text search if embedding generation fails
+        console.log('Failed to generate query embedding, falling back to text search');
         return this.fallbackTextSearch('dishes', searchQuery, options);
       }
 
-      // Use Pinecone for vector search if available
-      if (vectorSearchService.isAvailable()) {
-        try {
-          const vectorSearchResult = await vectorSearchService.searchDishes(queryEmbedding, {
-            limit,
-            filters,
-            minScore: this.similarityThreshold,
-            cursor
-          });
+      console.log(`Query embedding: ${queryEmbedding.length} dimensions`);
 
-          const { results: vectorResults, pagination } = vectorSearchResult;
+      // Get dishes that have embeddings
+      const dishes = await Dish.find({
+        visible: { $ne: false },
+        embedding: { $exists: true, $ne: null },
+        ...filters
+      })
+        .select('+embedding')
+        .populate('user_id', 'fullName avatar')
+        .limit(this.maxResults)
+        .lean();
 
-          // Get full dish data from MongoDB using the IDs from Pinecone
-          const dishIds = vectorResults.map(result => result.dishId);
+      console.log(`Found ${dishes.length} dishes with embeddings`);
 
-          if (dishIds.length === 0) {
-            return {
-              success: true,
-              data: {
-                dishes: [],
-                pagination: {
-                  hasMore: false,
-                  nextCursor: null,
-                  limit
-                },
-                searchType: 'semantic-pinecone'
-              }
-            };
+      // Calculate similarity scores
+      const dishesWithScores = dishes
+        .map(dish => {
+          if (!dish.embedding || !Array.isArray(dish.embedding)) {
+            return null;
           }
 
-          const mongoFilter = {
-            _id: { $in: dishIds },
-            visible: { $ne: false },
-            ...(filters.user_id ? { user_id: filters.user_id } : {})
-          };
+          // Check dimension match
+          if (dish.embedding.length !== queryEmbedding.length) {
+            console.log(`Dimension mismatch: dish has ${dish.embedding.length}, query has ${queryEmbedding.length}`);
+            return null;
+          }
 
-          const dishes = await Dish.find(mongoFilter)
-            .populate('user_id', 'fullName avatar')
-            .lean();
-
-          // Merge Pinecone scores with MongoDB data, maintaining order
-          const dishesWithScores = vectorResults
-            .map(vectorResult => {
-              const dish = dishes.find(d => d._id.toString() === vectorResult.dishId);
-              if (!dish) return null;
-
-              return {
-                ...dish,
-                chef: dish.user_id,
-                semanticScore: vectorResult.score
-              };
-            })
-            .filter(dish => dish !== null);
-
-          console.log(`Pinecone search found ${dishesWithScores.length} dishes for query: "${searchQuery}"`);
+          const similarity = embeddingService.calculateCosineSimilarity(
+            queryEmbedding,
+            dish.embedding
+          );
 
           return {
-            success: true,
-            data: {
-              dishes: dishesWithScores,
-              pagination,
-              searchType: 'semantic-pinecone'
-            }
+            ...dish,
+            embedding: undefined, // Don't return embedding
+            chef: dish.user_id,
+            semanticScore: similarity
           };
+        })
+        .filter(dish => dish && dish.semanticScore >= this.similarityThreshold)
+        .sort((a, b) => b.semanticScore - a.semanticScore)
+        .slice(0, limit);
 
-        } catch (pineconeError) {
-          console.warn('Pinecone search failed, falling back to MongoDB:', pineconeError.message);
-          // Fall through to MongoDB search
+      console.log(`Semantic search found ${dishesWithScores.length} matching dishes`);
+
+      return {
+        success: true,
+        data: {
+          dishes: dishesWithScores,
+          pagination: {
+            hasMore: false,
+            nextCursor: null,
+            limit
+          },
+          searchType: 'semantic'
         }
-      }
-
-      // Fallback to MongoDB-based semantic search
-      return this._searchDishesWithMongoDB(searchQuery, queryEmbedding, { ...options, page: 1, limit });
+      };
 
     } catch (error) {
-      console.error('Semantic search error for dishes:', error);
-      // Fallback to text search
+      console.error('Semantic search error:', error);
       return this.fallbackTextSearch('dishes', searchQuery, options);
     }
-  }
-
-  /**
-   * MongoDB fallback for dishes search
-   * @private
-   */
-  async _searchDishesWithMongoDB(searchQuery, queryEmbedding, options) {
-    const { page = 1, limit = 10, filters = {} } = options;
-
-    // Get dishes that have embeddings
-    const dishes = await Dish.find({
-      visible: { $ne: false },
-      embedding: { $exists: true, $ne: null, $not: { $size: 0 } },
-      ...filters
-    })
-      .select('+embedding +embeddingGenerated')
-      .populate('user_id', 'fullName avatar')
-      .limit(this.maxResults * 2)
-      .lean();
-
-    // Calculate similarity scores
-    const dishesWithScores = dishes
-      .map(dish => {
-        if (!dish.embedding || !Array.isArray(dish.embedding)) {
-          return null;
-        }
-
-        const similarity = embeddingService.calculateCosineSimilarity(
-          queryEmbedding,
-          dish.embedding
-        );
-
-        return {
-          ...dish,
-          chef: dish.user_id,
-          semanticScore: similarity
-        };
-      })
-      .filter(dish => dish && dish.semanticScore >= this.similarityThreshold)
-      .sort((a, b) => b.semanticScore - a.semanticScore);
-
-    console.log(`MongoDB semantic search found ${dishesWithScores.length} dishes for query: "${searchQuery}"`);
-
-    // Apply pagination
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-    const paginatedResults = dishesWithScores.slice(startIndex, endIndex);
-
-    return {
-      success: true,
-      data: {
-        dishes: paginatedResults,
-        pagination: {
-          currentPage: page,
-          totalPages: Math.ceil(dishesWithScores.length / limit),
-          totalItems: dishesWithScores.length,
-          hasNextPage: endIndex < dishesWithScores.length,
-          hasPrevPage: page > 1
-        },
-        searchType: 'semantic-mongodb'
-      }
-    };
   }
 
   /**

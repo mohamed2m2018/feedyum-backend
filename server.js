@@ -1,3 +1,4 @@
+require('dotenv').config();
 // Fix deprecation warnings first
 process.env.NODE_NO_WARNINGS = '1';
 process.env.SUPPRESS_NO_CONFIG_WARNING = 'true';
@@ -7,11 +8,12 @@ const express = require("express");
 const passport = require("passport");
 const AdminJS = require("adminjs");
 const mongoose = require("mongoose");
-const mongoURI = require("./config/keys").mongoURI;
 const AdminJSExpress = require("@adminjs/express");
 const AdminJSMongoose = require("@adminjs/mongoose");
 const http = require('http');
 const socketSetup = require('./socket');
+const keys = require("./config/keys");
+const mongoURI = keys.mongoURI;
 
 AdminJS.registerAdapter(AdminJSMongoose);
 
@@ -43,9 +45,27 @@ async function connectToDatabase() {
         databases: [mongooseDb],
         rootPath: "/shoman-salah-not-expected",
       });
-      const adminJSRouter = AdminJSExpress.buildRouter(adminJS);
+
+      const adminJSRouter = AdminJSExpress.buildAuthenticatedRouter(
+        adminJS,
+        {
+          authenticate: async (email, password) => {
+            if (email === keys.adminEmail && password === keys.adminPassword) {
+              return Promise.resolve({ email: keys.adminEmail, role: 'admin' });
+            }
+            return null;
+          },
+          cookiePassword: 'some-secret-password-used-to-secure-cookie',
+        },
+        null,
+        {
+          resave: false,
+          saveUninitialized: true,
+        }
+      );
+
       app.use(adminJS.options.rootPath, adminJSRouter);
-      console.log("AdminJS initialized successfully");
+      console.log("AdminJS initialized successfully (Secured)");
     } catch (err) {
       console.error("AdminJS initialization error:", err.message);
     }

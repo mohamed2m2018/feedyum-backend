@@ -1,26 +1,28 @@
-module.exports = {
-  mongoURI: 'mongodb+srv://mohamed2m2018:22233322@cookbook.oogokbq.mongodb.net/foodtok?retryWrites=true&w=majority',
-  secretOrKey: 'makeitisagreatapp',
-  adminEmail: 'mohamed2m2018@gmail.com',
-  adminPassword: '22233322',
+const keys = {
+  mongoURI: process.env.MONGO_URI,
+  secretOrKey: process.env.SECRET_OR_KEY,
+  adminEmail: process.env.ADMIN_EMAIL,
+  adminPassword: process.env.ADMIN_PASSWORD,
 
-  // Legacy AWS S3 credentials (kept for backwards compatibility with existing content)
-  aws_access_key_id: '***REMOVED***',
-  aws_secret_access_key: '***REMOVED***',
-  aws_s3_bucket: 'foodtokforever',
-  aws_region: 'eu-central-1',
+  // Legacy AWS S3 credentials
+  aws_access_key_id: process.env.AWS_ACCESS_KEY_ID,
+  aws_secret_access_key: process.env.AWS_SECRET_ACCESS_KEY,
+  aws_s3_bucket: process.env.AWS_S3_BUCKET,
+  aws_region: process.env.AWS_REGION,
 
-  // Cloudflare R2 Configuration (S3-compatible)
-  r2_account_id: '3d5afc8657af28d0d91ec385fc42fb6b',
-  r2_access_key_id: 'b0cf2bd92e9c85f3aa5874a20e6f555b',
-  r2_secret_access_key: '***REMOVED***',
-  r2_bucket: 'feedyum',
-  r2_endpoint: 'https://3d5afc8657af28d0d91ec385fc42fb6b.r2.cloudflarestorage.com',
-  r2_public_url: 'https://cdn.feedyum.com', // Custom CDN domain for R2
+  // Cloudflare R2 Configuration
+  r2_account_id: process.env.R2_ACCOUNT_ID,
+  r2_access_key_id: process.env.R2_ACCESS_KEY_ID,
+  r2_secret_access_key: process.env.R2_SECRET_ACCESS_KEY,
+  r2_bucket: process.env.R2_BUCKET,
+  r2_endpoint: process.env.R2_ENDPOINT,
+  r2_public_url: process.env.R2_PUBLIC_URL,
 
-  stripePublishableKey: '***REMOVED***',
-  stripeSecretKey: '***REMOVED***',
-  oneSignalAppId: '8f642b9d-8d10-4b66-b43a-c1d0345ef13f',
-  oneSignalApikey: '***REMOVED***',
-  googleMapsApiKey: '***REMOVED***',
+  stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
+  stripeSecretKey: process.env.STRIPE_SECRET_KEY,
+  oneSignalAppId: process.env.ONESIGNAL_APP_ID,
+  oneSignalApikey: process.env.ONESIGNAL_API_KEY,
+  googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY,
 };
+
+module.exports = keys;

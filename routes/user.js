@@ -7,21 +7,21 @@ const userController = require('../controllers/userController/index.js');
 
 // @route  GET api/user/all
 // @desc   Get all users
-// @access Public
+// @access Private
 // @errors nousers error
-router.get('/all', userController.getAllUsers);
+router.get('/all', passport.authenticate('jwt', { session: false }), userController.getAllUsers);
 
 
 // @route  GET api/user/search
 // @desc   search users
-// @access Public
+// @access Private
 // @errors nousers error
-router.get('/search', userController.searchUser);
+router.get('/search', passport.authenticate('jwt', { session: false }), userController.searchUser);
 
 // @route  GET api/user/semantic-search
 // @desc   Semantic search users (with AI embeddings)
-// @access Public
-router.get('/semantic-search', userController.semanticSearchUser);
+// @access Private
+router.get('/semantic-search', passport.authenticate('jwt', { session: false }), userController.semanticSearchUser);
 
 // @route  POST api/user
 // @desc   User Signup - Create new user

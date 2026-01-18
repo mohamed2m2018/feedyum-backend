@@ -38,6 +38,58 @@ router.post('/', userController.signupUser);
 // @body   isFacebookEntry(optional) facebookId(optional)
 router.post('/login', userController.loginUser);
 
+// @route  POST api/user/forgot-password
+// @desc   Request password reset email
+// @access Public
+router.post('/forgot-password', userController.forgotPassword);
+
+// @route  POST api/user/reset-password
+// @desc   Reset password using token from email
+// @access Public
+router.post('/reset-password', userController.resetPassword);
+
+// @route  GET api/user/reset-password
+// @desc   Redirect page that opens the app via deep link
+// @access Public
+router.get('/reset-password', (req, res) => {
+  const { token, email } = req.query;
+  const deepLink = `feedyum://reset-password?token=${encodeURIComponent(token || '')}&email=${encodeURIComponent(email || '')}`;
+
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Reset Password - FeedYum</title>
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: linear-gradient(135deg, #FF6B35 0%, #FF8E53 100%); }
+        .container { background: white; padding: 40px; border-radius: 20px; text-align: center; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        h1 { color: #FF6B35; margin-bottom: 20px; }
+        p { color: #666; line-height: 1.6; }
+        .btn { display: inline-block; background: linear-gradient(135deg, #FF6B35 0%, #FF8E53 100%); color: white; padding: 15px 40px; border-radius: 12px; text-decoration: none; font-weight: 600; margin-top: 20px; }
+        .btn:hover { opacity: 0.9; }
+        .note { font-size: 14px; color: #999; margin-top: 30px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1>🍽️ FeedYum</h1>
+        <p>Tap the button below to open the app and reset your password.</p>
+        <a href="${deepLink}" class="btn">Open FeedYum App</a>
+        <p class="note">If the app doesn't open, make sure FeedYum is installed on your device.</p>
+      </div>
+      <script>
+        // Auto-redirect to app
+        setTimeout(function() {
+          window.location.href = "${deepLink}";
+        }, 500);
+      </script>
+    </body>
+    </html>
+  `);
+});
+
 // @route  PATCH api/user
 // @desc   Update logged in user
 // @access Private

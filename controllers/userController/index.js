@@ -11,6 +11,8 @@ const searchUser = require('./searchUser');
 const semanticSearchUser = require('./semanticSearchUser');
 const getAllLocations = require('./getAllUserLocations');
 const getUserByTag = require('./getUserByTag');
+const forgotPassword = require('./forgotPassword');
+const resetPassword = require('./resetPassword');
 
 module.exports = {
   getAllUsers,
@@ -26,4 +28,6 @@ module.exports = {
   semanticSearchUser,
   getAllLocations,
   getUserByTag,
+  forgotPassword,
+  resetPassword,
 };

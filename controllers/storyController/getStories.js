@@ -129,7 +129,7 @@ function getNearestLocation(targetLat, targetLong, locations) {
  */
 async function generateNewFeed(userId, categoryIds, userLat, userLong) {
   const startTime = Date.now();
-  console.log(`[FEED GEN] Starting feed generation for user ${userId}`);
+  console.log(`[FEED GEN] Starting feed generation for user ${userId}, categoryIds: ${categoryIds}`);
 
   // 1. Build Query for Candidates
   // Limit to last 60 days for performance/relevance
@@ -137,8 +137,26 @@ async function generateNewFeed(userId, categoryIds, userLat, userLong) {
   sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
 
   let query = { created_at: { $gte: sixtyDaysAgo } };
-  if (categoryIds && categoryIds.length) {
-    query.category = { $in: categoryIds.split(',') };
+
+  // FIX: Convert categoryIds string to array of ObjectIds for proper MongoDB matching
+  if (categoryIds && categoryIds.length > 0) {
+    const categoryIdArray = categoryIds.split(',').filter(id => id.trim());
+    if (categoryIdArray.length > 0) {
+      // Convert string IDs to ObjectIds for proper matching
+      const objectIds = categoryIdArray.map(id => {
+        try {
+          return new mongoose.Types.ObjectId(id.trim());
+        } catch (e) {
+          console.warn(`[FEED GEN] Invalid ObjectId: ${id}`);
+          return null;
+        }
+      }).filter(Boolean);
+
+      if (objectIds.length > 0) {
+        query.category = { $in: objectIds };
+        console.log(`[FEED GEN] Filtering by ${objectIds.length} categories:`, objectIds);
+      }
+    }
   }
 
   // 2. Fetch Candidates
@@ -148,6 +166,9 @@ async function generateNewFeed(userId, categoryIds, userLat, userLong) {
     .sort({ created_at: -1 })
     .limit(1000)
     .lean();
+
+  console.log(`[FEED GEN] Found ${candidates.length} candidates after filtering`);
+
 
   // 3. Analyze User History (Implicit Interest Tracking)
   let viewedStoryIds = new Set();
@@ -305,7 +326,18 @@ const getStories = async (req, res) => {
     const pageIds = feedIds.slice(startIndex, startIndex + pageSize);
 
     if (pageIds.length === 0) {
-      // TIER 2/3 FALLBACK: User exhausted hot content, fetch extended/archive
+      // If we're filtering by category and got 0 results, return empty - don't fall back to all content
+      if (categoryIds && categoryIds.length > 0) {
+        console.log('[FEED] Category filter active with 0 results - returning empty list');
+        return res.json({
+          stories: [],
+          totalPages: 0,
+          currentPage: page,
+          message: "No content matches your selected categories."
+        });
+      }
+
+      // TIER 2/3 FALLBACK: Only for non-filtered feeds when user exhausted hot content
       console.log('[FEED] Tier 1 exhausted, switching to Tier 2/3 fallback');
 
       const tier1Size = feedIds.length;
@@ -317,6 +349,7 @@ const getStories = async (req, res) => {
       const hasLocation = userLat && userLong && !isNaN(userLat) && !isNaN(userLong);
 
       // Build fallback query (exclude already-shown IDs if possible)
+
       const excludeIds = feedIds.map(id => new mongoose.Types.ObjectId(id));
 
       let fallbackStories = [];

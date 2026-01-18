@@ -10,7 +10,7 @@ const getChefDashboardStats = async (req, res) => {
     // Define start and end of today for revenue calculation
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
-    
+
     const endOfDay = new Date();
     endOfDay.setHours(23, 59, 59, 999);
 
@@ -52,16 +52,21 @@ const getChefDashboardStats = async (req, res) => {
                 $cond: [{ $eq: ['$status', 'completed'] }, 1, 0]
               }
             },
+            totalRevenue: {
+              $sum: {
+                $cond: [{ $eq: ['$status', 'completed'] }, '$totalPrice', 0]
+              }
+            },
             todayRevenue: {
               $sum: {
                 $cond: [
-                  { 
+                  {
                     $and: [
-                      { $gte: ['$created_at', startOfDay] }, 
+                      { $gte: ['$created_at', startOfDay] },
                       { $lte: ['$created_at', endOfDay] }
-                    ] 
-                  }, 
-                  '$totalPrice', 
+                    ]
+                  },
+                  '$totalPrice',
                   0
                 ]
               }
@@ -69,13 +74,13 @@ const getChefDashboardStats = async (req, res) => {
             todayOrdersCount: {
               $sum: {
                 $cond: [
-                  { 
+                  {
                     $and: [
-                      { $gte: ['$created_at', startOfDay] }, 
+                      { $gte: ['$created_at', startOfDay] },
                       { $lte: ['$created_at', endOfDay] }
-                    ] 
-                  }, 
-                  1, 
+                    ]
+                  },
+                  1,
                   0
                 ]
               }
@@ -85,11 +90,12 @@ const getChefDashboardStats = async (req, res) => {
       ]),
       Dish.countDocuments({ user_id: chefId })
     ]);
-    
+
     const result = stats[0] || {
       totalOrders: 0,
       pendingOrders: 0,
       completedOrders: 0,
+      totalRevenue: 0,
       todayRevenue: 0,
       todayOrdersCount: 0
     };

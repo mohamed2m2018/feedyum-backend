@@ -13,6 +13,8 @@ const getAllLocations = require('./getAllUserLocations');
 const getUserByTag = require('./getUserByTag');
 const forgotPassword = require('./forgotPassword');
 const resetPassword = require('./resetPassword');
+const uploadProfilePicture = require('./uploadProfilePicture');
+const checkAvailability = require('./checkAvailability');
 
 module.exports = {
   getAllUsers,
@@ -30,4 +32,6 @@ module.exports = {
   getUserByTag,
   forgotPassword,
   resetPassword,
+  uploadProfilePicture,
+  checkAvailability,
 };

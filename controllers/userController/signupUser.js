@@ -53,8 +53,15 @@ const signupUser = (req, res) => {
       }
 
       bcrypt.genSalt(10, (err, salt) => {
+        if (err) {
+          return res.status(500).json({ error: 'Error generating salt' });
+        }
+
         bcrypt.hash(newUser.password, salt, (err, hash) => {
-          if (err) throw err;
+          if (err) {
+            return res.status(500).json({ error: 'Error hashing password' });
+          }
+
           newUser.password = hash;
           newUser
             .save()
@@ -67,7 +74,7 @@ const signupUser = (req, res) => {
                   'bio',
                   'type'
                 ]);
-                
+
                 if (text && text.trim().length > 0) {
                   const embedding = await embeddingService.generateEmbedding(text);
                   if (embedding) {
@@ -75,13 +82,9 @@ const signupUser = (req, res) => {
                       embedding: embedding,
                       embeddingGenerated: new Date()
                     });
-                    console.log(`✅ Generated embedding for new user: ${user.fullName || user.username}`);
-                  } else {
-                    console.log(`⚠️ Failed to generate embedding for user: ${user.fullName || user.username}`);
                   }
                 }
               } catch (error) {
-                console.error(`❌ Error generating embedding for user ${user.fullName || user.username}:`, error.message);
                 // Don't fail the user creation if embedding generation fails
               }
 
@@ -96,8 +99,11 @@ const signupUser = (req, res) => {
               jwt.sign(
                 TokenPayload,
                 keys.secretOrKey,
-                // { expiresIn: 604800 },
                 (err, token) => {
+                  if (err) {
+                    return res.status(500).json({ error: 'Error creating token' });
+                  }
+
                   // Remove embeddings from response
                   const cleanUserData = cleanResponseData(userData);
                   return res.json({ user: cleanUserData, success: true, token: 'Bearer ' + token });

@@ -24,6 +24,16 @@ router.get('/search', passport.authenticate('jwt', { session: false }), userCont
 // @access Private
 router.get('/semantic-search', passport.authenticate('jwt', { session: false }), userController.semanticSearchUser);
 
+// @route  POST api/user/check-availability
+// @desc   Check if email/phone are available for registration
+// @access Public
+router.post('/check-availability', userController.checkAvailability);
+
+// @route  POST api/user/upload-profile-picture
+// @desc   Upload profile picture during registration (public, no auth required)
+// @access Public
+router.post('/upload-profile-picture', userController.uploadProfilePicture);
+
 // @route  POST api/user
 // @desc   User Signup - Create new user
 // @access Public

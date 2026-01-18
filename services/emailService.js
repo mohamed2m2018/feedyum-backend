@@ -3,6 +3,7 @@ const nodemailer = require('nodemailer');
 // Email Service for FeedYum - Password Reset Flow
 // Last updated: 2026-01-18
 class EmailService {
+
   constructor() {
     this.transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST || 'smtp.zoho.com',

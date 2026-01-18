@@ -121,6 +121,11 @@ const getFollowingStories = async (req, res) => {
           finalAvatarUri = item.poster;
         }
 
+        // Mark author as followed (these are stories from followed users by definition)
+        if (item.author) {
+          item.author.currentUserFollowed = true;
+        }
+
         return {
           ...item,
           avatarUri: finalAvatarUri,

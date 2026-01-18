@@ -6,6 +6,7 @@ const Story = mongoose.model("story");
 const Like = mongoose.model('like');
 const View = mongoose.model('view');
 const Dish = mongoose.model('dish');
+const Follow = mongoose.model('follow');
 
 /**
  * SCORING ALGORITHM
@@ -409,13 +410,14 @@ const getStories = async (req, res) => {
     const stories = await Story.find({ _id: { $in: pageIds } })
       .populate("author")
       .populate("dishes")
+      .populate("reviewedChef")
       .lean();
 
     // 5. Re-Order
     const storyMap = new Map(stories.map(s => [s._id.toString(), s]));
     const orderedStories = pageIds.map(id => storyMap.get(id)).filter(Boolean);
 
-    // 6. Hydrate (Likes, Ratings)
+    // 6. Hydrate (Likes, Ratings, Follow Status)
     if (userId !== 'anonymous') {
       const allLikes = await Like.find({
         post_id: { $in: orderedStories.map(s => s._id) },
@@ -423,6 +425,28 @@ const getStories = async (req, res) => {
       }).select('post_id').lean();
       const likeSet = new Set(allLikes.map(l => l.post_id.toString()));
       orderedStories.forEach(s => s.currentUserLiked = likeSet.has(s._id.toString()));
+
+      // Check follow status for all story authors and reviewedChefs
+      const authorIds = orderedStories.map(s => s.author?._id).filter(Boolean);
+      const reviewedChefIds = orderedStories.map(s => s.reviewedChef?._id).filter(Boolean);
+      const allIdsToCheck = [...new Set([...authorIds, ...reviewedChefIds])];
+
+      if (allIdsToCheck.length > 0) {
+        const userFollows = await Follow.find({
+          follower_id: userId,
+          following_id: { $in: allIdsToCheck }
+        }).select('following_id').lean();
+        const followSet = new Set(userFollows.map(f => f.following_id.toString()));
+
+        orderedStories.forEach(s => {
+          if (s.author) {
+            s.author.currentUserFollowed = followSet.has(s.author._id.toString());
+          }
+          if (s.reviewedChef) {
+            s.reviewedChef.currentUserFollowed = followSet.has(s.reviewedChef._id.toString());
+          }
+        });
+      }
     }
 
     // Aggregate Author Ratings

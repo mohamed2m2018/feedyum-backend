@@ -4,6 +4,7 @@ const passport = require('passport');
 const router = express.Router();
 
 const userController = require('../controllers/userController/index.js');
+const optionalAuth = require('../middleware/optionalAuth');
 
 // @route  GET api/user/all
 // @desc   Get all users
@@ -80,9 +81,9 @@ router.get(
 
 // @route  GET api/user/:id
 // @desc   Get user by ID
-// @access Public
+// @access Public (with optional auth for personalized data like follow status)
 // @errors
-router.get('/:id', userController.getUserById);
+router.get('/:id', optionalAuth, userController.getUserById);
 
 // @route  GET api/user/:id/profile
 // @desc   Get user profile with menu (if chef)

@@ -5,7 +5,7 @@ const Story = require('../models/story');
 
 class SemanticSearchService {
   constructor() {
-    this.similarityThreshold = 0.3; // Threshold for matching
+    this.similarityThreshold = 0.35; // Threshold based on query testing: fast food=0.38+, sweets=0.32-0.35
     this.maxResults = 50;
   }
 
@@ -21,39 +21,9 @@ class SemanticSearchService {
     return arabicRegex.test(query);
   }
 
-  /**
-   * Process Arabic queries for semantic search
-   * Expands Arabic brand names to associated food terms
-   * @param {string} text - Arabic text
-   * @returns {string} - Expanded query
-   */
-  enhanceArabicQuery(text) {
-    // Arabic brand/query expansion map
-    const expansions = {
-      'ماكدونالدز': 'burger برجر همبرجر فاست فود',
-      'ماك': 'burger برجر همبرجر ماكدونالدز فاست فود',
-      'هارديز': 'burger برجر همبرجر فاست فود',
-      'كنتاكي': 'chicken فراخ دجاج مقلي fried',
-      'بيتزا هت': 'pizza بيتزا',
-      'دومينوز': 'pizza بيتزا',
-      'ستاربكس': 'coffee قهوة كافيه',
-      'صب واي': 'sandwich سندوتش ساندويتش',
-      'فاست فود': 'burger pizza chicken برجر بيتزا فراخ وجبات سريعة',
-      'وجبات سريعة': 'burger pizza chicken برجر بيتزا فراخ فاست فود',
-    };
-
-    let expandedQuery = text.trim();
-
-    // Check if query contains any known brands and expand
-    Object.entries(expansions).forEach(([brand, expansion]) => {
-      if (text.includes(brand)) {
-        expandedQuery += ' ' + expansion;
-      }
-    });
-
-    console.log(`🌍 Arabic query expanded: "${text}" → "${expandedQuery}"`);
-    return expandedQuery;
-  }
+  // Note: enhanceArabicQuery was removed as it caused incorrect search results.
+  // OpenAI's text-embedding-3-large has excellent native multilingual support
+  // and doesn't need manual query expansion which was adding irrelevant terms.
 
   /**
    * Perform semantic search for dishes using MongoDB
@@ -147,17 +117,11 @@ class SemanticSearchService {
    * @returns {Promise<Object>} - Search results with similarity scores
    */
   async searchUsers(searchQuery, options = {}) {
-    const { cursor = null, limit = 10, currentUserId, filters = {} } = options;
+    const { page = 1, cursor = null, limit = 10, currentUserId, filters = {} } = options;
 
     try {
-      // Enhance Arabic queries for better semantic search
-      let effectiveQuery = searchQuery;
-      if (this.isArabicQuery(searchQuery)) {
-        console.log(`Arabic user search: "${searchQuery}" - Enhancing`);
-        effectiveQuery = this.enhanceArabicQuery(searchQuery);
-      }
-
-      const queryEmbedding = await embeddingService.generateQueryEmbedding(effectiveQuery);
+      // Use query directly - OpenAI model has native multilingual support
+      const queryEmbedding = await embeddingService.generateQueryEmbedding(searchQuery);
 
       if (!queryEmbedding) {
         return this.fallbackTextSearch('users', searchQuery, options);
@@ -232,21 +196,15 @@ class SemanticSearchService {
     const { page = 1, limit = 10, excludeReviews, reviewsOnly, authorType } = options;
 
     try {
-      // Enhance Arabic queries for better semantic search
-      let effectiveQuery = searchQuery;
-      if (this.isArabicQuery(searchQuery)) {
-        console.log(`Arabic semantic search: "${searchQuery}" - Enhancing`);
-        effectiveQuery = this.enhanceArabicQuery(searchQuery);
-      }
-
-      const queryEmbedding = await embeddingService.generateQueryEmbedding(effectiveQuery);
+      // Use query directly - OpenAI model has native multilingual support
+      const queryEmbedding = await embeddingService.generateQueryEmbedding(searchQuery);
 
       if (!queryEmbedding) {
-        console.log(`❌ Failed to generate query embedding for "${effectiveQuery}" - falling back to text search`);
+        console.log(`❌ Failed to generate query embedding for "${searchQuery}" - falling back to text search`);
         return this.fallbackTextSearch('stories', searchQuery, options);
       }
 
-      console.log(`✅ Generated query embedding for "${effectiveQuery}" successfully`);
+      console.log(`✅ Generated query embedding for "${searchQuery}" successfully`);
 
       // Build query based on review filtering
       // Note: $ne: [] ensures we exclude empty embedding arrays
@@ -405,17 +363,11 @@ class SemanticSearchService {
         return this.fallbackTextSearch(type, searchQuery, options);
       }
 
-      // Smart enhancement for Arabic queries
-      let effectiveQuery = searchQuery;
-      if (this.isArabicQuery(searchQuery)) {
-        console.log(`Arabic hybrid search: "${searchQuery}" - Enhancing for better results`);
-        effectiveQuery = this.enhanceArabicQuery(searchQuery);
-      }
-
+      // Use query directly - OpenAI model has native multilingual support
       // Use Promise.allSettled to handle failures gracefully
       const [semanticResult, textResult] = await Promise.allSettled([
         this[`search${type.charAt(0).toUpperCase() + type.slice(1)}`](
-          effectiveQuery,
+          searchQuery,
           { ...options, limit: Math.ceil(options.limit / 2) }
         ),
         this.fallbackTextSearch(

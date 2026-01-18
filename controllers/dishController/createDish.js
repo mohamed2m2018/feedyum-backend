@@ -2,6 +2,7 @@ const Dish = require('../../models/dish');
 const Menu = require('../../models/menu');
 const Section = require('../../models/section');
 const embeddingService = require('../../services/embeddingService');
+const translationService = require('../../services/translationService');
 
 const createDish = async (req, res) => {
   try {
@@ -14,12 +15,19 @@ const createDish = async (req, res) => {
       categories,
       sectionId,
       sectionName,
+      sectionNameArabic,
+      sectionNameEnglish,
       image,
       ingredients,
       preparationTime,
       tags,
       nutritionalInfo,
-      dietaryInfo
+      dietaryInfo,
+      // Bilingual fields
+      nameArabic,
+      nameEnglish,
+      descriptionArabic,
+      descriptionEnglish,
     } = req.body;
     const menu = await Menu.findById(menuId);
 
@@ -43,8 +51,13 @@ const createDish = async (req, res) => {
       });
 
       if (!section) {
+        // Detect language and store bilingual names
+        const sectionOriginalLang = translationService.detectLanguage(sectionName);
         section = new Section({
           name: sectionName.trim(),
+          nameArabic: sectionNameArabic || (sectionOriginalLang === 'ar' ? sectionName.trim() : ''),
+          nameEnglish: sectionNameEnglish || (sectionOriginalLang === 'en' ? sectionName.trim() : ''),
+          originalLanguage: sectionOriginalLang,
           description: '',
           owner: req.user._id
         });
@@ -119,10 +132,24 @@ const createDish = async (req, res) => {
       normalizedCategories = [category.trim()];
     }
 
+    // Detect original language for bilingual support
+    const nameOriginalLang = translationService.detectLanguage(name);
+    const descOriginalLang = description ? translationService.detectLanguage(description) : nameOriginalLang;
+
     const dish = new Dish({
       id: dishId,
       name,
+      // Bilingual name fields
+      nameArabic: nameArabic || (nameOriginalLang === 'ar' ? name : ''),
+      nameEnglish: nameEnglish || (nameOriginalLang === 'en' ? name : ''),
+      originalNameLanguage: nameOriginalLang,
+
       description,
+      // Bilingual description fields
+      descriptionArabic: descriptionArabic || (descOriginalLang === 'ar' ? description : ''),
+      descriptionEnglish: descriptionEnglish || (descOriginalLang === 'en' ? description : ''),
+      originalDescriptionLanguage: descOriginalLang,
+
       price,
       category: (category && category.trim()) || normalizedCategories[0] || 'Main Course',
       categories: normalizedCategories,

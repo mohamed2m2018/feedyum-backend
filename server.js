@@ -140,6 +140,7 @@ app.use("/api/promocode", require("./routes/promocode"));
 app.use("/api/chef-wallet", require("./routes/chefWallet"));
 app.use("/api/reviews", require("./routes/review"));
 app.use("/api/favorites", require("./routes/favorites"));
+app.use("/api/translate", require("./routes/translate"));
 // Sharing routes for deep linking fallback (must be before static files)
 app.use("/", require("./routes/sharing"));
 

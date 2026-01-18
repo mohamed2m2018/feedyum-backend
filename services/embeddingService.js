@@ -266,66 +266,36 @@ class EmbeddingService {
 
   /**
    * Prepare text for embedding
+   * Combines bilingual fields for cross-language semantic search
+   * Note: Removed arabicFoodKeywords anchoring as it caused false associations.
+   * OpenAI's text-embedding-3-large has excellent native multilingual understanding.
    */
   prepareTextForEmbedding(item, fields) {
-    // Arabic food category & brand keywords for better semantic matching
-    const arabicFoodKeywords = {
-      // Fast food + brands
-      'burger': 'فاست فود وجبات سريعة برجر همبرجر ماكدونالدز ماك هارديز fast food mcdonalds',
-      'برجر': 'فاست فود وجبات سريعة برجر همبرجر ماكدونالدز ماك هارديز fast food mcdonalds',
-      'ماكدونالدز': 'burger برجر همبرجر فاست فود وجبات سريعة ماك mcdonalds fast food',
-      'ماك': 'burger برجر همبرجر فاست فود وجبات سريعة ماكدونالدز mcdonalds fast food',
-      'هارديز': 'burger برجر همبرجر فاست فود وجبات سريعة hardees fast food',
-      'كنتاكي': 'chicken فراخ دجاج مقلي فاست فود kfc fried',
-      'kfc': 'chicken فراخ دجاج مقلي فاست فود كنتاكي fried',
-      'pizza': 'بيتزا فاست فود إيطالي بيتزا هت دومينوز fast food',
-      'بيتزا': 'بيتزا فاست فود إيطالي بيتزا هت دومينوز pizza fast food',
-      'sandwich': 'ساندويتش سندوتش وجبات سريعة صب واي',
-      'سندوتش': 'ساندويتش سندوتش وجبات سريعة صب واي sandwich',
-      'fried': 'مقلي قلي مقرمش كنتاكي crispy kfc',
-      // Sweets
-      'cake': 'كيك حلويات تورتة باسكن روبنز dessert',
-      'كيك': 'كيك حلويات تورتة dessert cake',
-      'dessert': 'حلويات حلو سكر كيك sweet',
-      // Healthy
-      'salad': 'سلطة صحي دايت healthy diet',
-      'سلطة': 'سلطة صحي دايت salad healthy diet',
-      // Main courses
-      'chicken': 'فراخ دجاج فرخة كنتاكي مقلي',
-      'دجاج': 'فراخ دجاج فرخة كنتاكي مقلي chicken kfc',
-      'meat': 'لحم لحمة ستيك كباب',
-      'لحم': 'لحم لحمة ستيك كباب meat steak',
-      'rice': 'أرز رز كشري',
-      'أرز': 'أرز رز كشري rice',
-      // Drinks
-      'juice': 'عصير مشروب شراب',
-      'عصير': 'عصير مشروب شراب juice drink',
-      'coffee': 'قهوة كافيه ستاربكس',
-      'قهوة': 'قهوة كافيه ستاربكس coffee starbucks',
-      'ستاربكس': 'coffee قهوة كافيه starbucks',
+    // Map of fields to their bilingual variants for cross-language search
+    const bilingualFieldMap = {
+      'name': ['name', 'nameArabic', 'nameEnglish'],
+      'description': ['description', 'descriptionArabic', 'descriptionEnglish'],
     };
 
-    const textParts = fields
-      .map(field => {
-        const value = item[field];
-        if (Array.isArray(value)) {
-          return value.join(' ');
+    const textParts = [];
+
+    fields.forEach(field => {
+      // Check if this field has bilingual variants
+      const fieldVariants = bilingualFieldMap[field] || [field];
+
+      fieldVariants.forEach(variantField => {
+        const value = item[variantField];
+        if (value) {
+          if (Array.isArray(value)) {
+            textParts.push(value.join(' '));
+          } else if (typeof value === 'string' && value.trim().length > 0) {
+            textParts.push(value.trim());
+          }
         }
-        return typeof value === 'string' ? value : '';
-      })
-      .filter(text => text.trim().length > 0);
-
-    let fullText = textParts.join(' ').trim();
-
-    // Add relevant Arabic keywords based on content
-    const lowerText = fullText.toLowerCase();
-    Object.entries(arabicFoodKeywords).forEach(([keyword, arabicTerms]) => {
-      if (lowerText.includes(keyword.toLowerCase())) {
-        fullText += ' ' + arabicTerms;
-      }
+      });
     });
 
-    return fullText;
+    return textParts.join(' ').trim();
   }
 }
 

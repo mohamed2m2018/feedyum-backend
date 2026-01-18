@@ -3,7 +3,16 @@ const mongoose = require("mongoose");
 const DishSchema = new mongoose.Schema({
   id: { type: Number, required: true }, // Adding an explicit ID field
   name: { type: String, required: true },
+  // Bilingual name fields for i18n
+  nameArabic: { type: String },
+  nameEnglish: { type: String },
+  originalNameLanguage: { type: String, enum: ['ar', 'en'], default: 'en' },
+
   description: { type: String },
+  // Bilingual description fields for i18n
+  descriptionArabic: { type: String },
+  descriptionEnglish: { type: String },
+  originalDescriptionLanguage: { type: String, enum: ['ar', 'en'], default: 'en' },
   // Legacy single category field (kept for backward compatibility with existing queries/UI)
   category: { type: String, required: true }, // Category field for dish type
   // New multi-category support
@@ -16,12 +25,12 @@ const DishSchema = new mongoose.Schema({
   visible: { type: Boolean, default: true }, // Visibility field
   average_rating: { type: Number, default: 0 }, // Average rating for the dish
   image: { type: String }, // URL for the dish image
-  
+
   // Enhanced fields for dish detail screen
   ingredients: [{ type: String }], // List of ingredients
   tags: [{ type: String }], // Tags for the dish (e.g., "spicy", "vegetarian")
   preparationTime: { type: Number }, // Preparation time in minutes
-  
+
   // Nutritional information
   nutritionalInfo: {
     calories: { type: Number },
@@ -32,21 +41,21 @@ const DishSchema = new mongoose.Schema({
     sodium: { type: String }, // e.g., "500mg"
     sugar: { type: String }, // e.g., "10g"
   },
-  
+
   // Dietary information
   dietaryInfo: [{ type: String }], // e.g., ["Vegetarian", "Gluten-Free", "Dairy-Free"]
-  
+
   // Additional nutritional fields (for backward compatibility)
   calories: { type: Number },
   protein: { type: String },
   carbs: { type: String },
   fat: { type: String },
   fiber: { type: String },
-  
+
   // Semantic search embedding - excluded by default for performance
   embedding: { type: [Number], default: null, select: false },
   embeddingGenerated: { type: Date, default: null, select: false },
-  
+
   created_at: {
     type: Date,
     default: Date.now,

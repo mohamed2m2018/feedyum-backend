@@ -2,6 +2,7 @@ const Dish = require('../../models/dish');
 const Section = require('../../models/section');
 const Menu = require('../../models/menu');
 const embeddingService = require('../../services/embeddingService');
+const translationService = require('../../services/translationService');
 
 
 const updateDish = async (req, res) => {
@@ -11,7 +12,22 @@ const updateDish = async (req, res) => {
       body: req.body
     });
 
-    const { sectionId, sectionName, ingredients, tags, dietaryInfo, categories, ...updateData } = req.body;
+    const {
+      sectionId,
+      sectionName,
+      sectionNameArabic,
+      sectionNameEnglish,
+      ingredients,
+      tags,
+      dietaryInfo,
+      categories,
+      // Bilingual fields
+      nameArabic,
+      nameEnglish,
+      descriptionArabic,
+      descriptionEnglish,
+      ...updateData
+    } = req.body;
 
     // Normalize categories if provided
     if (categories !== undefined) {
@@ -91,8 +107,13 @@ const updateDish = async (req, res) => {
       });
 
       if (!section) {
+        // Detect language and store bilingual names for new section
+        const sectionOriginalLang = translationService.detectLanguage(sectionName);
         section = new Section({
           name: sectionName.trim(),
+          nameArabic: sectionNameArabic || (sectionOriginalLang === 'ar' ? sectionName.trim() : ''),
+          nameEnglish: sectionNameEnglish || (sectionOriginalLang === 'en' ? sectionName.trim() : ''),
+          originalLanguage: sectionOriginalLang,
           description: '',
           owner: req.user._id
         });
@@ -109,6 +130,35 @@ const updateDish = async (req, res) => {
         }
       }
       updateData.section = section._id;
+    }
+
+    // Handle bilingual field updates
+    if (nameArabic !== undefined) updateData.nameArabic = nameArabic;
+    if (nameEnglish !== undefined) updateData.nameEnglish = nameEnglish;
+    if (descriptionArabic !== undefined) updateData.descriptionArabic = descriptionArabic;
+    if (descriptionEnglish !== undefined) updateData.descriptionEnglish = descriptionEnglish;
+
+    // Detect and update language if name is being changed
+    if (updateData.name) {
+      const nameOriginalLang = translationService.detectLanguage(updateData.name);
+      updateData.originalNameLanguage = nameOriginalLang;
+      // Auto-populate the matching language field if not explicitly set
+      if (nameOriginalLang === 'ar' && !nameArabic) {
+        updateData.nameArabic = updateData.name;
+      } else if (nameOriginalLang === 'en' && !nameEnglish) {
+        updateData.nameEnglish = updateData.name;
+      }
+    }
+
+    // Same for description
+    if (updateData.description) {
+      const descOriginalLang = translationService.detectLanguage(updateData.description);
+      updateData.originalDescriptionLanguage = descOriginalLang;
+      if (descOriginalLang === 'ar' && !descriptionArabic) {
+        updateData.descriptionArabic = updateData.description;
+      } else if (descOriginalLang === 'en' && !descriptionEnglish) {
+        updateData.descriptionEnglish = updateData.description;
+      }
     }
 
     console.log('Final Update Data:', updateData);

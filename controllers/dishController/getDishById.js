@@ -2,7 +2,6 @@ const Dish = require('../../models/dish');
 const User = require('../../models/user');
 const Review = require('../../models/review');
 const { cleanResponseData } = require('../../utils/embeddingUtils');
-const Rating = require('../../models/rating');
 
 const getDishById = async (req, res) => {
   try {
@@ -12,7 +11,7 @@ const getDishById = async (req, res) => {
     // Get dish with populated menu and chef info
     const dish = await Dish.findById(dishId)
       .populate('menu');
-    
+
     // Manually populate chef info since user_id might be stored as string
     let chefInfo = null;
     if (dish && dish.user_id) {
@@ -24,14 +23,11 @@ const getDishById = async (req, res) => {
       return res.status(404).json({ message: 'Dish not found' });
     }
 
-    // Calculate average rating
-    const ratings = await Rating.find({ dish: dishId });
-    const averageRating = ratings.length > 0 
-      ? ratings.reduce((sum, rating) => sum + rating.rating, 0) / ratings.length 
-      : 0;
+    // Use dish's stored average_rating (updated by addReview) or calculate from reviews
+    const averageRating = dish.average_rating || 0;
 
-    // Get total reviews count
-    const reviewsCount = await Review.countDocuments({ dish: dishId });
+    // Get total reviews count for this dish
+    const reviewsCount = await Review.countDocuments({ dishId: dishId, type: 'dish' });
 
     // Check if dish is in user's favorites (if user is authenticated)
     let isFavorite = false;
@@ -52,7 +48,7 @@ const getDishById = async (req, res) => {
       } : dishObject.menu,
       average_rating: Number(averageRating.toFixed(1)),
       reviews_count: reviewsCount,
-      ratings_count: ratings.length,
+      ratings_count: reviewsCount,
       isFavorite: isFavorite,
       chef: chefInfo ? {
         ...chefInfo.toObject(),

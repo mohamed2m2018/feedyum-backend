@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 const User = require('../../models/user');
 const Dish = require('../../models/dish');
-const Rating = require('../../models/rating');
 const Story = require('../../models/story');
 
 // Redis cache for performance (silent - logs disabled)
@@ -71,15 +70,12 @@ const getDiscoverData = async (req, res) => {
     }
 
     // Batch fetch all data in parallel using Promise.all
-    const [usersData, dishesData, ratingsData] = await Promise.all([
-      // 1. Get users for all categories in one aggregation
+    const [usersData, dishesData] = await Promise.all([
+      // 1. Get users for all categories in one aggregation (includes rating data)
       getUsersForAllCategories(categories, coordinates),
 
       // 2. Get dishes for all categories in one aggregation  
-      getDishesForAllCategories(categories, coordinates),
-
-      // 3. Get ratings for performance (batch fetch)
-      getRatingsForUsers(coordinates)
+      getDishesForAllCategories(categories, coordinates)
     ]);
 
     // Organize data by category
@@ -97,10 +93,7 @@ const getDiscoverData = async (req, res) => {
       };
     });
 
-    // Add ratings to users
-    if (ratingsData.length > 0) {
-      addRatingsToUsers(result.data, ratingsData);
-    }
+    // Ratings are now included directly from User model
 
     // Cache the result for 3 minutes
     if (redisClient) {
@@ -171,40 +164,12 @@ async function getUsersForAllCategories(categories, coordinates) {
         }
       }] : []),
 
-      // Lookup stories for each user
-      {
-        $lookup: {
-          from: 'stories',
-          localField: '_id',
-          foreignField: 'author',
-          as: 'stories',
-          pipeline: [
-            {
-              $lookup: {
-                from: 'categories',
-                localField: 'category',
-                foreignField: '_id',
-                as: 'category'
-              }
-            },
-            {
-              $lookup: {
-                from: 'dishes',
-                localField: 'dishes',
-                foreignField: '_id',
-                as: 'dishes'
-              }
-            }
-          ]
-        }
-      },
-
       // Sort by distance (if coordinates) or by creation date
       {
         $sort: coordinates ? { distance: 1, date: -1 } : { date: -1 }
       },
 
-      // Project needed fields
+      // Project needed fields (stories fetched separately via batch query)
       {
         $project: {
           _id: 1,
@@ -216,8 +181,7 @@ async function getUsersForAllCategories(categories, coordinates) {
           tags: 1,
           postsNo: 1,
           date: 1,
-          distance: { $ifNull: ['$distance', null] },
-          stories: 1
+          distance: { $ifNull: ['$distance', null] }
         }
       }
     ];
@@ -225,18 +189,66 @@ async function getUsersForAllCategories(categories, coordinates) {
     const users = await User.aggregate(pipeline);
     console.log(`[DISCOVER BATCH] Found ${users.length} users with matching tags`);
 
-    // Fetch stories for each user (similar to individual API)
-    for (let user of users) {
+    // OPTIMIZED: Batch fetch all stories in ONE query instead of N queries (N+1 fix)
+    const storiesStartTime = Date.now();
+    const allUserIds = users.map(u => u._id);
+    let storiesByUser = new Map();
+
+    if (allUserIds.length > 0) {
       try {
-        const userStories = await Story.find({ author: user._id })
+        const allStories = await Story.find({ author: { $in: allUserIds } })
           .populate("dishes")
           .populate("category", "name")
-          .lean()
-          .exec();
-        user.stories = userStories;
+          .lean();
+
+        // Group stories by author for O(1) lookup
+        allStories.forEach(story => {
+          const authorId = story.author.toString();
+          if (!storiesByUser.has(authorId)) {
+            storiesByUser.set(authorId, []);
+          }
+          storiesByUser.get(authorId).push(story);
+        });
+
+        console.log(`[DISCOVER BATCH] Fetched ${allStories.length} stories for ${allUserIds.length} users in ${Date.now() - storiesStartTime}ms`);
       } catch (error) {
-        console.error(`[DISCOVER BATCH] Error fetching stories for user ${user._id}:`, error);
-        user.stories = [];
+        console.error('[DISCOVER BATCH] Error batch fetching stories:', error);
+      }
+    }
+
+    // Assign stories to users from the pre-built map
+    users.forEach(user => {
+      user.stories = storiesByUser.get(user._id.toString()) || [];
+    });
+
+    // Add dish rating aggregation for each chef (like getUserByTag.js does)
+    const uniqueUserIds = [...new Set(users.map(u => u._id.toString()))];
+    let ratingMap = new Map();
+
+    if (uniqueUserIds.length > 0) {
+      try {
+        const ratings = await Dish.aggregate([
+          { $match: { user_id: { $in: uniqueUserIds.map(id => mongoose.Types.ObjectId(id)) } } },
+          { $match: { average_rating: { $gt: 0 } } }, // Only dishes with ratings
+          {
+            $group: {
+              _id: "$user_id",
+              ratedDishesCount: { $sum: 1 },
+              totalRating: { $sum: "$average_rating" }
+            }
+          },
+          {
+            $project: {
+              ratedDishesCount: 1,
+              averageDishRating: { $round: [{ $divide: ["$totalRating", "$ratedDishesCount"] }, 1] }
+            }
+          }
+        ]).exec();
+
+        ratingMap = new Map(ratings.map(r => [r._id.toString(), r]));
+        console.log(`[DISCOVER BATCH] Aggregated dish ratings for ${ratings.length} chefs`);
+      } catch (ratingErr) {
+        console.error('[DISCOVER BATCH] Failed to aggregate dish ratings:', ratingErr?.message);
       }
     }
 
@@ -253,6 +265,9 @@ async function getUsersForAllCategories(categories, coordinates) {
         if (categoryName && usersData[categoryName]) {
           // Limit to 8 users per category
           if (usersData[categoryName].length < 8) {
+            // Get rating data from aggregation
+            const ratingData = ratingMap.get(user._id.toString());
+
             usersData[categoryName].push({
               _id: user._id,
               fullName: user.fullName,
@@ -264,7 +279,9 @@ async function getUsersForAllCategories(categories, coordinates) {
               postsNo: user.postsNo,
               date: user.date,
               distance: user.distance,
-              stories: user.stories || []
+              stories: user.stories || [],
+              averageDishRating: ratingData?.averageDishRating || 0,
+              ratedDishesCount: ratingData?.ratedDishesCount || 0
             });
           }
         }
@@ -312,7 +329,9 @@ async function getDishesForAllCategories(categories, coordinates) {
                 avatar: 1,
                 type: 1,
                 locations: 1,
-                bio: 1
+                bio: 1,
+                averageRating: 1,
+                totalReviews: 1
               }
             }
           ]
@@ -352,6 +371,7 @@ async function getDishesForAllCategories(categories, coordinates) {
           dishes: {
             $push: {
               _id: '$_id',
+              name: '$name',
               title: '$title',
               description: '$description',
               image: '$image',
@@ -362,7 +382,8 @@ async function getDishesForAllCategories(categories, coordinates) {
               branch: '$branch',
               created_at: '$created_at',
               visible: '$visible',
-              distance: { $ifNull: ['$distance', null] }
+              distance: { $ifNull: ['$distance', null] },
+              average_rating: { $ifNull: ['$average_rating', 0] }
             }
           }
         }
@@ -392,56 +413,7 @@ async function getDishesForAllCategories(categories, coordinates) {
   }
 }
 
-// Get ratings for users to add performance data
-async function getRatingsForUsers(coordinates) {
-  try {
-    const pipeline = [
-      {
-        $match: {
-          average_rating: { $gt: 0 }
-        }
-      },
-      {
-        $project: {
-          user_id: 1,
-          average_rating: 1,
-          total_ratings: 1
-        }
-      },
-      { $limit: 1000 } // Reasonable limit
-    ];
-
-    return await Rating.aggregate(pipeline);
-
-  } catch (error) {
-    console.error('[DISCOVER BATCH] Error fetching ratings:', error);
-    return [];
-  }
-}
-
-// Add ratings to users in the response
-function addRatingsToUsers(data, ratingsData) {
-  // Create ratings map for fast lookup
-  const ratingsMap = {};
-  ratingsData.forEach(rating => {
-    ratingsMap[rating.user_id.toString()] = {
-      averageRating: rating.average_rating,
-      totalRatings: rating.total_ratings
-    };
-  });
-
-  // Add ratings to each user in each category
-  Object.keys(data).forEach(category => {
-    if (data[category].users) {
-      data[category].users.forEach(user => {
-        const userRating = ratingsMap[user._id.toString()];
-        if (userRating) {
-          user.averageRating = userRating.averageRating;
-          user.totalRatings = userRating.totalRatings;
-        }
-      });
-    }
-  });
-}
+// Ratings are now fetched directly from User model with averageRating and totalReviews fields
+// No separate rating lookup needed
 
 module.exports = { getDiscoverData };

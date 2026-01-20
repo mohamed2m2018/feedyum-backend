@@ -9,7 +9,13 @@ const reviewSchema = new mongoose.Schema({
   orderId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "order",
-    required: true,
+    required: false, // Optional - not required for reel-based reviews
+  },
+  // Link to Story for reel-based reviews
+  storyId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "story",
+    required: false,
   },
   chefId: {
     type: mongoose.Schema.Types.ObjectId,

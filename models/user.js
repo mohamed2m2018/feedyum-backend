@@ -64,6 +64,10 @@ const UserSchema = new Schema({
     long: Number,
   })],
 
+  // Rating fields for chefs (aggregated from reviews)
+  averageRating: { type: Number, default: 0 },
+  totalReviews: { type: Number, default: 0 },
+
   // Semantic search embedding - excluded by default for performance
   embedding: { type: [Number], default: null, select: false },
   embeddingGenerated: { type: Date, default: null, select: false },

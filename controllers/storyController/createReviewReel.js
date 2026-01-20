@@ -12,6 +12,7 @@ const User = mongoose.model("user");
 const Dish = mongoose.model("dish");
 const Menu = mongoose.model("menu");
 const Category = mongoose.model("category");
+const Review = require("../../models/review");
 
 // Utils
 
@@ -289,9 +290,49 @@ const createReviewReel = async (req, res) => {
             rating: rating,
           });
 
+          // Create Review document for rating aggregation
+          try {
+            const reviewDoc = new Review({
+              userId: req.user._id,
+              chefId: chefId,
+              dishId: reviewType === "dish" ? dishId : undefined,
+              storyId: savedReviewReel._id,
+              type: reviewType === "dish" ? "dish" : "chef",
+              rating: parseInt(rating),
+              comment: caption || "",
+              isVerified: true,
+            });
+            await reviewDoc.save();
+            console.log("Review document created:", reviewDoc._id);
+
+            // Update dish average_rating if it's a dish review
+            if (reviewType === "dish" && dishId) {
+              const dishReviews = await Review.find({ dishId: dishId, type: "dish" });
+              const avgRating = dishReviews.reduce((sum, r) => sum + r.rating, 0) / dishReviews.length;
+              await Dish.findByIdAndUpdate(dishId, {
+                average_rating: Math.round(avgRating * 10) / 10
+              });
+              console.log(`Updated dish ${dishId} average_rating to ${avgRating.toFixed(1)}`);
+            }
+
+            // Update chef average rating
+            if (chefId) {
+              const chefReviews = await Review.find({ chefId: chefId });
+              const chefAvgRating = chefReviews.reduce((sum, r) => sum + r.rating, 0) / chefReviews.length;
+              await User.findByIdAndUpdate(chefId, {
+                averageRating: Math.round(chefAvgRating * 10) / 10,
+                totalReviews: chefReviews.length
+              });
+              console.log(`Updated chef ${chefId} averageRating to ${chefAvgRating.toFixed(1)} (${chefReviews.length} reviews)`);
+            }
+          } catch (reviewError) {
+            console.error("Failed to create Review document:", reviewError.message);
+            // Don't fail the request - the Story was saved successfully
+          }
+
           res.json({
             success: true,
-            story: populatedReviewReel, // Using 'story' to match existing API pattern
+            story: populatedReviewReel,
             message: "Review reel created successfully",
           });
 

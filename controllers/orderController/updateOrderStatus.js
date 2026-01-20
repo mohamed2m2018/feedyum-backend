@@ -59,6 +59,12 @@ const updateOrderStatus = async (req, res) => {
 
     if (deliveryFee !== undefined) {
       order.deliveryFee = deliveryFee;
+      // Recalculate totalPrice to include the new delivery fee
+      const subtotal = order.subtotal || 0;
+      const serviceFee = order.serviceFee || 0;
+      const tax = order.tax || 0;
+      const discountAmount = order.promocode?.discountAmount || 0;
+      order.totalPrice = subtotal + serviceFee + tax + deliveryFee - discountAmount;
     }
 
     order.lastUpdated = new Date();

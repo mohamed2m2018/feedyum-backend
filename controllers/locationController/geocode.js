@@ -21,11 +21,46 @@ exports.reverseGeocode = async (req, res) => {
         if (response.data.status === 'OK') {
             const results = response.data.results;
             if (results.length > 0) {
-                // Return the first result (most specific address)
+                const result = results[0];
+
+                // Parse address components for structured data
+                const addressComponents = {
+                    area: '',
+                    city: '',
+                    state: '',
+                    country: '',
+                    postalCode: '',
+                    street: ''
+                };
+
+                for (const component of result.address_components) {
+                    const types = component.types;
+
+                    if (types.includes('sublocality') || types.includes('neighborhood')) {
+                        addressComponents.area = component.long_name;
+                    } else if (types.includes('locality') || types.includes('administrative_area_level_2')) {
+                        addressComponents.city = component.long_name;
+                    } else if (types.includes('administrative_area_level_1')) {
+                        addressComponents.state = component.long_name;
+                    } else if (types.includes('country')) {
+                        addressComponents.country = component.long_name;
+                    } else if (types.includes('postal_code')) {
+                        addressComponents.postalCode = component.long_name;
+                    } else if (types.includes('route')) {
+                        addressComponents.street = component.long_name;
+                    }
+                }
+
+                // Fallback: if no area found, use city as area
+                if (!addressComponents.area && addressComponents.city) {
+                    addressComponents.area = addressComponents.city;
+                }
+
                 return res.json({
-                    address: results[0].formatted_address,
-                    placeId: results[0].place_id,
-                    components: results[0].address_components
+                    address: result.formatted_address,
+                    placeId: result.place_id,
+                    components: result.address_components,
+                    addressComponents: addressComponents
                 });
             } else {
                 return res.status(404).json({ error: 'No address found' });
@@ -39,3 +74,4 @@ exports.reverseGeocode = async (req, res) => {
         return res.status(500).json({ error: 'Internal server error' });
     }
 };
+

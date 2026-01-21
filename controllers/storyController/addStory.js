@@ -58,8 +58,9 @@ const addStory = async (req, res) => {
   // Handle dish IDs based on context
   let dishIds = [];
 
-  if (req.body.reviewMode) {
-    // For reviews, use the dish IDs as-is (they reference dishes being reviewed)
+  if (req.body.reviewMode || req.body.isReview) {
+    // For reviews (both legacy reviewMode and new isReview flow), use the dish IDs as-is
+    // They reference existing dishes being reviewed, not new dishes to create
     dishIds = req.body.dishes || [];
     console.log('Review mode: Using dish IDs directly:', dishIds);
   } else if (user.type === 'chef') {
@@ -67,7 +68,7 @@ const addStory = async (req, res) => {
     dishIds = req.body.dishes || [];
     console.log('Chef mode: Using existing dish IDs:', dishIds);
   } else {
-    // For non-chef users creating regular posts, create new dishes if needed
+    // For non-chef users creating regular posts (not reviews), create new dishes if needed
     if (req.body.dishes && req.body.dishes.length > 0) {
       const savedDishes = await Dish.insertMany(req.body.dishes);
       dishIds = savedDishes.map(dish => dish._id);
@@ -209,6 +210,63 @@ const addStory = async (req, res) => {
       } catch (error) {
         console.error(`❌ Error generating embedding for story ${story.title || story.caption || story._id}:`, error.message);
         // Don't fail the story creation if embedding generation fails
+      }
+
+      // Rating aggregation for reviews (isReview flow)
+      if (req.body?.isReview && req.body?.rating && dishIds.length > 0) {
+        try {
+          const Review = require('../../models/review');
+          const reviewedDishId = dishIds[0]; // Use first dish as the reviewed dish
+
+          // Get chef ID from the dish
+          const reviewedDish = await Dish.findById(reviewedDishId);
+          const chefId = reviewedDish?.user_id;
+
+          // Create Review document for rating aggregation
+          const reviewDoc = new Review({
+            userId: req.user._id,
+            chefId: chefId,
+            dishId: reviewedDishId,
+            storyId: story._id,
+            type: 'dish',
+            rating: parseInt(req.body.rating),
+            comment: req.body?.caption || '',
+            isVerified: true,
+          });
+          await reviewDoc.save();
+          console.log('✅ Review document created for isReview flow:', reviewDoc._id);
+
+          // Update story with reviewedDish field for consistency
+          await Story.findByIdAndUpdate(story._id, {
+            reviewedDish: reviewedDishId,
+            reviewMode: true,
+            reviewType: 'dish'
+          });
+
+          // Update dish average_rating
+          const dishReviews = await Review.find({ dishId: reviewedDishId, type: 'dish' });
+          const avgRating = dishReviews.reduce((sum, r) => sum + r.rating, 0) / dishReviews.length;
+          await Dish.findByIdAndUpdate(reviewedDishId, {
+            average_rating: Math.round(avgRating * 10) / 10,
+            total_ratings: dishReviews.length
+          });
+          console.log(`✅ Updated dish ${reviewedDishId} average_rating to ${avgRating.toFixed(1)} (${dishReviews.length} reviews)`);
+
+          // Update chef average rating
+          if (chefId) {
+            const chefReviews = await Review.find({ chefId: chefId });
+            const chefAvgRating = chefReviews.reduce((sum, r) => sum + r.rating, 0) / chefReviews.length;
+            await User.findByIdAndUpdate(chefId, {
+              averageRating: Math.round(chefAvgRating * 10) / 10,
+              averageDishRating: Math.round(avgRating * 10) / 10,
+              totalReviews: chefReviews.length
+            });
+            console.log(`✅ Updated chef ${chefId} averageRating to ${chefAvgRating.toFixed(1)} (${chefReviews.length} reviews)`);
+          }
+        } catch (reviewError) {
+          console.error('❌ Failed to process review aggregation:', reviewError.message);
+          // Don't fail the story creation if review aggregation fails
+        }
       }
 
       // Cache invalidation removed - No caching used

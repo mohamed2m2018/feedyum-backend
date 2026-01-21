@@ -116,12 +116,14 @@ const getAllDishes = async (req, res) => {
                   user_id: { $toString: "$user_id" },
                   menu: 1,
                   distance: 1,
+                  averageRating: { $ifNull: ["$average_rating", 0] },
                   chef: {
                     _id: { $toString: "$chef._id" },
                     fullName: "$chef.fullName",
                     username: "$chef.username",
                     avatar: "$chef.avatar",
-                    locations: "$chef.locations"
+                    locations: "$chef.locations",
+                    averageRating: { $ifNull: ["$chef.averageRating", 0] }
                   }
                 }
               }
@@ -138,7 +140,7 @@ const getAllDishes = async (req, res) => {
       // No location - simple query
       dishes = await Dish.find()
         .populate('menu')
-        .populate('user_id', 'fullName username avatar locations')
+        .populate('user_id', 'fullName username avatar locations averageRating')
         .skip(skip)
         .limit(limitNum)
         .sort({ _id: -1 })
@@ -146,17 +148,19 @@ const getAllDishes = async (req, res) => {
 
       totalCount = await Dish.countDocuments();
 
-      // Transform - ensure IDs are strings for consistent grouping
+      // Transform - ensure IDs are strings and normalize field names
       dishes = dishes.map(dish => ({
         ...dish,
         _id: dish._id?.toString(),
         user_id: dish.user_id?._id?.toString() || dish.user_id?.toString(),
+        averageRating: dish.average_rating || 0,
         chef: dish.user_id?._id ? {
           _id: dish.user_id._id.toString(),
           fullName: dish.user_id.fullName,
           username: dish.user_id.username,
           avatar: dish.user_id.avatar,
           locations: dish.user_id.locations,
+          averageRating: dish.user_id.averageRating || 0,
         } : null,
       }));
     }

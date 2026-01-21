@@ -44,12 +44,4 @@ router.post('/clear',
   cartController.clearCart
 );
 
-// @route  POST api/cart/checkout
-// @desc   Checkout cart and create order
-// @access Private
-router.post('/checkout',
-  passport.authenticate('jwt', { session: false }),
-  cartController.checkoutCart
-);
-
 module.exports = router;

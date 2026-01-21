@@ -70,6 +70,14 @@ router.put('/:id/cancel',
   orderController.cancelOrderByUser
 );
 
+// @route  GET api/orders/unseen/count
+// @desc   Get count of orders with unseen status changes
+// @access Private
+router.get('/unseen/count',
+  passport.authenticate('jwt', { session: false }),
+  orderController.getUnseenOrderCount
+);
+
 // @route  GET api/orders/:id
 // @desc   Get a single order by ID
 // @access Private
@@ -78,4 +86,13 @@ router.get('/:id',
   orderController.getOrderById
 );
 
+// @route  PUT api/orders/:orderId/seen
+// @desc   Mark an order as seen by current user
+// @access Private
+router.put('/:orderId/seen',
+  passport.authenticate('jwt', { session: false }),
+  orderController.markOrderSeen
+);
+
 module.exports = router;
+

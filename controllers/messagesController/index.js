@@ -8,6 +8,7 @@ const deleteMessage = require('./deleteMessage');
 const markMessageAsRead = require('./markMessageAsRead');
 const markChatAsRead = require('./markChatAsRead');
 const getUnreadCounts = require('./getUnreadCounts');
+const getOrderChats = require('./getOrderChats');
 
 module.exports = {
   getChatList,
@@ -19,5 +20,6 @@ module.exports = {
   deleteMessage,
   markMessageAsRead,
   markChatAsRead,
-  getUnreadCounts
+  getUnreadCounts,
+  getOrderChats
 }; 

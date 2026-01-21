@@ -42,6 +42,9 @@ const OrderSchema = new mongoose.Schema({
   }],
   statusNotes: { type: String },
   estimatedDeliveryTime: { type: Date },
+  // Tracking when user/chef last viewed this order (for unseen badge counts)
+  userLastSeenAt: { type: Date, default: null },
+  chefLastSeenAt: { type: Date, default: null },
 });
 
 // Add indexes for better query performance

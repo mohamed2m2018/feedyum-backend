@@ -1,4 +1,5 @@
 const Order = require('../../models/order');
+const Message = require('../../models/message');
 
 const getCurrentUserOrders = async (req, res) => {
   try {
@@ -20,12 +21,28 @@ const getCurrentUserOrders = async (req, res) => {
       .limit(limit)
       .lean();
 
+    // Get unread message count for each order
+    const ordersWithUnreadCount = await Promise.all(
+      orders.map(async (order) => {
+        const unreadCount = await Message.countDocuments({
+          order: order._id,
+          receiver: userId,
+          isRead: false,
+          isDeleted: { $ne: true }
+        });
+        return {
+          ...order,
+          unreadMessageCount: unreadCount
+        };
+      })
+    );
+
     const totalOrders = await Order.countDocuments({ user: userId });
     const totalPages = Math.ceil(totalOrders / limit);
 
     res.json({
       success: true,
-      orders: orders,
+      orders: ordersWithUnreadCount,
       totalPages: totalPages,
       currentPage: page,
       totalOrders: totalOrders,

@@ -6,7 +6,7 @@ const searchDishes = async (req, res) => {
   try {
     const { searchString, page = 1, limit = 10, chefId } = req.query;
     console.log('Traditional dish search called with:', { searchString, page, limit });
-    
+
     // If no search string, return all visible dishes
     if (!searchString || searchString.trim() === '') {
       console.log('No search string provided, returning all visible dishes');
@@ -22,16 +22,25 @@ const searchDishes = async (req, res) => {
       const totalPages = Math.ceil(totalDishes / limitNum);
 
       const dishes = await Dish.find(query)
-        .populate('user_id', 'fullName avatar')
+        .populate('user_id', 'fullName avatar averageRating')
         .sort({ averageRating: -1, createdAt: -1 })
         .skip(skip)
         .limit(limitNum)
         .lean();
 
-      // Remove embeddings from response to reduce size
+      // Remove embeddings, normalize ratings, and add chef field
       const dishesWithoutEmbeddings = dishes.map(dish => {
         const { embedding, embeddingGenerated, ...dishWithoutEmbedding } = dish;
-        return dishWithoutEmbedding;
+        return {
+          ...dishWithoutEmbedding,
+          averageRating: dish.average_rating || 0,
+          chef: dish.user_id ? {
+            _id: dish.user_id._id,
+            fullName: dish.user_id.fullName,
+            avatar: dish.user_id.avatar,
+            averageRating: dish.user_id.averageRating || 0,
+          } : null,
+        };
       });
 
       console.log(`Traditional dishes search found ${dishesWithoutEmbeddings.length} dishes for query: "${searchString}"`);
@@ -74,26 +83,29 @@ const searchDishes = async (req, res) => {
     // Get total count for pagination
     const totalDishes = await Dish.countDocuments(searchQuery);
     const totalPages = Math.ceil(totalDishes / limitNum);
-    
+
     console.log(`Found ${totalDishes} dishes matching search criteria`);
 
     // Get dishes with pagination
     const dishes = await Dish.find(searchQuery)
-      .populate('user_id', 'fullName avatar')
+      .populate('user_id', 'fullName avatar averageRating')
       .sort({ average_rating: -1, created_at: -1 })
       .skip(skip)
       .limit(limitNum)
       .lean();
 
-    // Format dishes with chef information and convert ObjectIds to strings
+    // Format dishes with chef information, normalize ratings, and convert ObjectIds to strings
     const formattedDishes = dishes.map(dish => ({
       ...dish,
       _id: dish._id.toString(),
-      user_id: dish.user_id._id.toString(),
+      user_id: dish.user_id?._id?.toString() || dish.user_id,
       menu: dish.menu ? dish.menu.toString() : dish.menu,
+      averageRating: dish.average_rating || 0,
       chef: dish.user_id ? {
-        ...dish.user_id,
-        _id: dish.user_id._id.toString()
+        _id: dish.user_id._id?.toString() || dish.user_id._id,
+        fullName: dish.user_id.fullName,
+        avatar: dish.user_id.avatar,
+        averageRating: dish.user_id.averageRating || 0,
       } : null
     }));
 

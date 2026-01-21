@@ -54,7 +54,7 @@ class SemanticSearchService {
         ...filters
       })
         .select('+embedding')
-        .populate('user_id', 'fullName avatar')
+        .populate('user_id', 'fullName avatar averageRating')
         .limit(this.maxResults)
         .lean();
 
@@ -81,7 +81,13 @@ class SemanticSearchService {
           return {
             ...dish,
             embedding: undefined, // Don't return embedding
-            chef: dish.user_id,
+            averageRating: dish.average_rating || 0,
+            chef: dish.user_id ? {
+              _id: dish.user_id._id,
+              fullName: dish.user_id.fullName,
+              avatar: dish.user_id.avatar,
+              averageRating: dish.user_id.averageRating || 0,
+            } : null,
             semanticScore: similarity
           };
         })

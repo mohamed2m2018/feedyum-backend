@@ -7,6 +7,8 @@ const updateOrderStatus = require('./updateOrderStatus');
 const getChefDashboardStats = require('./getChefDashboardStats');
 const getChefAnalytics = require('./getChefAnalytics');
 const cancelOrderByUser = require('./cancelOrderByUser');
+const getUnseenOrderCount = require('./getUnseenOrderCount');
+const markOrderSeen = require('./markOrderSeen');
 
 module.exports = {
   getOrderById,
@@ -18,4 +20,6 @@ module.exports = {
   getChefDashboardStats,
   getChefAnalytics,
   cancelOrderByUser,
+  getUnseenOrderCount,
+  markOrderSeen,
 };

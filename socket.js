@@ -1,11 +1,15 @@
 const socketIo = require('socket.io');
 const Message = require('./models/message');
+const Order = require('./models/order');
 
 console.log('✅ socket.js loaded with Push Notification support'); // Startup check
 
-// Helper function to get unread counts for a user
-const getUnreadCounts = async (userId) => {
+// Helper function to get all badge counts for a user (chat unread + order unseen)
+const getBadgeCounts = async (userId) => {
     try {
+        const mongoose = require('mongoose');
+        const userObjectId = new mongoose.Types.ObjectId(userId);
+
         // Get total unread messages count
         const totalUnreadCount = await Message.countDocuments({
             receiver: userId,
@@ -24,16 +28,33 @@ const getUnreadCounts = async (userId) => {
         // Calculate chat unread count (non-order messages)
         const chatUnreadCount = totalUnreadCount - orderUnreadCount;
 
+        // Get unseen orders count (active orders with status changes user hasn't seen)
+        // Only count orders with lastUpdated field (not old orders without it)
+        const orders = await Order.find({
+            user: userObjectId,
+            status: { $nin: ['cancelled', 'delivered', 'completed'] },
+            lastUpdated: { $exists: true, $ne: null }
+        }).select('lastUpdated userLastSeenAt').lean();
+
+        const unseenOrdersCount = orders.filter(order => {
+            if (!order.userLastSeenAt) return true; // Never seen
+            return new Date(order.lastUpdated) > new Date(order.userLastSeenAt);
+        }).length;
+
         return {
             totalUnreadCount,
             orderUnreadCount,
-            chatUnreadCount
+            chatUnreadCount,
+            unseenOrdersCount
         };
     } catch (error) {
-        console.error('Error getting unread counts:', error);
-        return { totalUnreadCount: 0, orderUnreadCount: 0, chatUnreadCount: 0 };
+        console.error('Error getting badge counts:', error);
+        return { totalUnreadCount: 0, orderUnreadCount: 0, chatUnreadCount: 0, unseenOrdersCount: 0 };
     }
 };
+
+// Export helper for use by other modules
+module.exports.getBadgeCounts = getBadgeCounts;
 
 // Store io instance for use by other modules
 let ioInstance = null;
@@ -105,9 +126,9 @@ module.exports = (server) => {
                     currentPage: pageNumber,
                 });
 
-                // Send initial unread counts to the user
-                const unreadCounts = await getUnreadCounts(userId);
-                socket.emit('unreadCountsUpdate', unreadCounts);
+                // Send initial badge counts to the user
+                const badgeCounts = await getBadgeCounts(userId);
+                socket.emit('badgeCountsUpdate', badgeCounts);
 
             } catch (error) {
                 console.error('Error fetching chat history:', error);
@@ -151,9 +172,9 @@ module.exports = (server) => {
                 io.to(receiverId).emit('newMessage', populatedMessage);
                 io.to(senderId).emit('newMessage', populatedMessage); // Send to sender to avoid frontend handling
 
-                // Send updated unread counts to receiver
-                const receiverUnreadCounts = await getUnreadCounts(receiverId);
-                io.to(receiverId).emit('unreadCountsUpdate', receiverUnreadCounts);
+                // Send updated badge counts to receiver
+                const receiverBadgeCounts = await getBadgeCounts(receiverId);
+                io.to(receiverId).emit('badgeCountsUpdate', receiverBadgeCounts);
 
                 // --- PUSH NOTIFICATION INTEGRATION ---
                 try {
@@ -219,9 +240,9 @@ module.exports = (server) => {
                     readAt: new Date()
                 });
 
-                // Send updated unread counts to user
-                const unreadCounts = await getUnreadCounts(userId);
-                io.to(userId).emit('unreadCountsUpdate', unreadCounts);
+                // Send updated badge counts to user
+                const badgeCounts = await getBadgeCounts(userId);
+                io.to(userId).emit('badgeCountsUpdate', badgeCounts);
 
             } catch (error) {
                 console.error('Error marking messages as read:', error);

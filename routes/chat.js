@@ -184,13 +184,16 @@ router.post('/message',
     passport.authenticate('jwt', { session: false }),
     async (req, res) => {
         const userId = getCurrentUserId(req);
-        const { chatUserId, content, orderId } = req.body;
+        const { chatUserId, content, orderId, audio, duration, messageType } = req.body;
 
         try {
             const newMessage = new Message({
                 sender: userId,
                 receiver: chatUserId,
-                content,
+                content: content || '',
+                audio: audio || undefined,
+                duration: duration || undefined,
+                messageType: messageType || (audio ? 'audio' : 'text'),
                 order: orderId || null,
                 timestamp: new Date()
             });
@@ -219,14 +222,15 @@ router.post('/message',
             try {
                 const senderInfo = populatedMessage.sender;
                 if (senderInfo) {
+                    const notificationMessage = audio ? '🎤 Voice message' : content;
                     await EnhancedNotificationService.sendChatNotification({
                         recipientId: chatUserId.toString(),
                         senderId: userId.toString(),
                         senderName: senderInfo.fullName || senderInfo.username || 'User',
-                        message: content,
+                        message: notificationMessage,
                         chatId: userId.toString(), // Chat ID is usually the sender's ID for 1-on-1 from receiver perspective
                         senderAvatar: senderInfo.avatar,
-                        messageType: 'text', // Assuming text for now as per this route's simple content
+                        messageType: messageType || (audio ? 'audio' : 'text'),
                         orderId: orderId || null
                     });
                     console.log(`[HTTP] Chat notification sent from ${userId} to ${chatUserId}`);

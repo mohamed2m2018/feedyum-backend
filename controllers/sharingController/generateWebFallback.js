@@ -222,7 +222,7 @@ const generateWebFallback = async (req, res) => {
         </div>
         
         <div class="download-buttons" id="downloadButtons" style="display: none;">
-            <p>Don't have FeedYum yet? Download now and discover amazing recipes!</p>
+            <p>Don't have FeedYum yet? Download now and discover amazing dishes!</p>
             
             <!-- Primary: Google Play Store for Android -->
             <a href="${playStoreUrl}" class="download-btn playstore-btn" onclick="trackDownload('android')">
@@ -265,7 +265,7 @@ const generateWebFallback = async (req, res) => {
         
         <div class="fallback-content">
             <h2>What is FeedYum?</h2>
-            <p>Discover amazing recipes, connect with talented chefs, and explore delicious food content. Join thousands of food enthusiasts sharing their culinary creations!</p>
+            <p>Discover amazing dishes, connect with talented chefs, and explore delicious food content. Join thousands of food enthusiasts sharing their culinary creations!</p>
             <div style="margin-top: 20px; font-size: 14px; opacity: 0.8;">
                 <p>🍽️ Recipe Videos • 👨‍🍳 Chef Profiles • 📋 Menus • 🔴 Live Cooking</p>
             </div>
@@ -455,25 +455,25 @@ function getOGTitle(type, contentId) {
 
 function getOGDescription(type) {
     const descriptions = {
-        reel: 'Discover amazing recipes and cooking videos from talented food creators.',
+        reel: 'Discover amazing dishes and cooking videos from talented food creators.',
         profile: 'Connect with food creators and discover their delicious content.',
         chefProfile: 'Meet talented chefs and explore their culinary creations.',
-        chefMenu: 'Explore delicious dishes and discover amazing recipes.',
-        menu: 'Browse amazing food options and discover new recipes.',
+        chefMenu: 'Explore delicious dishes and discover amazing dishes.',
+        menu: 'Browse amazing food options and discover new dishes.',
         dish: 'Discover this delicious recipe and many more on FeedYum.',
         live: 'Join live cooking sessions and learn from expert chefs.',
         story: 'Follow food stories and cooking journeys from creators.'
     };
-    return descriptions[type] || 'Join the FeedYum community and discover amazing recipes and food content!';
+    return descriptions[type] || 'Join the FeedYum community and discover amazing dishes and food content!';
 }
 
 function getContentDescription(type, contentId) {
     const descriptions = {
         reel: 'Watch this amazing cooking video and discover more food content!',
-        profile: 'Check out this food creator\'s profile and their amazing recipes!',
+        profile: 'Check out this food creator\'s profile and their amazing dishes!',
         chefProfile: 'Meet this talented chef and explore their culinary journey!',
-        chefMenu: 'Browse this chef\'s delicious menu and discover great recipes!',
-        menu: 'Explore this amazing menu and discover delicious recipes!',
+        chefMenu: 'Browse this chef\'s delicious menu and discover great dishes!',
+        menu: 'Explore this amazing menu and discover delicious dishes!',
         dish: 'Check out this mouth-watering recipe and learn how to make it!',
         live: 'Join this live cooking session and learn from the chef!',
         story: 'Follow this food story and discover the creator\'s journey!'

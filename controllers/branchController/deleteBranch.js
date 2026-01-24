@@ -6,10 +6,10 @@ const User = mongoose.model("user");
 
 const deleteBranch = async (req, res) => {
   const errors = {};
-  
+
   try {
     const { branchId } = req.body;
-    
+
     if (!branchId) {
       errors.branchId = "Branch ID is required";
       return res.status(400).json({ errors, success: false });
@@ -36,6 +36,16 @@ const deleteBranch = async (req, res) => {
       isActive: true
     });
 
+    // Prevent deleting the last branch - at least one branch must exist
+    if (otherActiveBranches.length === 0) {
+      errors.lastBranch = "Cannot delete your last branch. At least one branch must exist.";
+      return res.status(400).json({
+        errors,
+        success: false,
+        message: "Cannot delete your last branch. At least one branch must exist."
+      });
+    }
+
     // If this is the primary branch and there are other active branches, promote one
     if (branch.isPrimary && otherActiveBranches.length > 0) {
       const newPrimary = otherActiveBranches[0];
@@ -43,19 +53,9 @@ const deleteBranch = async (req, res) => {
       await newPrimary.save();
     }
 
-    // If this is the last branch, reset chef's country lock
-    if (otherActiveBranches.length === 0) {
-      chef.chefSettings = chef.chefSettings || {};
-      chef.chefSettings.country = null;
-      chef.chefSettings.currency = null;
-      chef.chefSettings.currencySymbol = null;
-      chef.chefSettings.isCountryLocked = false;
-      chef.chefSettings.hasBranches = false;
-      chef.chefSettings.totalBranches = 0;
-    } else {
-      // Update branch count
-      chef.chefSettings.totalBranches = otherActiveBranches.length;
-    }
+    // Update branch count
+    chef.chefSettings = chef.chefSettings || {};
+    chef.chefSettings.totalBranches = otherActiveBranches.length;
 
     // Delete the branch
     await ChefBranch.findByIdAndDelete(branchId);
@@ -63,7 +63,7 @@ const deleteBranch = async (req, res) => {
     // Save chef updates
     await chef.save();
 
-    res.json({ 
+    res.json({
       success: true,
       message: 'Branch deleted successfully',
       remainingBranches: otherActiveBranches.length

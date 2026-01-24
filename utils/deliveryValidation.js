@@ -2,9 +2,9 @@ const mongoose = require("mongoose");
 const ChefBranch = mongoose.model("chefBranch");
 
 /**
- * Maximum delivery distance in kilometers
+ * Default maximum delivery distance in kilometers (fallback if branch doesn't have deliveryRadius set)
  */
-const MAX_DELIVERY_DISTANCE_KM = 10;
+const DEFAULT_DELIVERY_DISTANCE_KM = 20;
 
 /**
  * Calculate distance between two coordinates using Haversine formula
@@ -81,12 +81,16 @@ const findNearestBranch = async (chefId, userLat, userLong) => {
                 parseFloat(branch.location.long)
             );
 
+            // Get branch's delivery radius or use default fallback
+            const branchDeliveryRadius = branch.deliveryRadius || DEFAULT_DELIVERY_DISTANCE_KM;
+
             branchesWithDistance.push({
                 branchId: branch._id,
                 branchName: branch.branchName,
                 address: branch.addressDetails?.formattedAddress,
                 deliveryFee: branch.deliveryFee,
                 minimumOrder: branch.minimumOrderAmount,
+                deliveryRadius: branchDeliveryRadius,
                 distance: Math.round(distance * 10) / 10
             });
 
@@ -102,6 +106,7 @@ const findNearestBranch = async (chefId, userLat, userLong) => {
 
 /**
  * Validate if delivery is possible based on distance
+ * Uses the branch's specific deliveryRadius (or default fallback)
  * @param {string} chefId - Chef's MongoDB ObjectId
  * @param {Object} deliveryAddress - Delivery address with coordinates
  * @returns {Promise<{ canDeliver: boolean, nearestBranch: Object|null, nearestDistance: number, error: string|null, allBranches: Array }>}
@@ -135,20 +140,24 @@ const validateDeliveryDistance = async (chefId, deliveryAddress) => {
         };
     }
 
-    // Check if within delivery distance
-    const canDeliver = nearestDistance <= MAX_DELIVERY_DISTANCE_KM;
+    // Get the branch's delivery radius (or use default fallback)
+    const branchDeliveryRadius = nearestBranch.deliveryRadius || DEFAULT_DELIVERY_DISTANCE_KM;
+
+    // Check if within the branch's delivery radius
+    const canDeliver = nearestDistance <= branchDeliveryRadius;
 
     if (!canDeliver) {
         return {
             canDeliver: false,
             nearestBranch: {
                 branchId: nearestBranch._id,
-                branchName: nearestBranch.branchName
+                branchName: nearestBranch.branchName,
+                deliveryRadius: branchDeliveryRadius
             },
             nearestDistance: Math.round(nearestDistance * 10) / 10,
             error: 'delivery_distance_exceeded',
             errorMessage: 'This kitchen is too far from your location',
-            maxDistance: MAX_DELIVERY_DISTANCE_KM,
+            maxDistance: branchDeliveryRadius,
             allBranches
         };
     }
@@ -158,18 +167,19 @@ const validateDeliveryDistance = async (chefId, deliveryAddress) => {
         nearestBranch: {
             branchId: nearestBranch._id,
             branchName: nearestBranch.branchName,
-            deliveryFee: nearestBranch.deliveryFee
+            deliveryFee: nearestBranch.deliveryFee,
+            deliveryRadius: branchDeliveryRadius
         },
         nearestDistance: Math.round(nearestDistance * 10) / 10,
         error: null,
         errorMessage: null,
-        maxDistance: MAX_DELIVERY_DISTANCE_KM,
-        allBranches: allBranches.filter(b => b.distance <= MAX_DELIVERY_DISTANCE_KM)
+        maxDistance: branchDeliveryRadius,
+        allBranches: allBranches.filter(b => b.distance <= b.deliveryRadius)
     };
 };
 
 module.exports = {
-    MAX_DELIVERY_DISTANCE_KM,
+    DEFAULT_DELIVERY_DISTANCE_KM,
     calculateDistance,
     extractCoordinates,
     findNearestBranch,

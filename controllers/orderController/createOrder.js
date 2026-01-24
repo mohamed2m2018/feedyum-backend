@@ -2,7 +2,7 @@ const Order = require('../../models/order');
 const User = require('../../models/user');
 const Dish = require('../../models/dish');
 const EnhancedNotificationService = require('../../services/enhancedNotificationService');
-const { validateDeliveryDistance, MAX_DELIVERY_DISTANCE_KM } = require('../../utils/deliveryValidation');
+const { validateDeliveryDistance } = require('../../utils/deliveryValidation');
 
 const createOrder = async (req, res) => {
   try {
@@ -77,7 +77,7 @@ const createOrder = async (req, res) => {
           error: validationResult.error,
           chefId,
           nearestDistance: validationResult.nearestDistance,
-          maxDistance: MAX_DELIVERY_DISTANCE_KM,
+          maxDistance: validationResult.maxDistance,
           nearestBranch: validationResult.nearestBranch?.branchName
         });
       }

@@ -2,8 +2,7 @@ const mongoose = require("mongoose");
 const Address = mongoose.model("address");
 const {
   validateDeliveryDistance,
-  extractCoordinates,
-  MAX_DELIVERY_DISTANCE_KM
+  extractCoordinates
 } = require('../../utils/deliveryValidation');
 
 /**
@@ -70,7 +69,7 @@ const validateOrderLocation = async (req, res) => {
         hasMatchingBranch: validationResult.canDeliver,
         branchesAvailable: validationResult.allBranches.length,
         nearestDistance: validationResult.nearestDistance,
-        maxDistance: MAX_DELIVERY_DISTANCE_KM
+        maxDistance: validationResult.maxDistance
       }
     };
 
@@ -80,7 +79,7 @@ const validateOrderLocation = async (req, res) => {
       response.nearestBranch = validationResult.nearestBranch;
     } else {
       response.message = validationResult.errorMessage ||
-        `This kitchen is too far from your location (${validationResult.nearestDistance}km, max ${MAX_DELIVERY_DISTANCE_KM}km)`;
+        `This kitchen is too far from your location (${validationResult.nearestDistance}km, max ${validationResult.maxDistance}km)`;
       response.availabilityStatus = validationResult.error;
       if (validationResult.nearestBranch) {
         response.nearestBranch = validationResult.nearestBranch;

@@ -7,7 +7,8 @@ const {
   addBranch,
   getBranches,
   editBranch,
-  deleteBranch
+  deleteBranch,
+  getCoverageAreas
 } = require('../controllers/branchController');
 
 // @route   POST /api/branches/add
@@ -19,6 +20,11 @@ router.post('/add', passport.authenticate("jwt", { session: false }), addBranch)
 // @desc    Get branches (for chef's own branches or specific chef by ID)
 // @access  Private
 router.get('/', passport.authenticate("jwt", { session: false }), getBranches);
+
+// @route   GET /api/branches/coverage-areas
+// @desc    Get areas/neighborhoods within a delivery radius
+// @access  Public (no auth required - used during branch setup)
+router.get('/coverage-areas', getCoverageAreas);
 
 // @route   PUT /api/branches/edit
 // @desc    Edit an existing branch

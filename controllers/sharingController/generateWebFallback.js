@@ -441,7 +441,7 @@ function getContentTitle(type, contentId) {
 
 function getOGTitle(type, contentId) {
     const titles = {
-        reel: 'Check out this amazing food recipe on FeedYum!',
+        reel: 'Check out this amazing reel on FeedYum!',
         profile: 'Check out this chef profile on FeedYum!',
         chefProfile: 'Check out this talented chef on FeedYum!',
         chefMenu: 'Check out this delicious menu on FeedYum!',

@@ -78,6 +78,13 @@ router.get('/unseen/count',
   orderController.getUnseenOrderCount
 );
 
+// @route  GET api/orders/check-delivery/:chefId
+// @desc   Check if a kitchen delivers to a given location
+// @access Public (no auth required for menu browsing)
+router.get('/check-delivery/:chefId',
+  orderController.checkDeliveryEligibility
+);
+
 // @route  GET api/orders/:id
 // @desc   Get a single order by ID
 // @access Private

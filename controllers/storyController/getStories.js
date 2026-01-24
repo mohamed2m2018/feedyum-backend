@@ -487,6 +487,7 @@ const getStories = async (req, res) => {
     if (uniqueAuthorIds.length > 0) {
       const authorRatings = await Dish.aggregate([
         { $match: { user_id: { $in: uniqueAuthorIds } } },
+        { $match: { average_rating: { $gt: 0 } } }, // Exclude dishes without ratings
         { $group: { _id: "$user_id", avg: { $avg: "$average_rating" }, count: { $sum: 1 } } }
       ]);
       const ratingMap = new Map(authorRatings.map(r => [r._id.toString(), r]));

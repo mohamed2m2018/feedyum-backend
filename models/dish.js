@@ -23,7 +23,7 @@ const DishSchema = new mongoose.Schema({
   menu_id: { type: Number, required: true }, // Numeric ID for the menu
   user_id: { type: mongoose.Schema.Types.ObjectId, ref: "user", required: true }, // User identifier
   visible: { type: Boolean, default: true }, // Visibility field
-  average_rating: { type: Number, default: 0 }, // Average rating for the dish
+  average_rating: { type: Number, default: 0, min: 0, max: 5 }, // Average rating for the dish (0 = no rating, 1-5 = rated)
   image: { type: String }, // URL for the dish image
 
   // Enhanced fields for dish detail screen

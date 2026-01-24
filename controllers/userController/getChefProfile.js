@@ -5,13 +5,13 @@ const mongoose = require('mongoose');
 const getChefProfile = async (req, res) => {
   try {
     const { chefId } = req.params;
-    
+
     // Find the chef user
     const chef = await User.findById(chefId)
       .select('fullName username avatar email phone type bio hasMenu locations tags')
       .populate('tags', 'name')
       .lean();
-    
+
     if (!chef) {
       return res.status(404).json({
         success: false,
@@ -74,6 +74,7 @@ const getChefProfile = async (req, res) => {
     }
 
     // Compute average rating across the chef's dishes (based on dish.average_rating)
+    // Only include valid ratings (1-5), excludes 0 (no rating) and invalid values < 1
     let averageDishRating = 0;
     let ratedDishesCount = 0;
     let dishCount = 0;
@@ -81,7 +82,7 @@ const getChefProfile = async (req, res) => {
     if (menu && Array.isArray(menu.dishes)) {
       dishCount = menu.dishes.length;
       const ratedDishes = menu.dishes.filter(
-        (dish) => typeof dish.average_rating === 'number' && dish.average_rating > 0
+        (dish) => typeof dish.average_rating === 'number' && dish.average_rating >= 1
       );
       ratedDishesCount = ratedDishes.length;
       if (ratedDishesCount > 0) {
@@ -97,9 +98,9 @@ const getChefProfile = async (req, res) => {
       ratedDishesCount,
       menu: menu
         ? {
-            ...menu,
-            dishCount,
-          }
+          ...menu,
+          dishCount,
+        }
         : null,
     };
 

@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const cacheManager = require('../../utils/cacheManager');
 
 // Models
 const Story = mongoose.model("story");
@@ -7,6 +6,10 @@ const Like = mongoose.model('like');
 const View = mongoose.model('view');
 const Dish = mongoose.model('dish');
 const Follow = mongoose.model('follow');
+
+// Simple in-memory storage for pagination consistency (no external dependencies)
+const userFeeds = new Map();
+const FEED_EXPIRY = 5 * 60 * 1000; // 5 minutes
 
 /**
  * SCORING ALGORITHM
@@ -301,7 +304,10 @@ const getStories = async (req, res) => {
   const startTime = Date.now();
   const { page = 1, limit = 10, categoryIds, lat, long, refresh } = req.query;
   const userId = req.user?._id?.toString() || 'anonymous';
-  const pageSize = parseInt(limit);
+  const pageNum = parseInt(page) || 1; // Parse page as integer
+  const pageSize = parseInt(limit) || 10;
+
+  console.log(`[GET STORIES] Request: page=${pageNum}, limit=${pageSize}, userId=${userId}`);
 
   // Cache Key Strategy:
   // - User Specific
@@ -310,20 +316,28 @@ const getStories = async (req, res) => {
   const latKey = lat ? Math.round(Number(lat) * 100) / 100 : 'noc';
   const longKey = long ? Math.round(Number(long) * 100) / 100 : 'noc';
   const catKey = categoryIds || 'all';
-  const feedCacheKey = `feed:${userId}:${catKey}:${latKey}:${longKey}`;
+  const feedKey = `${userId}:${catKey}:${latKey}:${longKey}`;
 
   try {
     let feedIds = [];
-    let isCached = false;
 
-    // Generate New Feed if needed
-    if (feedIds.length === 0) {
+    // Check if we have cached feed for this user (for pagination consistency)
+    const cachedFeed = userFeeds.get(feedKey);
+    if (cachedFeed && (Date.now() - cachedFeed.timestamp) < FEED_EXPIRY) {
+      feedIds = cachedFeed.ids;
+      console.log(`[GET STORIES] Using cached feed: ${feedIds.length} items`);
+    } else {
+      // Generate new feed
       feedIds = await generateNewFeed(userId === 'anonymous' ? null : userId, categoryIds, lat, long);
+      // Store for pagination consistency
+      userFeeds.set(feedKey, { ids: feedIds, timestamp: Date.now() });
+      console.log(`[GET STORIES] Generated new feed: ${feedIds.length} items, stored for pagination`);
     }
 
-    // 3. Pagination (O(1))
-    const startIndex = (page - 1) * pageSize;
+    // Pagination
+    const startIndex = (pageNum - 1) * pageSize;
     const pageIds = feedIds.slice(startIndex, startIndex + pageSize);
+    console.log(`[GET STORIES] Page ${pageNum}: startIndex=${startIndex}, returning ${pageIds.length} items`);
 
     if (pageIds.length === 0) {
       // If we're filtering by category and got 0 results, return empty - don't fall back to all content
@@ -507,10 +521,13 @@ const getStories = async (req, res) => {
       });
     }
 
+    const totalPages = Math.ceil(feedIds.length / pageSize);
+    console.log(`[GET STORIES] Response: ${orderedStories.length} stories, page ${pageNum}/${totalPages}`);
+
     res.json({
       stories: orderedStories,
-      totalPages: Math.ceil(feedIds.length / pageSize),
-      currentPage: page
+      totalPages: totalPages,
+      currentPage: pageNum
     });
 
   } catch (error) {

@@ -4,63 +4,10 @@ const mongoose = require("mongoose");
 const Story = mongoose.model("story");
 const Follow = mongoose.model("follow");
 const Like = mongoose.model('like');
+const Dish = mongoose.model('dish');
 
-// Function to shuffle an array using Fisher-Yates algorithm
-function shuffleArray(array) {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
-  return array;
-}
-
-function getNearestLocation(targetLat, targetLong, locations) {
-  if (!Array.isArray(locations) || locations.length === 0) {
-    return undefined; // Return null if the locations array is empty or not an array
-  }
-
-  // Radius of the Earth in kilometers
-  const earthRadius = 6371;
-
-  // Initialize variables to track the nearest location and its distance
-  let nearestLocation = null;
-  let nearestDistance = Infinity;
-
-
-  // Iterate through the list of locations
-  for (const location of locations) {
-    const { lat, long } = location;
-
-    // Calculate the differences in latitude and longitude
-    const latDiff = deg2rad(lat - targetLat);
-    const longDiff = deg2rad(long - targetLong);
-
-    // Calculate the Haversine distance
-    const a =
-      Math.sin(latDiff / 2) ** 2 +
-      Math.cos(deg2rad(targetLat)) *
-      Math.cos(deg2rad(lat)) *
-      Math.sin(longDiff / 2) ** 2;
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const distance = earthRadius * c;
-
-    // Update nearestLocation if this location is closer
-    if (distance < nearestDistance) {
-      nearestLocation = location;
-      nearestDistance = distance;
-    }
-  }
-
-  return {
-    nearestLocation,
-    distance: nearestDistance,
-  };
-}
-
-// Helper function to convert degrees to radians
-function deg2rad(degrees) {
-  return degrees * (Math.PI / 180);
-}
+// Utils
+const { getNearestLocation, shuffleArray } = require('../../utils/storyFeedUtils');
 
 const getFollowingStories = async (req, res) => {
   const { page = 1, limit = 10, userId, categoryIds } = req.query;
@@ -139,7 +86,6 @@ const getFollowingStories = async (req, res) => {
     const uniqueAuthorIds = [...new Set(mappedStories.map(s => s.author?._id?.toString()).filter(Boolean))];
     if (uniqueAuthorIds.length > 0) {
       try {
-        const Dish = mongoose.model('dish');
         const ratings = await Dish.aggregate([
           { $match: { user_id: { $in: uniqueAuthorIds.map(id => mongoose.Types.ObjectId(id)) } } },
           { $match: { average_rating: { $gt: 0 } } }, // Pre-filter rated dishes
@@ -178,7 +124,7 @@ const getFollowingStories = async (req, res) => {
     }
 
     // Shuffle the followingStories array to randomize the order
-    const randomizedStories = shuffleArray([...mappedStories]);
+    const randomizedStories = shuffleArray(mappedStories);
 
     // Return response with randomized stories, total pages, and current page
     return res.json({

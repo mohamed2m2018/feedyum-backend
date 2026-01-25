@@ -103,7 +103,7 @@ async function getUserViewHistory(userId) {
   if (!userId) return { viewedIds: new Set(), preferredCategories: new Set() };
 
   const userViews = await View.aggregate([
-    { $match: { user_id: mongoose.Types.ObjectId(userId) } },
+    { $match: { user_id: new mongoose.Types.ObjectId(userId) } },
     { $sort: { created_at: -1 } },
     { $limit: 100 },
     {
@@ -164,7 +164,7 @@ async function generateNewFeed(userId, categoryIds, userLat, userLong) {
     if (categoryIdArray.length > 0) {
       const objectIds = categoryIdArray.map(id => {
         try {
-          return mongoose.Types.ObjectId(id.trim());
+          return new mongoose.Types.ObjectId(id.trim());
         } catch (e) {
           return null;
         }
@@ -285,7 +285,7 @@ const getStories = async (req, res) => {
       const userLong = long ? parseFloat(long) : null;
       const hasLocation = userLat && userLong && !isNaN(userLat) && !isNaN(userLong);
 
-      const excludeIds = feedIds.map(id => mongoose.Types.ObjectId(id));
+      const excludeIds = feedIds.map(id => new mongoose.Types.ObjectId(id));
 
       let fallbackStories = [];
 

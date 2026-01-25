@@ -19,119 +19,209 @@ const {
 // Simple in-memory storage for pagination consistency (no external dependencies)
 const userFeeds = new Map();
 
+// Configuration
+const TIER1_CANDIDATE_LIMIT = 500;   // Hot+Recent content (fast scoring)
+const TIER2_CANDIDATE_LIMIT = 300;   // Extended content (scored on demand)
+const MAX_FEED_SIZE = 1000;          // Max items in a single feed before fallback
+const FEED_CACHE_CLEANUP_INTERVAL = 10 * 60 * 1000; // Cleanup every 10 minutes
+
+// Periodic cleanup of old feeds to prevent memory leaks
+setInterval(() => {
+  const now = Date.now();
+  let cleaned = 0;
+  for (const [key, feed] of userFeeds.entries()) {
+    if (now - feed.timestamp > FEED_EXPIRY * 3) {
+      userFeeds.delete(key);
+      cleaned++;
+    }
+  }
+  if (cleaned > 0) {
+    console.log(`[FEED CLEANUP] Removed ${cleaned} expired feeds`);
+  }
+}, FEED_CACHE_CLEANUP_INTERVAL);
+
 /**
- * GENERATE FEED (Heavy Operation)
- * Fetches candidates, analyzes user interest, scores, and returns ORDERED LIST OF IDs.
+ * TIERED CANDIDATE FETCHING
+ * Instead of fetching all 1000 at once, fetch in priority tiers
+ */
+async function fetchCandidatesTiered(categoryQuery, limit) {
+  const now = new Date();
+  const results = [];
+
+  // TIER 1: Hot content (last 7 days) - most likely to be relevant
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const tier1 = await Story.find({ ...categoryQuery, created_at: { $gte: sevenDaysAgo } })
+    .select('created_at author likesNo views commentsNo caption dishes reviewMode poster category avgCompletionRate rewatchCount shareCount')
+    .populate('author', 'locations type')
+    .sort({ created_at: -1 })
+    .limit(Math.min(limit, TIER1_CANDIDATE_LIMIT))
+    .lean();
+
+  results.push(...tier1);
+
+  // TIER 2: Extended content (7-30 days) - only if we need more
+  if (results.length < limit) {
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const tier2 = await Story.find({
+      ...categoryQuery,
+      created_at: { $gte: thirtyDaysAgo, $lt: sevenDaysAgo }
+    })
+      .select('created_at author likesNo views commentsNo caption dishes reviewMode poster category avgCompletionRate rewatchCount shareCount')
+      .populate('author', 'locations type')
+      .sort({ likesNo: -1 }) // Sort by engagement for older content
+      .limit(Math.min(limit - results.length, TIER2_CANDIDATE_LIMIT))
+      .lean();
+
+    results.push(...tier2);
+  }
+
+  // TIER 3: Archive content (30-60 days) - only if needed
+  if (results.length < limit) {
+    const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const tier3 = await Story.find({
+      ...categoryQuery,
+      created_at: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo }
+    })
+      .select('created_at author likesNo views commentsNo caption dishes reviewMode poster category avgCompletionRate rewatchCount shareCount')
+      .populate('author', 'locations type')
+      .sort({ views: -1 }) // Sort by views for archive
+      .limit(Math.min(limit - results.length, 200))
+      .lean();
+
+    results.push(...tier3);
+  }
+
+  return results;
+}
+
+/**
+ * OPTIMIZED USER HISTORY FETCH
+ * Use aggregation for faster processing
+ */
+async function getUserViewHistory(userId) {
+  if (!userId) return { viewedIds: new Set(), preferredCategories: new Set() };
+
+  const userViews = await View.aggregate([
+    { $match: { user_id: mongoose.Types.ObjectId(userId) } },
+    { $sort: { created_at: -1 } },
+    { $limit: 100 },
+    {
+      $lookup: {
+        from: 'stories',
+        localField: 'story',
+        foreignField: '_id',
+        as: 'storyData'
+      }
+    },
+    { $unwind: { path: '$storyData', preserveNullAndEmptyArrays: true } },
+    {
+      $group: {
+        _id: null,
+        viewedIds: { $addToSet: '$story' },
+        categories: { $push: '$storyData.category' }
+      }
+    }
+  ]);
+
+  if (!userViews.length) {
+    return { viewedIds: new Set(), preferredCategories: new Set() };
+  }
+
+  const viewedIds = new Set(userViews[0].viewedIds.map(id => id.toString()));
+
+  // Count category occurrences
+  const categoryCounts = {};
+  userViews[0].categories.flat().forEach(cat => {
+    if (cat) {
+      const catId = cat.toString();
+      categoryCounts[catId] = (categoryCounts[catId] || 0) + 1;
+    }
+  });
+
+  // Preferred = viewed 2+ times
+  const preferredCategories = new Set(
+    Object.entries(categoryCounts)
+      .filter(([_, count]) => count >= 2)
+      .map(([catId]) => catId)
+  );
+
+  return { viewedIds, preferredCategories };
+}
+
+/**
+ * GENERATE FEED (Optimized)
+ * Uses tiered fetching and optimized aggregations
  */
 async function generateNewFeed(userId, categoryIds, userLat, userLong) {
   const startTime = Date.now();
-  console.log(`[FEED GEN] Starting feed generation for user ${userId}, categoryIds: ${categoryIds}`);
+  console.log(`[FEED GEN] Starting optimized feed generation for user ${userId}`);
 
-  // 1. Build Query for Candidates
-  // Limit to last 60 days for performance/relevance
-  const sixtyDaysAgo = new Date();
-  sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
-
-  let query = { created_at: { $gte: sixtyDaysAgo } };
-
-  // FIX: Convert categoryIds string to array of ObjectIds for proper MongoDB matching
+  // 1. Build Category Query
+  let categoryQuery = {};
   if (categoryIds && categoryIds.length > 0) {
     const categoryIdArray = categoryIds.split(',').filter(id => id.trim());
     if (categoryIdArray.length > 0) {
-      // Convert string IDs to ObjectIds for proper matching
       const objectIds = categoryIdArray.map(id => {
         try {
-          return new mongoose.Types.ObjectId(id.trim());
+          return mongoose.Types.ObjectId(id.trim());
         } catch (e) {
-          console.warn(`[FEED GEN] Invalid ObjectId: ${id}`);
           return null;
         }
       }).filter(Boolean);
 
       if (objectIds.length > 0) {
-        query.category = { $in: objectIds };
-        console.log(`[FEED GEN] Filtering by ${objectIds.length} categories:`, objectIds);
+        categoryQuery.category = { $in: objectIds };
       }
     }
   }
 
-  // 2. Fetch Candidates
-  const candidates = await Story.find(query)
-    .select('created_at author likesNo views caption dishes reviewMode poster category')
-    .populate('author', 'locations')
-    .sort({ created_at: -1 })
-    .limit(1000)
-    .lean();
+  // 2. Fetch Candidates (Tiered)
+  const candidates = await fetchCandidatesTiered(categoryQuery, MAX_FEED_SIZE);
+  console.log(`[FEED GEN] Fetched ${candidates.length} candidates (tiered)`);
 
-  console.log(`[FEED GEN] Found ${candidates.length} candidates after filtering`);
+  // 3. Get User History (Optimized)
+  const { viewedIds, preferredCategories } = await getUserViewHistory(userId);
+  console.log(`[FEED GEN] User has ${viewedIds.size} viewed, ${preferredCategories.size} preferred categories`);
 
-
-  // 3. Analyze User History (Implicit Interest Tracking)
-  let viewedStoryIds = new Set();
-  let preferredCategories = new Set();
-
-  if (userId) {
-    // Fetch last 50 views
-    const userViews = await View.find({ user_id: userId })
-      .sort({ created_at: -1 })
-      .limit(50)
-      .populate('story', 'category') // Populate category of viewed stories
-      .lean();
-
-    // Count Categories
-    const categoryCounts = {};
-    userViews.forEach(view => {
-      viewedStoryIds.add(view.story?._id?.toString() || view.story?.toString());
-
-      // Track category preference
-      if (view.story && view.story.category) {
-        // Handle array or single category
-        const cats = Array.isArray(view.story.category) ? view.story.category : [view.story.category];
-        cats.forEach(cat => {
-          const catId = cat.toString();
-          categoryCounts[catId] = (categoryCounts[catId] || 0) + 1;
-        });
-      }
-    });
-
-    // Determine Top Categories (Threshold: Viewed > 2 items in this cat)
-    Object.entries(categoryCounts).forEach(([catId, count]) => {
-      if (count >= 2) preferredCategories.add(catId);
-    });
-
-    console.log(`[FEED GEN] User Interests: ${[...preferredCategories].length} categories`);
-  }
-
-  // 4. Score Candidates
+  // 4. Score Candidates (Batch Processing)
   const currentTime = Date.now();
   const hasValidCoordinates = userLat && userLong && !isNaN(userLat) && !isNaN(userLong);
+  const userLatNum = Number(userLat);
+  const userLongNum = Number(userLong);
 
-  candidates.forEach(story => {
-    // Calc Distance
-    if (hasValidCoordinates && story.author && story.author.locations) {
-      const result = getNearestLocation(Number(userLat), Number(userLong), story.author.locations);
-      story.kmAway = result?.distance;
-    } else {
-      story.kmAway = undefined;
-    }
+  // Process in batches of 100 to avoid blocking
+  const BATCH_SIZE = 100;
+  for (let i = 0; i < candidates.length; i += BATCH_SIZE) {
+    const batch = candidates.slice(i, i + BATCH_SIZE);
 
-    // Assign Score
-    story._score = calculateRecommendationScore(
-      story,
-      { lat: userLat, long: userLong },
-      viewedStoryIds,
-      preferredCategories,
-      currentTime
-    );
-  });
+    batch.forEach(story => {
+      // Calculate distance
+      if (hasValidCoordinates && story.author?.locations?.length > 0) {
+        const result = getNearestLocation(userLatNum, userLongNum, story.author.locations);
+        story.kmAway = result?.distance;
+      } else {
+        story.kmAway = undefined;
+      }
 
-  // 5. Sort & Bucket
+      // Calculate score
+      story._score = calculateRecommendationScore(
+        story,
+        { lat: userLatNum, long: userLongNum },
+        viewedIds,
+        preferredCategories,
+        currentTime
+      );
+    });
+  }
+
+  // 5. Sort, Bucket, Interleave
   candidates.sort((a, b) => b._score - a._score);
-
   const buckets = bucketByPriority(candidates);
   const uniqueOrderedIds = interleaveBuckets(buckets);
 
-  console.log(`[FEED GEN] Generated feed with ${uniqueOrderedIds.length} items from ${candidates.length} candidates`);
+  const elapsed = Date.now() - startTime;
+  console.log(`[FEED GEN] Generated ${uniqueOrderedIds.length} items in ${elapsed}ms`);
 
   return uniqueOrderedIds;
 }
@@ -141,15 +231,12 @@ const getStories = async (req, res) => {
   const startTime = Date.now();
   const { page = 1, limit = 10, categoryIds, lat, long, refresh } = req.query;
   const userId = req.user?._id?.toString() || 'anonymous';
-  const pageNum = parseInt(page) || 1; // Parse page as integer
+  const pageNum = parseInt(page) || 1;
   const pageSize = parseInt(limit) || 10;
 
   console.log(`[GET STORIES] Request: page=${pageNum}, limit=${pageSize}, userId=${userId}`);
 
-  // Cache Key Strategy:
-  // - User Specific
-  // - Location (Rounded)
-  // - Categories
+  // Cache Key Strategy
   const latKey = lat ? Math.round(Number(lat) * 100) / 100 : 'noc';
   const longKey = long ? Math.round(Number(long) * 100) / 100 : 'noc';
   const catKey = categoryIds || 'all';
@@ -158,55 +245,52 @@ const getStories = async (req, res) => {
   try {
     let feedIds = [];
 
-    // Check if we have cached feed for this user (for pagination consistency)
+    // Force refresh if requested
+    const forceRefresh = refresh === 'true';
+
+    // Check cache
     const cachedFeed = userFeeds.get(feedKey);
-    if (cachedFeed && (Date.now() - cachedFeed.timestamp) < FEED_EXPIRY) {
+    if (!forceRefresh && cachedFeed && (Date.now() - cachedFeed.timestamp) < FEED_EXPIRY) {
       feedIds = cachedFeed.ids;
-      console.log(`[GET STORIES] Using cached feed: ${feedIds.length} items`);
+      console.log(`[GET STORIES] Cache HIT: ${feedIds.length} items`);
     } else {
       // Generate new feed
       feedIds = await generateNewFeed(userId === 'anonymous' ? null : userId, categoryIds, lat, long);
-      // Store for pagination consistency
       userFeeds.set(feedKey, { ids: feedIds, timestamp: Date.now() });
-      console.log(`[GET STORIES] Generated new feed: ${feedIds.length} items, stored for pagination`);
+      console.log(`[GET STORIES] Cache MISS: Generated ${feedIds.length} items`);
     }
 
     // Pagination
     const startIndex = (pageNum - 1) * pageSize;
     const pageIds = feedIds.slice(startIndex, startIndex + pageSize);
-    console.log(`[GET STORIES] Page ${pageNum}: startIndex=${startIndex}, returning ${pageIds.length} items`);
+    console.log(`[GET STORIES] Page ${pageNum}: indices [${startIndex}-${startIndex + pageSize}], got ${pageIds.length} items`);
 
     if (pageIds.length === 0) {
-      // If we're filtering by category and got 0 results, return empty - don't fall back to all content
+      // Category filter with 0 results
       if (categoryIds && categoryIds.length > 0) {
-        console.log('[FEED] Category filter active with 0 results - returning empty list');
         return res.json({
           stories: [],
           totalPages: 0,
-          currentPage: page,
+          currentPage: pageNum,
           message: "No content matches your selected categories."
         });
       }
 
-      // TIER 2/3 FALLBACK: Only for non-filtered feeds when user exhausted hot content
-      console.log('[FEED] Tier 1 exhausted, switching to Tier 2/3 fallback');
+      // Exhausted feed - show archive content
+      console.log('[FEED] Feed exhausted, entering archive mode');
 
       const tier1Size = feedIds.length;
-      const fallbackOffset = startIndex - tier1Size; // How far into fallback tiers
-
-      // Use aggregation for distance-sorted extended content
+      const fallbackOffset = startIndex - tier1Size;
       const userLat = lat ? parseFloat(lat) : null;
       const userLong = long ? parseFloat(long) : null;
       const hasLocation = userLat && userLong && !isNaN(userLat) && !isNaN(userLong);
 
-      // Build fallback query (exclude already-shown IDs if possible)
-
-      const excludeIds = feedIds.map(id => new mongoose.Types.ObjectId(id));
+      const excludeIds = feedIds.map(id => mongoose.Types.ObjectId(id));
 
       let fallbackStories = [];
 
       if (hasLocation) {
-        // Tier 2/3: Distance-sorted via aggregation
+        // Distance-sorted fallback using aggregation
         const pipeline = [
           { $match: { _id: { $nin: excludeIds } } },
           { $lookup: { from: 'users', localField: 'author', foreignField: '_id', as: 'authorData' } },
@@ -256,7 +340,6 @@ const getStories = async (req, res) => {
 
         fallbackStories = await Story.aggregate(pipeline);
       } else {
-        // No location - just date sorted
         fallbackStories = await Story.find({ _id: { $nin: excludeIds } })
           .populate('author')
           .populate('dishes')
@@ -270,12 +353,11 @@ const getStories = async (req, res) => {
         return res.json({
           stories: [],
           totalPages: Math.ceil(tier1Size / pageSize) + 1,
-          currentPage: page,
+          currentPage: pageNum,
           message: "You've seen everything! Check back later for new content."
         });
       }
 
-      // Hydrate fallback stories
       const hydratedFallback = fallbackStories.map(s => ({
         ...s,
         author: s.authorData || s.author,
@@ -284,25 +366,26 @@ const getStories = async (req, res) => {
 
       return res.json({
         stories: hydratedFallback,
-        totalPages: 999, // Unknown total for archive
-        currentPage: page,
+        totalPages: 999,
+        currentPage: pageNum,
         tier: 'extended'
       });
     }
 
-    // 4. Fetch Details
+    // Fetch full story details
     const stories = await Story.find({ _id: { $in: pageIds } })
       .populate("author")
       .populate("dishes")
       .populate("reviewedChef")
       .lean();
 
-    // 5. Re-Order
+    // Re-order to match feed order
     const storyMap = new Map(stories.map(s => [s._id.toString(), s]));
     const orderedStories = pageIds.map(id => storyMap.get(id)).filter(Boolean);
 
-    // 6. Hydrate (Likes, Ratings, Follow Status)
+    // Hydrate with user-specific data (likes, follows)
     if (userId !== 'anonymous') {
+      // Batch fetch likes
       const allLikes = await Like.find({
         post_id: { $in: orderedStories.map(s => s._id) },
         user_id: userId
@@ -310,7 +393,7 @@ const getStories = async (req, res) => {
       const likeSet = new Set(allLikes.map(l => l.post_id.toString()));
       orderedStories.forEach(s => s.currentUserLiked = likeSet.has(s._id.toString()));
 
-      // Check follow status for all story authors and reviewedChefs
+      // Batch fetch follows
       const authorIds = orderedStories.map(s => s.author?._id).filter(Boolean);
       const reviewedChefIds = orderedStories.map(s => s.reviewedChef?._id).filter(Boolean);
       const allIdsToCheck = [...new Set([...authorIds, ...reviewedChefIds])];
@@ -333,12 +416,12 @@ const getStories = async (req, res) => {
       }
     }
 
-    // Aggregate Author Ratings
+    // Aggregate author ratings (batch)
     const uniqueAuthorIds = [...new Set(orderedStories.map(s => s.author?._id))];
     if (uniqueAuthorIds.length > 0) {
       const authorRatings = await Dish.aggregate([
         { $match: { user_id: { $in: uniqueAuthorIds } } },
-        { $match: { average_rating: { $gt: 0 } } }, // Exclude dishes without ratings
+        { $match: { average_rating: { $gt: 0 } } },
         { $group: { _id: "$user_id", avg: { $avg: "$average_rating" }, count: { $sum: 1 } } }
       ]);
       const ratingMap = new Map(authorRatings.map(r => [r._id.toString(), r]));
@@ -359,7 +442,8 @@ const getStories = async (req, res) => {
     }
 
     const totalPages = Math.ceil(feedIds.length / pageSize);
-    console.log(`[GET STORIES] Response: ${orderedStories.length} stories, page ${pageNum}/${totalPages}`);
+    const elapsed = Date.now() - startTime;
+    console.log(`[GET STORIES] Response: ${orderedStories.length} stories, page ${pageNum}/${totalPages}, took ${elapsed}ms`);
 
     res.json({
       stories: orderedStories,

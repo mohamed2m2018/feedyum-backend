@@ -128,4 +128,22 @@ router.get(
   storyController.getReviewStoriesByDish
 );
 
+// @route  POST api/story/:id/engagement
+// @desc   Track engagement signals (watch time, completion, rewatch, share)
+// @access Private
+router.post(
+  "/:id/engagement",
+  passport.authenticate("jwt", { session: false }),
+  storyController.trackEngagement
+);
+
+// @route  POST api/story/:id/share
+// @desc   Track story share
+// @access Private
+router.post(
+  "/:id/share",
+  passport.authenticate("jwt", { session: false }),
+  storyController.trackShare
+);
+
 module.exports = router;

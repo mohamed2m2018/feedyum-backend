@@ -114,11 +114,28 @@ const StorySchema = new Schema({
 
   embedding: { type: [Number], default: null, select: false },
   embeddingGenerated: { type: Date, default: null, select: false },
+
+  // Pre-computed engagement stats (updated by trackEngagement)
+  avgCompletionRate: { type: Number, default: 0 },
+  rewatchCount: { type: Number, default: 0 },
+  shareCount: { type: Number, default: 0 },
 });
 
-// Performance optimization indexes for semantic search
-StorySchema.index({ embedding: 1 }); // Index for semantic search
-StorySchema.index({ reviewMode: 1, embedding: 1 }); // Compound index for review filtering with semantic search
+// Performance optimization indexes
+
+// Single field indexes (already have author, category, created_at)
+StorySchema.index({ views: -1 }); // For popular content queries
+StorySchema.index({ likesNo: -1 }); // For liked content
+
+// Compound indexes for feed generation
+StorySchema.index({ created_at: -1, category: 1 }); // Category-filtered feeds
+StorySchema.index({ created_at: -1, author: 1 }); // Author content
+StorySchema.index({ author: 1, created_at: -1 }); // Author's recent content
+
+// Semantic search indexes
+StorySchema.index({ embedding: 1 });
+StorySchema.index({ reviewMode: 1, embedding: 1 });
 
 const Story = mongoose.model("story", StorySchema);
 module.exports = Story;
+

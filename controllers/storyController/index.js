@@ -15,6 +15,7 @@ const reportStory = require('./reportStory');
 const createReviewReel = require('./createReviewReel');
 const uploadStoryMedia = require('./uploadStoryMedia');
 const getUploadUrl = require('./getUploadUrl');
+const { trackEngagement, trackShare } = require('./trackEngagement');
 
 module.exports = {
     addStory,
@@ -34,4 +35,6 @@ module.exports = {
     createReviewReel,
     uploadStoryMedia,
     getUploadUrl,
+    trackEngagement,
+    trackShare,
 };

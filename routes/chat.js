@@ -128,7 +128,12 @@ router.get('/messages',
                 .skip((pageNumber - 1) * pageSize)
                 .limit(pageSize)
                 .populate('sender receiver', 'username avatar fullName')
-                .populate('order', 'status created_at');
+                .populate('order', 'status created_at')
+                .populate({
+                    path: 'replyTo',
+                    select: 'content sender timestamp messageType audio',
+                    populate: { path: 'sender', select: 'username fullName avatar' }
+                });
 
             const totalMessages = await Message.countDocuments(query);
             const totalPages = Math.ceil(totalMessages / pageSize);
@@ -184,7 +189,7 @@ router.post('/message',
     passport.authenticate('jwt', { session: false }),
     async (req, res) => {
         const userId = getCurrentUserId(req);
-        const { chatUserId, content, orderId, audio, duration, messageType } = req.body;
+        const { chatUserId, content, orderId, audio, duration, messageType, replyTo } = req.body;
 
         try {
             const newMessage = new Message({
@@ -195,6 +200,7 @@ router.post('/message',
                 duration: duration || undefined,
                 messageType: messageType || (audio ? 'audio' : 'text'),
                 order: orderId || null,
+                replyTo: replyTo || null,
                 timestamp: new Date()
             });
             const savedMessage = await newMessage.save();
@@ -212,6 +218,9 @@ router.post('/message',
                     // Emit to receiver for real-time update
                     io.to(chatUserId.toString()).emit('newMessage', populatedMessage);
                     console.log(`[SOCKET] Emitted newMessage to receiver: ${chatUserId}`);
+                    // Also emit to sender for real-time confirmation
+                    io.to(userId.toString()).emit('newMessage', populatedMessage);
+                    console.log(`[SOCKET] Emitted newMessage to sender: ${userId}`);
                 }
             } catch (socketError) {
                 console.error('[SOCKET] Failed to emit newMessage:', socketError.message);

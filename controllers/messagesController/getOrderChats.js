@@ -121,8 +121,12 @@ const getOrderChats = async (req, res) => {
                 return {
                     orderId: order._id,
                     order: order,
-                    chef: chatPartner,
-                    latestMessage: latestMessage,
+                    chatPartner: chatPartner,  // Renamed from 'chef' to be correct for both user and chef
+                    isCurrentUserChef: isCurrentUserChef,  // Added to help frontend identify context
+                    latestMessage: latestMessage ? {
+                        ...latestMessage,
+                        isFromCurrentUser: latestMessage.sender?._id?.toString() === userId.toString()
+                    } : null,
                     unreadCount: unreadCount
                 };
             })

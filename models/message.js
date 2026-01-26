@@ -7,16 +7,17 @@ const messageSchema = new mongoose.Schema({
   content: String,
   audio: String, // URL to the audio file
   duration: Number, // Duration in seconds
-  messageType: { 
-    type: String, 
-    enum: ['text', 'audio'], 
-    default: 'text' 
+  messageType: {
+    type: String,
+    enum: ['text', 'audio'],
+    default: 'text'
   },
   isRead: { type: Boolean, default: false }, // Track if message has been read
   readAt: { type: Date }, // When message was read
   isEdited: { type: Boolean, default: false }, // Track if message has been edited
   isDeleted: { type: Boolean, default: false }, // Soft delete flag
   deletedAt: { type: Date }, // When message was deleted
+  replyTo: { type: mongoose.Schema.Types.ObjectId, ref: 'message', default: null }, // Reply reference
   timestamp: { type: Date, default: Date.now }
 });
 

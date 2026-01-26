@@ -5,6 +5,7 @@ const router = express.Router();
 
 const userController = require('../controllers/userController/index.js');
 const optionalAuth = require('../middleware/optionalAuth');
+const { authLimiter, searchLimiter } = require('../middleware/rateLimit');
 
 // @route  GET api/user/all
 // @desc   Get all users
@@ -22,7 +23,7 @@ router.get('/search', passport.authenticate('jwt', { session: false }), userCont
 // @route  GET api/user/semantic-search
 // @desc   Semantic search users (with AI embeddings)
 // @access Private
-router.get('/semantic-search', passport.authenticate('jwt', { session: false }), userController.semanticSearchUser);
+router.get('/semantic-search', searchLimiter, passport.authenticate('jwt', { session: false }), userController.semanticSearchUser);
 
 // @route  POST api/user/check-availability
 // @desc   Check if email/phone are available for registration
@@ -36,27 +37,27 @@ router.post('/upload-profile-picture', userController.uploadProfilePicture);
 
 // @route  POST api/user
 // @desc   User Signup - Create new user
-// @access Public
+// @access Public (Rate limited to prevent abuse)
 // @errors first_name last_name email password password2 location error
 // @body   isFacebookEntry(optional) facebookId(optional)
-router.post('/', userController.signupUser);
+router.post('/', authLimiter, userController.signupUser);
 
 // @route  POST api/user/login
 // @desc   User Login - Return jwt token
-// @access Public
+// @access Public (Rate limited to prevent brute force)
 // @errors incorrectinfo email password error
 // @body   isFacebookEntry(optional) facebookId(optional)
-router.post('/login', userController.loginUser);
+router.post('/login', authLimiter, userController.loginUser);
 
 // @route  POST api/user/forgot-password
 // @desc   Request password reset email
-// @access Public
-router.post('/forgot-password', userController.forgotPassword);
+// @access Public (Rate limited)
+router.post('/forgot-password', authLimiter, userController.forgotPassword);
 
 // @route  POST api/user/reset-password
 // @desc   Reset password using token from email
-// @access Public
-router.post('/reset-password', userController.resetPassword);
+// @access Public (Rate limited)
+router.post('/reset-password', authLimiter, userController.resetPassword);
 
 // @route  GET api/user/reset-password
 // @desc   Redirect page that opens the app via deep link

@@ -4,11 +4,13 @@ const router = express.Router();
 
 const orderController = require('../controllers/orderController');
 const checkChefPaymentStatus = require('../middleware/checkChefPaymentStatus');
+const { orderLimiter } = require('../middleware/rateLimit');
 
 // @route  POST api/orders
 // @desc   Create a new order
-// @access Private
+// @access Private (Rate limited to prevent order spam)
 router.post('/',
+  orderLimiter,
   passport.authenticate('jwt', { session: false }),
   orderController.createOrder
 );

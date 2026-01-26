@@ -4,6 +4,7 @@ const router = express.Router();
 
 const dishController = require('../controllers/dishController');
 const requestTimeout = require('../middleware/requestTimeout');
+const { searchLimiter } = require('../middleware/rateLimit');
 
 
 // @route  POST api/dishes
@@ -50,8 +51,9 @@ router.get('/search',
 
 // @route  GET api/dishes/semantic-search
 // @desc   Semantic search dishes (with AI embeddings)
-// @access Public
+// @access Public (Rate limited for AI cost control)
 router.get('/semantic-search',
+  searchLimiter,
   requestTimeout(18000), // 18 second timeout (shorter than controller's 15s + buffer)
   dishController.semanticSearchDishes
 );

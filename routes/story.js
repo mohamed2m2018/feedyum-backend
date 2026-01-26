@@ -4,6 +4,7 @@ const passport = require("passport");
 const router = express.Router();
 
 const storyController = require("../controllers/storyController");
+const { searchLimiter, uploadLimiter } = require('../middleware/rateLimit');
 
 
 // @route  POST api/user/add_story
@@ -18,18 +19,20 @@ router.post(
 
 // @route  POST api/story/upload-media
 // @desc   Upload media (image/video) for story creation
-// @access Private
+// @access Private (Rate limited)
 router.post(
   "/upload-media",
+  uploadLimiter,
   passport.authenticate("jwt", { session: false }),
   storyController.uploadStoryMedia
 );
 
 // @route  GET api/story/get-upload-url
 // @desc   Get presigned URL for direct R2 upload
-// @access Private
+// @access Private (Rate limited)
 router.get(
   "/get-upload-url",
+  uploadLimiter,
   passport.authenticate("jwt", { session: false }),
   storyController.getUploadUrl
 );
@@ -52,9 +55,9 @@ router.get("/search", storyController.searchStories);
 
 // @route  GET api/story/semantic-search
 // @desc   Semantic search stories (with AI embeddings)
-// @access Public
+// @access Public (Rate limited for AI cost control)
 
-router.get("/semantic-search", storyController.semanticSearchStories);
+router.get("/semantic-search", searchLimiter, storyController.semanticSearchStories);
 
 // @route  delete api/story/stories
 // @desc   delete all stories

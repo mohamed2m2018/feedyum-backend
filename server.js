@@ -81,12 +81,19 @@ async function connectToDatabase() {
 const performanceMonitor = require('./middleware/performance');
 const timeout = require('./middleware/timeout');
 
-// Initialize cache manager
+// Rate limiting middleware (security)
+const { globalLimiter, authLimiter, searchLimiter, orderLimiter, uploadLimiter } = require('./middleware/rateLimit');
 
-
+// Apply global rate limiter first (baseline protection)
+app.use(globalLimiter);
 
 app.use(performanceMonitor);
 app.use(timeout(30000)); // 30 second timeout
+
+// Health check endpoint (excluded from rate limiting)
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
 // BodyParser Middleware
 app.use(bodyParser.urlencoded({ extended: false }));

@@ -10,6 +10,7 @@
  */
 
 const rateLimit = require('express-rate-limit');
+const { ipKeyGenerator } = require('express-rate-limit');
 
 // Standard response for rate limit exceeded
 const createLimitMessage = (retryAfter) => ({
@@ -19,13 +20,13 @@ const createLimitMessage = (retryAfter) => ({
     retryAfter: Math.ceil(retryAfter / 1000), // seconds
 });
 
-// Key generator - use user ID if authenticated, otherwise IP
+// Key generator - use user ID if authenticated, otherwise normalized IP
 const keyGenerator = (req) => {
     if (req.user && req.user._id) {
         return `user_${req.user._id}`;
     }
-    // Use X-Forwarded-For for proxied requests, fallback to direct IP
-    return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
+    // Use ipKeyGenerator helper to properly normalize IPv6 addresses
+    return ipKeyGenerator(req);
 };
 
 /**
@@ -66,7 +67,7 @@ const authLimiter = rateLimit({
     },
     // Always use IP for auth (user not authenticated yet)
     keyGenerator: (req) => {
-        return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
+        return ipKeyGenerator(req);
     },
 });
 

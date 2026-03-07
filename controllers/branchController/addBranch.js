@@ -6,21 +6,21 @@ const User = mongoose.model("user");
 
 const addBranch = async (req, res) => {
   const errors = {};
-  
+
   try {
     // Validation
     const requiredFields = [
-      'branchName', 'streetName', 'buildingNumber', 'area', 
+      'branchName', 'streetName', 'buildingNumber', 'area',
       'city', 'state', 'country', 'postalCode', 'lat', 'long',
       'phoneNumber', 'countryCode'
     ];
-    
+
     for (const field of requiredFields) {
       if (!req.body[field]) {
         errors[field] = `${field} is required`;
       }
     }
-    
+
     if (Object.keys(errors).length > 0) {
       return res.status(400).json({ errors, success: false });
     }
@@ -39,11 +39,11 @@ const addBranch = async (req, res) => {
     }
 
     // Count existing branches
-    const existingBranchesCount = await ChefBranch.countDocuments({ 
-      chef: req.user._id, 
-      isActive: true 
+    const existingBranchesCount = await ChefBranch.countDocuments({
+      chef: req.user._id,
+      isActive: true
     });
-    
+
     // Check if this is the first branch and set as primary
     const isPrimary = existingBranchesCount === 0;
 
@@ -75,6 +75,7 @@ const addBranch = async (req, res) => {
       isPrimary: isPrimary,
       deliveryRadius: req.body.deliveryRadius || 10,
       deliveryFee: req.body.deliveryFee || 0,
+      deliveryTiers: req.body.deliveryTiers || [],
       minimumOrderAmount: req.body.minimumOrderAmount || 0,
       operatingHours: req.body.operatingHours || []
     });
@@ -98,15 +99,15 @@ const addBranch = async (req, res) => {
     // Populate chef data for response
     await savedBranch.populate('chef', 'fullName avatar type chefSettings');
 
-    res.json({ 
-      branch: savedBranch, 
+    res.json({
+      branch: savedBranch,
       success: true,
       message: isPrimary ? 'Primary branch added successfully' : 'Branch added successfully'
     });
 
   } catch (err) {
     console.error('Error adding branch:', err);
-    
+
     // Handle duplicate key errors
     if (err.code === 11000) {
       if (err.keyPattern?.chef && err.keyPattern?.isPrimary) {
@@ -116,7 +117,7 @@ const addBranch = async (req, res) => {
       }
       return res.status(400).json({ errors, success: false });
     }
-    
+
     errors.database = "Error saving branch to database";
     return res.status(500).json({ errors, success: false, details: err.message });
   }

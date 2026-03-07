@@ -10,7 +10,7 @@ const getMenuByChef = async (req, res) => {
           select: 'name description'
         }
       })
-      .populate('chef', 'fullName avatar bio phone email chefSettings');
+      .populate('chef', 'fullName avatar cover bio phone email chefSettings');
 
     if (!menu) return res.status(404).json({ message: 'Menu not found' });
     res.status(200).json(menu);

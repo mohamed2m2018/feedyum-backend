@@ -1,7 +1,8 @@
 const { findNearestBranch, DEFAULT_DELIVERY_DISTANCE_KM } = require('../../utils/deliveryValidation');
+const { calculateDeliveryFee } = require('../../config/feeConfig');
 
 /**
- * Check if a kitchen delivers to a given location
+ * Check if a kitchen delivers to a given location and return calculated delivery fee
  * @route GET /api/orders/check-delivery/:chefId
  * @query lat - User latitude
  * @query long - User longitude
@@ -47,12 +48,18 @@ const checkDeliveryEligibility = async (req, res) => {
                 nearestDistance: null,
                 maxDistance: null,
                 branchCount: 0,
+                deliveryFee: 0,
             });
         }
 
         // Get branch's delivery radius
         const maxDistance = nearestBranch.deliveryRadius || DEFAULT_DELIVERY_DISTANCE_KM;
         const canDeliver = nearestDistance <= maxDistance;
+
+        // Calculate delivery fee from branch tiers
+        const deliveryFee = canDeliver
+            ? calculateDeliveryFee(nearestDistance, nearestBranch.deliveryTiers, nearestBranch.deliveryFee)
+            : 0;
 
         return res.json({
             success: true,
@@ -61,6 +68,7 @@ const checkDeliveryEligibility = async (req, res) => {
             maxDistance,
             nearestBranchName: nearestBranch.branchName || null,
             branchCount: allBranches.length,
+            deliveryFee,
         });
 
     } catch (error) {
@@ -74,3 +82,4 @@ const checkDeliveryEligibility = async (req, res) => {
 };
 
 module.exports = checkDeliveryEligibility;
+

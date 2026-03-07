@@ -1,12 +1,12 @@
 const mongoose = require('mongoose');
 
 const ChefBranchSchema = new mongoose.Schema({
-  chef: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: "user", 
-    required: true 
+  chef: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "user",
+    required: true
   },
-  
+
   // Complete address information
   addressDetails: {
     streetName: { type: String },
@@ -18,38 +18,42 @@ const ChefBranchSchema = new mongoose.Schema({
     postalCode: { type: String },
     formattedAddress: { type: String, required: true }
   },
-  
+
   // Geographic coordinates
   location: {
     lat: { type: Number, required: true },
     long: { type: Number, required: true }
   },
-  
+
   // Branch information
   branchName: { type: String, required: true }, // e.g., "Main Branch", "Downtown Location"
   contactInfo: {
     phoneNumber: { type: String, required: true },
     countryCode: { type: String, required: true }
   },
-  
+
   // Operational details
   isActive: { type: Boolean, default: true },
   operatingHours: [{
-    day: { 
-      type: String, 
+    day: {
+      type: String,
       enum: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
-      required: true 
+      required: true
     },
     isOpen: { type: Boolean, default: true },
     openTime: { type: String }, // Format: "09:00"
     closeTime: { type: String }, // Format: "22:00"
   }],
-  
+
   // Delivery settings
   deliveryRadius: { type: Number, default: 10 }, // in kilometers
-  deliveryFee: { type: Number, default: 0 },
+  deliveryFee: { type: Number, default: 0 }, // Fallback flat fee if no tiers configured
+  deliveryTiers: [{
+    maxDistance: { type: Number, required: true }, // km
+    fee: { type: Number, required: true },         // EGP
+  }],
   minimumOrderAmount: { type: Number, default: 0 },
-  
+
   // Metadata
   isPrimary: { type: Boolean, default: false }, // Primary branch for the chef
   created_at: { type: Date, default: Date.now },
@@ -66,18 +70,18 @@ ChefBranchSchema.index({ isActive: 1 });
 
 // Ensure only one primary branch per chef
 ChefBranchSchema.index(
-  { chef: 1, isPrimary: 1 }, 
+  { chef: 1, isPrimary: 1 },
   { unique: true, partialFilterExpression: { isPrimary: true } }
 );
 
 // Update timestamp on save
-ChefBranchSchema.pre('save', function(next) {
+ChefBranchSchema.pre('save', function (next) {
   this.updated_at = new Date();
   next();
 });
 
 // Static method to get active branches by city
-ChefBranchSchema.statics.getActiveByCity = function(city, country) {
+ChefBranchSchema.statics.getActiveByCity = function (city, country) {
   return this.find({
     'addressDetails.city': new RegExp(city, 'i'),
     'addressDetails.country': new RegExp(country, 'i'),
@@ -86,7 +90,7 @@ ChefBranchSchema.statics.getActiveByCity = function(city, country) {
 };
 
 // Static method to get branches within delivery radius
-ChefBranchSchema.statics.getWithinDeliveryRadius = function(lat, long, maxDistance = 50) {
+ChefBranchSchema.statics.getWithinDeliveryRadius = function (lat, long, maxDistance = 50) {
   return this.find({
     location: {
       $near: {
@@ -99,21 +103,21 @@ ChefBranchSchema.statics.getWithinDeliveryRadius = function(lat, long, maxDistan
 };
 
 // Instance method to check if branch delivers to a location
-ChefBranchSchema.methods.deliversTo = function(clientLat, clientLong) {
+ChefBranchSchema.methods.deliversTo = function (clientLat, clientLong) {
   const distance = this.calculateDistance(clientLat, clientLong);
   return distance <= this.deliveryRadius;
 };
 
 // Instance method to calculate distance to a point
-ChefBranchSchema.methods.calculateDistance = function(lat, long) {
+ChefBranchSchema.methods.calculateDistance = function (lat, long) {
   const R = 6371; // Earth's radius in kilometers
   const dLat = (lat - this.location.lat) * Math.PI / 180;
   const dLon = (long - this.location.long) * Math.PI / 180;
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(this.location.lat * Math.PI / 180) * Math.cos(lat * Math.PI / 180) * 
-    Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(this.location.lat * Math.PI / 180) * Math.cos(lat * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c; // Distance in kilometers
 };
 

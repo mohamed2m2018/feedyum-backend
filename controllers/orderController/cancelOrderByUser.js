@@ -29,8 +29,8 @@ const cancelOrderByUser = async (req, res) => {
       });
     }
 
-    // Only allow cancellation when status is 'pending' or 'confirmed' (before preparing)
-    if (!['pending', 'confirmed'].includes(order.status)) {
+    // Only allow cancellation when status is 'pending', 'awaiting_confirmation', or 'confirmed' (before preparing)
+    if (!['pending', 'awaiting_confirmation', 'confirmed'].includes(order.status)) {
       return res.status(400).json({
         success: false,
         message: `Cannot cancel order. Order can only be cancelled before it starts preparing. Current status: '${order.status}'`
@@ -97,10 +97,10 @@ ${reason ? `\n📝 Reason: ${reason}` : ''}${refundMessage}`,
 
     // Send notification to chef about order cancellation
     try {
-      const notificationMessage = wasConfirmed 
+      const notificationMessage = wasConfirmed
         ? `Order #${order._id.toString().slice(-6)} has been cancelled by ${order.user.fullName}. Service fee has been refunded.`
         : `Order #${order._id.toString().slice(-6)} has been cancelled by ${order.user.fullName}.`;
-      
+
       await EnhancedNotificationService.sendNotification({
         userIds: [order.chef._id.toString()],
         title: 'Order Cancelled',
@@ -138,7 +138,7 @@ ${reason ? `\n📝 Reason: ${reason}` : ''}${refundMessage}`,
       console.error('[SOCKET] Failed to emit orderCancelled:', socketError.message);
     }
 
-    const responseMessage = wasConfirmed 
+    const responseMessage = wasConfirmed
       ? 'Order cancelled successfully. Service fee has been refunded to the chef.'
       : 'Order cancelled successfully.';
 

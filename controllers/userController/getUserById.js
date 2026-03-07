@@ -7,7 +7,7 @@ const getUserById = async (req, res) => {
     // Get current user ID from token if available
     const currentUserId = req.user?._id;
 
-    const user = await User.findById(id).select('fullName username avatar email phone type bio locations').lean();
+    const user = await User.findById(id).select('fullName username avatar cover email phone type bio locations').lean();
 
     if (!user) {
       return res.status(404).json({

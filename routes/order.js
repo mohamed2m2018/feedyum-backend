@@ -72,6 +72,14 @@ router.put('/:id/cancel',
   orderController.cancelOrderByUser
 );
 
+// @route  PUT api/orders/:id/confirm
+// @desc   Confirm order by user (only when status is awaiting_confirmation)
+// @access Private
+router.put('/:id/confirm',
+  passport.authenticate('jwt', { session: false }),
+  orderController.confirmOrderByUser
+);
+
 // @route  GET api/orders/unseen/count
 // @desc   Get count of orders with unseen status changes
 // @access Private

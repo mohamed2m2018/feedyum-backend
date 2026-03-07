@@ -8,6 +8,7 @@ const CategorySchema = new Schema({
     name: String,
     nameArabic: String,
     description: String,
+    image: String,
 });
 
 

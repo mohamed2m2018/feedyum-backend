@@ -14,6 +14,7 @@ const UserSchema = new Schema({
     long: Number,
   })],
   avatar: String,
+  cover: String,
   fullName: String,
   phone: String,
   discount: {

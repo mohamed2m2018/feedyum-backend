@@ -6,10 +6,14 @@ const User = mongoose.model("user");
 
 const editBranch = async (req, res) => {
   const errors = {};
-  
+
   try {
     const { branchId } = req.body;
-    
+    console.log('🐞 [editBranch] Request body keys:', Object.keys(req.body));
+    console.log('🐞 [editBranch] deliveryTiers:', JSON.stringify(req.body.deliveryTiers));
+    console.log('🐞 [editBranch] deliveryFee:', req.body.deliveryFee);
+    console.log('🐞 [editBranch] deliveryRadius:', req.body.deliveryRadius);
+
     if (!branchId) {
       errors.branchId = "Branch ID is required";
       return res.status(400).json({ errors, success: false });
@@ -30,7 +34,7 @@ const editBranch = async (req, res) => {
 
     // Get chef to check country restrictions
     const chef = await User.findById(req.user._id);
-    
+
     // If country is being changed, validate it
     if (req.body.country && req.body.country !== branch.addressDetails.country) {
       if (!chef.canAddBranchInCountry(req.body.country)) {
@@ -54,9 +58,9 @@ const editBranch = async (req, res) => {
     if (req.body.postalCode) branch.addressDetails.postalCode = req.body.postalCode;
 
     // Update formatted address if any address field changed
-    if (req.body.streetName || req.body.buildingNumber || req.body.area || 
-        req.body.city || req.body.state || req.body.country || req.body.postalCode) {
-      branch.addressDetails.formattedAddress = 
+    if (req.body.streetName || req.body.buildingNumber || req.body.area ||
+      req.body.city || req.body.state || req.body.country || req.body.postalCode) {
+      branch.addressDetails.formattedAddress =
         `${branch.addressDetails.buildingNumber} ${branch.addressDetails.streetName}, ${branch.addressDetails.area}, ${branch.addressDetails.city}, ${branch.addressDetails.state} ${branch.addressDetails.postalCode}, ${branch.addressDetails.country}`;
     }
 
@@ -71,13 +75,17 @@ const editBranch = async (req, res) => {
     // Update operational details
     if (req.body.deliveryRadius !== undefined) branch.deliveryRadius = req.body.deliveryRadius;
     if (req.body.deliveryFee !== undefined) branch.deliveryFee = req.body.deliveryFee;
+    if (req.body.deliveryTiers !== undefined) {
+      branch.deliveryTiers = req.body.deliveryTiers;
+      branch.markModified('deliveryTiers');
+    }
     if (req.body.minimumOrderAmount !== undefined) branch.minimumOrderAmount = req.body.minimumOrderAmount;
     if (req.body.operatingHours) branch.operatingHours = req.body.operatingHours;
-    
+
     // Handle active status change
     if (req.body.isActive !== undefined) {
       const newStatus = req.body.isActive;
-      
+
       // If deactivating primary branch, ensure there's another branch to promote
       if (!newStatus && branch.isPrimary) {
         const otherActiveBranches = await ChefBranch.find({
@@ -85,32 +93,35 @@ const editBranch = async (req, res) => {
           _id: { $ne: branchId },
           isActive: true
         });
-        
+
         if (otherActiveBranches.length === 0) {
           errors.status = "Cannot deactivate primary branch when it's the only active branch";
           return res.status(400).json({ errors, success: false });
         }
-        
+
         // Promote another branch to primary
         const newPrimary = otherActiveBranches[0];
         newPrimary.isPrimary = true;
         await newPrimary.save();
-        
+
         branch.isPrimary = false;
       }
-      
+
       branch.isActive = newStatus;
     }
 
     // Save the updated branch
+    console.log('🐞 [editBranch] Before save - branch.deliveryTiers:', JSON.stringify(branch.deliveryTiers));
+    console.log('🐞 [editBranch] Before save - branch.isModified("deliveryTiers"):', branch.isModified('deliveryTiers'));
     const updatedBranch = await branch.save();
+    console.log('🐞 [editBranch] After save - updatedBranch.deliveryTiers:', JSON.stringify(updatedBranch.deliveryTiers));
 
     // Update chef's branch count
-    const activeBranchCount = await ChefBranch.countDocuments({ 
-      chef: req.user._id, 
-      isActive: true 
+    const activeBranchCount = await ChefBranch.countDocuments({
+      chef: req.user._id,
+      isActive: true
     });
-    
+
     chef.chefSettings = chef.chefSettings || {};
     chef.chefSettings.totalBranches = activeBranchCount;
     chef.chefSettings.hasBranches = activeBranchCount > 0;
@@ -119,8 +130,8 @@ const editBranch = async (req, res) => {
     // Populate chef data for response
     await updatedBranch.populate('chef', 'fullName avatar type chefSettings');
 
-    res.json({ 
-      branch: updatedBranch, 
+    res.json({
+      branch: updatedBranch,
       success: true,
       message: 'Branch updated successfully'
     });

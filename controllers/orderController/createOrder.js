@@ -3,6 +3,7 @@ const User = require('../../models/user');
 const Dish = require('../../models/dish');
 const EnhancedNotificationService = require('../../services/enhancedNotificationService');
 const { validateDeliveryDistance } = require('../../utils/deliveryValidation');
+const { calculateDeliveryFee } = require('../../config/feeConfig');
 
 const createOrder = async (req, res) => {
   try {
@@ -68,8 +69,9 @@ const createOrder = async (req, res) => {
     }
 
     // Geographic validation: Distance-based delivery check
+    let validationResult = null;
     if (deliveryAddress) {
-      const validationResult = await validateDeliveryDistance(chefId, deliveryAddress);
+      validationResult = await validateDeliveryDistance(chefId, deliveryAddress);
 
       if (!validationResult.canDeliver) {
         return res.status(400).json({
@@ -83,11 +85,20 @@ const createOrder = async (req, res) => {
       }
     }
 
-    // Calculate fees
-    const serviceFeePctg = 0.02; // 2%
-    const serviceFee = totalAmount * serviceFeePctg;
-    const deliveryFee = 0; // Will be set by chef later
-    const finalTotal = totalAmount + serviceFee + deliveryFee;
+    // Calculate delivery fee from nearest branch tiers
+    let deliveryFee = 0;
+    if (validationResult && validationResult.nearestBranch) {
+      // Use the full branch document to access deliveryTiers
+      const ChefBranch = require('../../models/chefBranch');
+      const fullBranch = await ChefBranch.findById(validationResult.nearestBranch.branchId);
+      if (fullBranch && fullBranch.deliveryTiers && fullBranch.deliveryTiers.length > 0) {
+        deliveryFee = calculateDeliveryFee(validationResult.nearestDistance, fullBranch.deliveryTiers, fullBranch.deliveryFee);
+      } else if (fullBranch) {
+        deliveryFee = fullBranch.deliveryFee || 0;
+      }
+    }
+    const serviceFee = 0; // No customer service fee — platform charges chef commission instead
+    const finalTotal = totalAmount + deliveryFee;
 
     // Create the order
     const order = new Order({
@@ -96,7 +107,7 @@ const createOrder = async (req, res) => {
       items: validatedItems,
       subtotal: Number(totalAmount.toFixed(2)),
       totalPrice: Number(finalTotal.toFixed(2)),
-      serviceFee: Number(serviceFee.toFixed(2)),
+      serviceFee: 0,
       deliveryFee: Number(deliveryFee.toFixed(2)),
       deliveryAddress,
       specialInstructions: notes || '',

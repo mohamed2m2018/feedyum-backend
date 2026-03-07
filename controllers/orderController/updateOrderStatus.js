@@ -1,6 +1,5 @@
 const Order = require('../../models/order');
 const User = require('../../models/user');
-const ChefWallet = require('../../models/chefWallet');
 const EnhancedNotificationService = require('../../services/enhancedNotificationService');
 
 const updateOrderStatus = async (req, res) => {
@@ -10,7 +9,7 @@ const updateOrderStatus = async (req, res) => {
     const chefId = req.user._id;
 
     // Validate status
-    const validStatuses = ['pending', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled'];
+    const validStatuses = ['pending', 'awaiting_confirmation', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled'];
     if (!status || !validStatuses.includes(status)) {
       return res.status(400).json({
         message: 'Invalid status. Valid statuses are: ' + validStatuses.join(', ')
@@ -35,7 +34,7 @@ const updateOrderStatus = async (req, res) => {
     }
 
     // Prevent backwards status changes (except for cancellation)
-    const statusOrder = ['pending', 'confirmed', 'preparing', 'ready', 'completed'];
+    const statusOrder = ['pending', 'awaiting_confirmation', 'confirmed', 'preparing', 'ready', 'completed'];
     const currentStatusIndex = statusOrder.indexOf(order.status);
     const newStatusIndex = statusOrder.indexOf(status);
 
@@ -45,9 +44,33 @@ const updateOrderStatus = async (req, res) => {
       });
     }
 
+    // When chef sets 'confirmed', redirect to 'awaiting_confirmation' 
+    // (user must confirm the order)
+    let actualStatus = status;
+    if (status === 'confirmed' && order.status === 'pending') {
+      actualStatus = 'awaiting_confirmation';
+    }
+
+    // Track if delivery fee was overridden by the chef
+    let deliveryFeeOverridden = false;
+    const previousDeliveryFee = order.deliveryFee;
+
+    // Update delivery fee if chef overrides it
+    if (deliveryFee !== undefined) {
+      const parsedFee = Number(deliveryFee);
+      if (parsedFee !== order.deliveryFee) {
+        deliveryFeeOverridden = true;
+      }
+      order.deliveryFee = parsedFee;
+      // Recalculate totalPrice: subtotal + deliveryFee (no service fee)
+      const subtotal = order.subtotal || 0;
+      const discountAmount = order.promocode?.discountAmount || 0;
+      order.totalPrice = subtotal + parsedFee - discountAmount;
+    }
+
     // Update order status
     const previousStatus = order.status;
-    order.status = status;
+    order.status = actualStatus;
 
     if (estimatedTime) {
       order.estimatedDeliveryTime = estimatedTime;
@@ -55,16 +78,6 @@ const updateOrderStatus = async (req, res) => {
 
     if (notes) {
       order.statusNotes = notes;
-    }
-
-    if (deliveryFee !== undefined) {
-      order.deliveryFee = deliveryFee;
-      // Recalculate totalPrice to include the new delivery fee
-      const subtotal = order.subtotal || 0;
-      const serviceFee = order.serviceFee || 0;
-      const tax = order.tax || 0;
-      const discountAmount = order.promocode?.discountAmount || 0;
-      order.totalPrice = subtotal + serviceFee + tax + deliveryFee - discountAmount;
     }
 
     order.lastUpdated = new Date();
@@ -76,80 +89,72 @@ const updateOrderStatus = async (req, res) => {
 
     order.statusHistory.push({
       status: previousStatus,
-      changedTo: status,
+      changedTo: actualStatus,
       timestamp: new Date(),
       notes: notes || ''
     });
 
     await order.save();
 
-    // Handle commission deduction when order is confirmed
-    if (status === 'confirmed' && previousStatus !== 'confirmed') {
-      try {
-        let wallet = await ChefWallet.findOne({ chef: chefId });
-
-        // If wallet doesn't exist, create it with initial balance
-        if (!wallet) {
-          wallet = new ChefWallet({
-            chef: chefId,
-            balance: 500, // Initial balance from platform
-            transactions: [{
-              type: 'initial_bonus',
-              amount: 500,
-              description: 'Welcome bonus from platform',
-              timestamp: new Date()
-            }]
-          });
-        }
-
-        // Deduct 5% service fee
-        // Note: addServiceFee handles the saving of the wallet
-        await wallet.addServiceFee(order._id, order.totalPrice);
-        console.log(`[WALLET] Deducted service fee for order ${order._id} from chef ${chefId}`);
-
-      } catch (walletError) {
-        console.error('[WALLET] Failed to process service fee:', walletError);
-        // We log but don't fail the order update to avoid blocking operations
-        // ideally this should be a transaction or have a retry mechanism
-      }
-    }
+    // NOTE: Wallet deduction is now handled in confirmOrderByUser.js
+    // when the customer confirms the order
 
     // Send notification to customer about status change
     try {
-      await EnhancedNotificationService.sendOrderStatusNotification({
+      const notificationData = {
         userId: order.user._id.toString(),
         orderId: order._id.toString(),
-        status: status,
+        status: actualStatus,
         chefName: order.chef.fullName,
         orderDetails: {
           total: order.totalPrice.toFixed(2),
           itemCount: order.items.length,
-          notes: notes
+          notes: notes,
+          deliveryFee: order.deliveryFee,
+          deliveryFeeOverridden,
+          previousDeliveryFee: deliveryFeeOverridden ? previousDeliveryFee : undefined,
         },
         estimatedTime: estimatedTime
-      });
+      };
 
-      console.log(`Order status notification sent for order ${orderId}: ${status}`);
+      await EnhancedNotificationService.sendOrderStatusNotification(notificationData);
+
+      console.log(`Order status notification sent for order ${orderId}: ${actualStatus}`);
     } catch (notificationError) {
       console.error('Failed to send order status notification:', notificationError);
-      // Don't fail the status update if notification fails
     }
 
-    // Emit socket event to notify chef dashboard about the order update
+    // Emit socket event to notify customer and chef dashboard
     try {
       const socketModule = require('../../socket');
       const io = socketModule.getIO();
       if (io) {
+        // Notify chef dashboard
         io.to(chefId.toString()).emit('chefDashboardUpdate', {
           type: 'orderStatusUpdate',
           orderId: order._id.toString(),
-          status: status,
+          status: actualStatus,
           previousStatus: previousStatus
         });
-        console.log(`[SOCKET] Emitted chefDashboardUpdate (orderStatusUpdate) to chef: ${chefId}`);
+
+        // Notify customer about awaiting confirmation (with delivery fee info)
+        if (actualStatus === 'awaiting_confirmation') {
+          io.to(order.user._id.toString()).emit('orderUpdate', {
+            type: 'awaiting_confirmation',
+            orderId: order._id.toString(),
+            status: actualStatus,
+            deliveryFee: order.deliveryFee,
+            deliveryFeeOverridden,
+            previousDeliveryFee: deliveryFeeOverridden ? previousDeliveryFee : undefined,
+            totalPrice: order.totalPrice,
+            chefName: order.chef.fullName,
+          });
+        }
+
+        console.log(`[SOCKET] Emitted orderStatusUpdate for order ${orderId}: ${actualStatus}`);
       }
     } catch (socketError) {
-      console.error('[SOCKET] Failed to emit chefDashboardUpdate:', socketError.message);
+      console.error('[SOCKET] Failed to emit update:', socketError.message);
     }
 
     res.json({
@@ -157,12 +162,15 @@ const updateOrderStatus = async (req, res) => {
       order: {
         _id: order._id,
         status: order.status,
+        deliveryFee: order.deliveryFee,
+        totalPrice: order.totalPrice,
+        deliveryFeeOverridden,
         estimatedDeliveryTime: order.estimatedDeliveryTime,
         statusNotes: order.statusNotes,
         lastUpdated: order.lastUpdated,
         statusHistory: order.statusHistory
       },
-      message: `Order status updated to ${status}`
+      message: `Order status updated to ${actualStatus}`
     });
 
   } catch (error) {
@@ -175,3 +183,4 @@ const updateOrderStatus = async (req, res) => {
 };
 
 module.exports = updateOrderStatus;
+

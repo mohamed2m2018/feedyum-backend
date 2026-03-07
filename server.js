@@ -185,6 +185,10 @@ async function startServer() {
     // Socket.io setup
     socketSetup(server);
 
+    // Start cron jobs
+    const { startStaleOrderReminders } = require('./cron/staleOrderReminders');
+    startStaleOrderReminders();
+
     // Start listening
     server.listen(port, () => {
       console.log('🚀 Server listening on port', port);

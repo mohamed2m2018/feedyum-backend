@@ -32,7 +32,7 @@ const DEFAULT_CATEGORIES = [
   { name: 'Main Courses', nameArabic: 'أطباق رئيسية', description: 'Main course dishes', image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=200&h=200&fit=crop' },
   { name: 'Soups and Stews', nameArabic: 'شوربة وطواجن', description: 'Hearty soups and stews', image: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=200&h=200&fit=crop' },
   { name: 'Sandwiches and Wraps', nameArabic: 'ساندوتشات ولفائف', description: 'Sandwiches and wraps', image: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=200&h=200&fit=crop' },
-  { name: 'Foul and Flafel', nameArabic: 'فول وفلافل', description: 'Middle Eastern classics', image: 'https://images.unsplash.com/photo-1593001874117-c99c800e3eb2?w=200&h=200&fit=crop' },
+  { name: 'Foul and Flafel', nameArabic: 'فول وفلافل', description: 'Middle Eastern classics', image: 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=200&h=200&fit=crop' },
   { name: 'Vegetarian', nameArabic: 'نباتي', description: 'Plant-based dishes', image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=200&h=200&fit=crop' },
   { name: 'Healthy', nameArabic: 'صحي', description: 'Healthy and nutritious options', image: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=200&h=200&fit=crop' },
   { name: 'Breakfast', nameArabic: 'فطار', description: 'Breakfast dishes', image: 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=200&h=200&fit=crop' },
@@ -40,7 +40,7 @@ const DEFAULT_CATEGORIES = [
   { name: 'Desserts', nameArabic: 'حلويات', description: 'Sweet treats and desserts', image: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=200&h=200&fit=crop' },
   { name: 'Beverages', nameArabic: 'مشروبات', description: 'Drinks and beverages', image: 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=200&h=200&fit=crop' },
   { name: 'Snacks', nameArabic: 'سناكس', description: 'Light snacks and appetizers', image: 'https://images.unsplash.com/photo-1621939514649-280e2ee25f60?w=200&h=200&fit=crop' },
-  { name: 'Side Dishes', nameArabic: 'أطباق جانبية', description: 'Sides and accompaniments', image: 'https://images.unsplash.com/photo-1534938665831-4f6e2e262d15?w=200&h=200&fit=crop' },
+  { name: 'Side Dishes', nameArabic: 'أطباق جانبية', description: 'Sides and accompaniments', image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&h=200&fit=crop' },
   { name: 'Homemade', nameArabic: 'أكل بيتي', description: 'Homestyle cooking', image: 'https://images.unsplash.com/photo-1466637574441-749b8f19452f?w=200&h=200&fit=crop' },
   { name: 'Coupons', nameArabic: 'كوبونات', description: 'Special offers and coupons', image: 'https://images.unsplash.com/photo-1607083206968-13611e3d76db?w=200&h=200&fit=crop' },
 

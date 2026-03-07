@@ -45,6 +45,7 @@ const OrderSchema = new mongoose.Schema({
   // Tracking when user/chef last viewed this order (for unseen badge counts)
   userLastSeenAt: { type: Date, default: null },
   chefLastSeenAt: { type: Date, default: null },
+  lastReminderSentAt: { type: Date, default: null },
 });
 
 // Add indexes for better query performance

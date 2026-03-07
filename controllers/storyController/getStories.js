@@ -44,13 +44,15 @@ setInterval(() => {
  * TIERED CANDIDATE FETCHING
  * Instead of fetching all 1000 at once, fetch in priority tiers
  */
-async function fetchCandidatesTiered(categoryQuery, limit) {
+async function fetchCandidatesTiered(categoryQuery, limit, extraFilters = {}) {
   const now = new Date();
+  // Merge extra filters into the category query
+  const baseQuery = { ...categoryQuery, ...extraFilters };
   const results = [];
 
   // TIER 1: Hot content (last 7 days) - most likely to be relevant
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const tier1 = await Story.find({ ...categoryQuery, created_at: { $gte: sevenDaysAgo } })
+  const tier1 = await Story.find({ ...baseQuery, created_at: { $gte: sevenDaysAgo } })
     .select('created_at author likesNo views commentsNo caption dishes reviewMode poster category avgCompletionRate rewatchCount shareCount')
     .populate('author', 'locations type')
     .sort({ created_at: -1 })
@@ -63,7 +65,7 @@ async function fetchCandidatesTiered(categoryQuery, limit) {
   if (results.length < limit) {
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const tier2 = await Story.find({
-      ...categoryQuery,
+      ...baseQuery,
       created_at: { $gte: thirtyDaysAgo, $lt: sevenDaysAgo }
     })
       .select('created_at author likesNo views commentsNo caption dishes reviewMode poster category avgCompletionRate rewatchCount shareCount')
@@ -80,7 +82,7 @@ async function fetchCandidatesTiered(categoryQuery, limit) {
     const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const tier3 = await Story.find({
-      ...categoryQuery,
+      ...baseQuery,
       created_at: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo }
     })
       .select('created_at author likesNo views commentsNo caption dishes reviewMode poster category avgCompletionRate rewatchCount shareCount')
@@ -153,7 +155,7 @@ async function getUserViewHistory(userId) {
  * GENERATE FEED (Optimized)
  * Uses tiered fetching and optimized aggregations
  */
-async function generateNewFeed(userId, categoryIds, userLat, userLong) {
+async function generateNewFeed(userId, categoryIds, userLat, userLong, filters = {}) {
   const startTime = Date.now();
   console.log(`[FEED GEN] Starting optimized feed generation for user ${userId}`);
 
@@ -176,8 +178,31 @@ async function generateNewFeed(userId, categoryIds, userLat, userLong) {
     }
   }
 
+  // Build extra filter conditions from query params
+  const extraFilters = {};
+
+  // Reviews only filter
+  if (filters.reviewsOnly) {
+    extraFilters.$or = [
+      { rating: { $exists: true, $ne: null } },
+      { reviewMode: true },
+    ];
+  }
+
+  // Chefs only filter - lookup chef user IDs
+  if (filters.chefsOnly) {
+    const User = mongoose.model('user');
+    const chefUsers = await User.find({ type: 'chef' }).select('_id').lean();
+    extraFilters.author = { $in: chefUsers.map(u => u._id) };
+  }
+
+  // Has orderable dishes filter
+  if (filters.hasDishes) {
+    extraFilters.dishes = { $exists: true, $not: { $size: 0 } };
+  }
+
   // 2. Fetch Candidates (Tiered)
-  const candidates = await fetchCandidatesTiered(categoryQuery, MAX_FEED_SIZE);
+  const candidates = await fetchCandidatesTiered(categoryQuery, MAX_FEED_SIZE, extraFilters);
   console.log(`[FEED GEN] Fetched ${candidates.length} candidates (tiered)`);
 
   // 3. Get User History (Optimized)
@@ -216,9 +241,16 @@ async function generateNewFeed(userId, categoryIds, userLat, userLong) {
   }
 
   // 5. Sort, Bucket, Interleave
-  candidates.sort((a, b) => b._score - a._score);
+  if (filters.sortBy === 'trending') {
+    // Trending sort: by engagement (likes + views) instead of recommendation score
+    candidates.sort((a, b) => ((b.likesNo || 0) + (b.views || 0)) - ((a.likesNo || 0) + (a.views || 0)));
+  } else {
+    candidates.sort((a, b) => b._score - a._score);
+  }
   const buckets = bucketByPriority(candidates);
-  const uniqueOrderedIds = interleaveBuckets(buckets);
+  const uniqueOrderedIds = filters.sortBy === 'trending'
+    ? candidates.map(c => c._id.toString())
+    : interleaveBuckets(buckets);
 
   const elapsed = Date.now() - startTime;
   console.log(`[FEED GEN] Generated ${uniqueOrderedIds.length} items in ${elapsed}ms`);
@@ -229,7 +261,15 @@ async function generateNewFeed(userId, categoryIds, userLat, userLong) {
 
 const getStories = async (req, res) => {
   const startTime = Date.now();
-  const { page = 1, limit = 10, categoryIds, lat, long, refresh } = req.query;
+  const { page = 1, limit = 10, categoryIds, lat, long, refresh, reviewsOnly, chefsOnly, hasDishes, sortBy } = req.query;
+
+  // Build filters object from query params
+  const filters = {
+    reviewsOnly: reviewsOnly === 'true',
+    chefsOnly: chefsOnly === 'true',
+    hasDishes: hasDishes === 'true',
+    sortBy: sortBy || 'default',
+  };
   const userId = req.user?._id?.toString() || 'anonymous';
   const pageNum = parseInt(page) || 1;
   const pageSize = parseInt(limit) || 10;
@@ -240,7 +280,8 @@ const getStories = async (req, res) => {
   const latKey = lat ? Math.round(Number(lat) * 100) / 100 : 'noc';
   const longKey = long ? Math.round(Number(long) * 100) / 100 : 'noc';
   const catKey = categoryIds || 'all';
-  const feedKey = `${userId}:${catKey}:${latKey}:${longKey}`;
+  const filterKey = `${filters.reviewsOnly}:${filters.chefsOnly}:${filters.hasDishes}:${filters.sortBy}`;
+  const feedKey = `${userId}:${catKey}:${latKey}:${longKey}:${filterKey}`;
 
   try {
     let feedIds = [];
@@ -255,7 +296,7 @@ const getStories = async (req, res) => {
       console.log(`[GET STORIES] Cache HIT: ${feedIds.length} items`);
     } else {
       // Generate new feed
-      feedIds = await generateNewFeed(userId === 'anonymous' ? null : userId, categoryIds, lat, long);
+      feedIds = await generateNewFeed(userId === 'anonymous' ? null : userId, categoryIds, lat, long, filters);
       userFeeds.set(feedKey, { ids: feedIds, timestamp: Date.now() });
       console.log(`[GET STORIES] Cache MISS: Generated ${feedIds.length} items`);
     }

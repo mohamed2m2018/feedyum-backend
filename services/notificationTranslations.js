@@ -29,6 +29,16 @@ const notificationTranslations = {
         ar: 'تحديث الطلب'
     },
 
+    // Awaiting Confirmation Reminder
+    awaitingConfirmationTitle: {
+        en: 'Order Needs Your Confirmation! ⏰',
+        ar: 'الطلب بحاجة لتأكيدك! ⏰'
+    },
+    awaitingConfirmationMessage: {
+        en: (chefName) => `${chefName} has accepted your order and is waiting for your confirmation`,
+        ar: (chefName) => `وافق ${chefName} على طلبك وينتظر تأكيدك`
+    },
+
     // Order Messages
     pendingMessage: {
         en: (chefName) => `Your order is being reviewed by chef ${chefName}`,

@@ -133,7 +133,8 @@ class EnhancedNotificationService {
         app_id: oneSignalAppId,
         headings: headings,
         contents: contents,
-        include_external_user_ids: userIds.map(id => id.toString()),
+        include_aliases: { external_id: userIds.map(id => id.toString()) },
+        target_channel: 'push',
         data: {
           type,
           id: targetId,
@@ -199,6 +200,13 @@ class EnhancedNotificationService {
         messageObj = {
           en: trans.pendingMessage.en(chefName),
           ar: trans.pendingMessage.ar(chefName)
+        };
+        break;
+      case 'awaiting_confirmation':
+        titleObj = trans.awaitingConfirmationTitle;
+        messageObj = {
+          en: trans.awaitingConfirmationMessage.en(chefName),
+          ar: trans.awaitingConfirmationMessage.ar(chefName)
         };
         break;
       case 'confirmed':

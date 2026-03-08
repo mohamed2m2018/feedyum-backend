@@ -109,12 +109,15 @@ const createPaymentIntention = async (req, res) => {
             }
         );
 
-        const { client_secret, id: paymobIntentionId } = response.data;
+        const { client_secret, id: paymobIntentionId, intention_order_id } = response.data;
 
-        console.log('[Paymob] Intention created: intentionId=', paymobIntentionId);
+        // intention_order_id is the REAL Paymob order ID (numeric, matches callback's obj.order.id)
+        // id is the intention ID (string like 'pi_test_...')
+        const realOrderId = intention_order_id || paymobIntentionId;
+        console.log('[Paymob] Intention created: intentionId=', paymobIntentionId, 'order_id=', intention_order_id);
 
-        // Update transaction with Paymob data
-        transaction.paymobOrderId = paymobIntentionId?.toString();
+        // Update transaction with the REAL Paymob order ID
+        transaction.paymobOrderId = realOrderId?.toString();
         transaction.clientSecret = client_secret;
         await transaction.save();
 
@@ -153,11 +156,14 @@ const handleCallback = async (req, res) => {
         const orderId = obj.order?.id?.toString() || obj.order?.toString();
         const isSuccess = obj.success === true || obj.success === 'true';
         const amountCents = obj.amount_cents || obj.amount;
+        // Paymob puts our extras inside creation_extras
         const extras = obj.order?.extras || obj.extras || {};
-        const userId = extras.userId;
+        const creationExtras = extras.creation_extras || extras;
+        const userId = creationExtras.userId || extras.userId;
+        const ourTransactionId = creationExtras.transactionId || extras.transactionId;
         const merchantOrderId = obj.order?.merchant_order_id || obj.merchant_order_id;
 
-        console.log('[Paymob Callback] Parsed: txnId=', transactionId, 'orderId=', orderId, 'merchantOrderId=', merchantOrderId, 'success=', isSuccess, 'amountCents=', amountCents, 'userId=', userId);
+        console.log('[Paymob Callback] Parsed: txnId=', transactionId, 'orderId=', orderId, 'merchantOrderId=', merchantOrderId, 'ourTxnId=', ourTransactionId, 'success=', isSuccess, 'amountCents=', amountCents, 'userId=', userId);
 
         // Verify HMAC if secret is configured
         if (keys.paymobHmacSecret) {
@@ -200,76 +206,48 @@ const handleCallback = async (req, res) => {
             }
         }
 
-        // Find the transaction — merchant_order_id is the primary lookup (our MongoDB _id)
-        let transaction = null;
+        // Find our transaction: intention_order_id (saved as paymobOrderId) matches callback's obj.order.id
+        const transaction = await PaymobTransaction.findOne({ paymobOrderId: orderId });
 
-        // Strategy 1 (PRIMARY): By merchant_order_id — this is our transaction._id sent to Paymob
-        if (merchantOrderId) {
-            transaction = await PaymobTransaction.findOne({ _id: merchantOrderId });
-            if (transaction) {
-                console.log('[Paymob Callback] Found via merchant_order_id:', transaction._id);
-            }
+        if (!transaction) {
+            console.warn('[Paymob Callback] No transaction found for orderId:', orderId);
+            return res.status(200).json({ success: true });
         }
 
-        // Strategy 2: By saved paymobOrderId
-        if (!transaction && orderId) {
-            transaction = await PaymobTransaction.findOne({ paymobOrderId: orderId });
+        console.log('[Paymob Callback] Found transaction:', transaction._id, 'for user:', transaction.user);
+        // Update with real Paymob IDs from callback
+        transaction.paymobTransactionId = transactionId;
+        if (orderId) {
+            transaction.paymobOrderId = orderId;
         }
+        transaction.status = isSuccess ? 'success' : 'failed';
+        transaction.callbackData = callbackData;
+        transaction.updated_at = new Date();
+        await transaction.save();
 
-        // Strategy 3: By paymob transaction ID
-        if (!transaction && transactionId) {
-            transaction = await PaymobTransaction.findOne({ paymobTransactionId: transactionId });
-        }
+        // If payment successful, credit the wallet
+        if (isSuccess) {
+            const amount = transaction.amount;
 
-        // Strategy 3: By userId from extras + pending status + matching amount
-        if (!transaction && userId && amountCents) {
-            transaction = await PaymobTransaction.findOne({
-                user: userId,
-                status: 'pending',
-                amountCents: parseInt(amountCents),
-            }).sort({ created_at: -1 });
-            if (transaction) {
-                console.log('[Paymob Callback] Found via userId+amount fallback:', transaction._id);
-            }
-        }
+            // Prevent double-credit
+            const existingCredit = await ChefWallet.findOne({
+                chef: transaction.user,
+                'transactions.description': { $regex: transaction._id.toString() }
+            });
 
-        if (transaction) {
-            // Update with real Paymob IDs from callback
-            transaction.paymobTransactionId = transactionId;
-            if (orderId) {
-                transaction.paymobOrderId = orderId;
-            }
-            transaction.status = isSuccess ? 'success' : 'failed';
-            transaction.callbackData = callbackData;
-            transaction.updated_at = new Date();
-            await transaction.save();
-
-            // If payment successful, credit the wallet
-            if (isSuccess) {
-                const amount = transaction.amount;
-
-                // Prevent double-credit
-                const existingCredit = await ChefWallet.findOne({
-                    chef: transaction.user,
-                    'transactions.description': { $regex: transaction._id.toString() }
-                });
-
-                if (!existingCredit) {
-                    let wallet = await ChefWallet.findOne({ chef: transaction.user });
-                    if (!wallet) {
-                        wallet = new ChefWallet({ chef: transaction.user });
-                        await wallet.save();
-                    }
-
-                    const description = `Wallet top-up via Paymob (Txn ${transaction._id})`;
-                    await wallet.processPayment(amount, description);
-                    console.log(`[Paymob Callback] Wallet credited: ${amount} EGP for user ${transaction.user}`);
-                } else {
-                    console.log(`[Paymob Callback] Wallet already credited for txn ${transaction._id}`);
+            if (!existingCredit) {
+                let wallet = await ChefWallet.findOne({ chef: transaction.user });
+                if (!wallet) {
+                    wallet = new ChefWallet({ chef: transaction.user });
+                    await wallet.save();
                 }
+
+                const description = `Wallet top-up via Paymob (Txn ${transaction._id})`;
+                await wallet.processPayment(amount, description);
+                console.log(`[Paymob Callback] Wallet credited: ${amount} EGP for user ${transaction.user}`);
+            } else {
+                console.log(`[Paymob Callback] Wallet already credited for txn ${transaction._id}`);
             }
-        } else {
-            console.warn('[Paymob Callback] No matching transaction found. orderId:', orderId, 'userId:', userId, 'amountCents:', amountCents);
         }
 
         // Always respond with 200 to Paymob

@@ -44,6 +44,8 @@ async function connectToDatabase() {
       const adminJS = new AdminJS({
         databases: [mongooseDb],
         rootPath: "/shoman-salah-not-expected",
+        loginPath: "/shoman-salah-not-expected/login",
+        logoutPath: "/shoman-salah-not-expected/logout",
       });
 
       const adminJSRouter = AdminJSExpress.buildAuthenticatedRouter(
@@ -70,6 +72,10 @@ async function connectToDatabase() {
       console.error("AdminJS initialization error:", err.message);
     }
 
+    // BodyParser MUST come after AdminJS router (@adminjs/express requirement)
+    app.use(bodyParser.urlencoded({ extended: false }));
+    app.use(bodyParser.json());
+
     return mongooseDb;
   } catch (err) {
     console.error("Error connecting to database:", err.message);
@@ -95,9 +101,7 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// BodyParser Middleware
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
+
 
 // Passport Config
 app.use(passport.initialize());

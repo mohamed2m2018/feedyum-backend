@@ -174,7 +174,7 @@ class EnhancedNotificationService {
       }
 
       const response = await client.createNotification(notification);
-      console.log(`${type} notification sent successfully:`, response);
+      console.log(`${type} notification sent successfully: id=${response?.body?.id || 'n/a'}, status=${response?.statusCode || 'n/a'}`);
       return response;
     } catch (error) {
       console.error(`Failed to send ${type} notification:`, error);
@@ -806,7 +806,7 @@ class EnhancedNotificationService {
       }
 
       const response = await client.createNotification(notification);
-      console.log('Bulk notification sent successfully:', response);
+      console.log(`Bulk notification sent successfully: id=${response?.body?.id || 'n/a'}, status=${response?.statusCode || 'n/a'}`);
       return response;
     } catch (error) {
       console.error('Failed to send bulk notification:', error);

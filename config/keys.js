@@ -23,6 +23,14 @@ const keys = {
   oneSignalAppId: process.env.ONESIGNAL_APP_ID,
   oneSignalApikey: process.env.ONESIGNAL_API_KEY,
   googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY,
+
+  // Paymob Payment Gateway
+  paymobApiKey: process.env.PAYMOB_API_KEY,
+  paymobSecretKey: process.env.PAYMOB_SECRET_KEY,
+  paymobPublicKey: process.env.PAYMOB_PUBLIC_KEY,
+  paymobHmacSecret: process.env.PAYMOB_HMAC_SECRET,
+  paymobIntegrationId: process.env.PAYMOB_INTEGRATION_ID,
+  paymobIframeId: process.env.PAYMOB_IFRAME_ID,
 };
 
 module.exports = keys;

@@ -1,13 +1,14 @@
 const Order = require('../../models/order');
 const User = require('../../models/user');
 const Dish = require('../../models/dish');
+const PromoCode = require('../../models/promocode');
 const EnhancedNotificationService = require('../../services/enhancedNotificationService');
 const { validateDeliveryDistance } = require('../../utils/deliveryValidation');
 const { calculateDeliveryFee } = require('../../config/feeConfig');
 
 const createOrder = async (req, res) => {
   try {
-    const { chefId, items, deliveryAddress, notes } = req.body;
+    const { chefId, items, deliveryAddress, notes, promocode } = req.body;
     const userId = req.user._id;
 
     // Validate required fields
@@ -98,7 +99,20 @@ const createOrder = async (req, res) => {
       }
     }
     const serviceFee = 0; // No customer service fee — platform charges chef commission instead
-    const finalTotal = totalAmount + deliveryFee;
+
+    // Apply promocode discount if provided
+    let discountAmount = 0;
+    let appliedPromocode = null;
+    if (promocode && promocode.code && promocode.discountAmount > 0) {
+      discountAmount = Math.min(promocode.discountAmount, totalAmount); // Don't discount more than subtotal
+      appliedPromocode = {
+        code: promocode.code,
+        discountAmount: Number(discountAmount.toFixed(2)),
+        discountType: promocode.discountType || 'fixed',
+      };
+    }
+
+    const finalTotal = totalAmount + deliveryFee - discountAmount;
 
     // Create the order
     const order = new Order({
@@ -109,6 +123,7 @@ const createOrder = async (req, res) => {
       totalPrice: Number(finalTotal.toFixed(2)),
       serviceFee: 0,
       deliveryFee: Number(deliveryFee.toFixed(2)),
+      ...(appliedPromocode && { promocode: appliedPromocode }),
       deliveryAddress,
       specialInstructions: notes || '',
       status: 'pending',
@@ -117,6 +132,18 @@ const createOrder = async (req, res) => {
     });
 
     await order.save();
+
+    // Increment promocode usage count
+    if (appliedPromocode) {
+      try {
+        await PromoCode.findOneAndUpdate(
+          { code: appliedPromocode.code },
+          { $inc: { usedCount: 1 } }
+        );
+      } catch (promoErr) {
+        console.error('Failed to increment promocode usage:', promoErr);
+      }
+    }
 
     // Populate order data for response
     await order.populate('user', 'fullName username avatar');

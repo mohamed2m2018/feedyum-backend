@@ -1,4 +1,18 @@
-require('dotenv').config();
+const fs = require('fs');
+const path = require('path');
+const envPath = path.resolve(process.cwd(), '.env');
+console.log('[DEBUG] CWD:', process.cwd());
+console.log('[DEBUG] .env path:', envPath);
+console.log('[DEBUG] .env exists:', fs.existsSync(envPath));
+if (fs.existsSync(envPath)) {
+  const content = fs.readFileSync(envPath, 'utf8');
+  console.log('[DEBUG] .env lines:', content.split('\n').length);
+  console.log('[DEBUG] .env first 100 chars:', content.substring(0, 100));
+}
+const dotenvResult = require('dotenv').config();
+console.log('[DEBUG] dotenv error:', dotenvResult.error || 'none');
+console.log('[DEBUG] dotenv parsed keys:', dotenvResult.parsed ? Object.keys(dotenvResult.parsed).length : 0);
+console.log('[DEBUG] SECRET_OR_KEY defined:', !!process.env.SECRET_OR_KEY);
 // Fix deprecation warnings first
 process.env.NODE_NO_WARNINGS = '1';
 process.env.SUPPRESS_NO_CONFIG_WARNING = 'true';

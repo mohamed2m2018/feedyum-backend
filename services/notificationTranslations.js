@@ -45,8 +45,8 @@ const notificationTranslations = {
         ar: (chefName) => `طلبك قيد المراجعة بواسطة الشيف ${chefName}`
     },
     confirmedMessage: {
-        en: (chefName, time) => `${chefName} confirmed your order! Estimated time: ${time || '30-45 mins'}`,
-        ar: (chefName, time) => `وافق ${chefName} على طلبك! الوقت المقدر: ${time || '30-45 دقيقة'}`
+        en: (chefName) => `${chefName} confirmed your order!`,
+        ar: (chefName) => `وافق ${chefName} على طلبك!`
     },
     preparingMessage: {
         en: (chefName) => `${chefName} is preparing your delicious meal`,

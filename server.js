@@ -186,11 +186,16 @@ async function startServer() {
     // Socket.io setup
     socketSetup(server);
 
-    // Start cron jobs
-    const { startStaleOrderReminders } = require('./cron/staleOrderReminders');
-    const { startOrderExpiry } = require('./cron/orderExpiry');
-    startStaleOrderReminders();
-    startOrderExpiry();
+    // Start cron jobs (only in production to avoid duplicate notifications from dev servers)
+    if (process.env.NODE_ENV === 'production') {
+      const { startStaleOrderReminders } = require('./cron/staleOrderReminders');
+      const { startOrderExpiry } = require('./cron/orderExpiry');
+      startStaleOrderReminders();
+      startOrderExpiry();
+      console.log('⏰ Cron jobs started (production mode)');
+    } else {
+      console.log('⏰ Cron jobs SKIPPED (non-production mode)');
+    }
 
     // Start listening
     server.listen(port, () => {

@@ -188,8 +188,7 @@ class EnhancedNotificationService {
     orderId,
     status,
     chefName,
-    orderDetails = {},
-    estimatedTime = null
+    orderDetails = {}
   }) {
     let messageObj = { en: '', ar: '' };
     let titleObj = { en: '', ar: '' };
@@ -212,8 +211,8 @@ class EnhancedNotificationService {
       case 'confirmed':
         titleObj = trans.orderConfirmed;
         messageObj = {
-          en: trans.confirmedMessage.en(chefName, estimatedTime),
-          ar: trans.confirmedMessage.ar(chefName, estimatedTime)
+          en: trans.confirmedMessage.en(chefName),
+          ar: trans.confirmedMessage.ar(chefName)
         };
         break;
       case 'preparing':
@@ -255,7 +254,6 @@ class EnhancedNotificationService {
       additionalData: {
         status,
         chefName,
-        estimatedTime,
         ...orderDetails
       }
     });

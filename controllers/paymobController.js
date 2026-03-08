@@ -38,11 +38,23 @@ const createPaymentIntention = async (req, res) => {
 
         const amountCents = Math.round(amount * 100);
 
+        // Save transaction to DB FIRST — we need its _id as merchant_order_id for Paymob
+        const transaction = new PaymobTransaction({
+            user: user._id,
+            amount,
+            amountCents,
+            status: 'pending',
+            description: `Wallet top-up of ${amount} EGP`,
+        });
+        await transaction.save();
+
         // Create the intention via Paymob API
+        // merchant_order_id is the key to linking callbacks back to our transaction
         const intentionPayload = {
             amount: amountCents,
             currency: 'EGP',
             payment_methods: [parseInt(keys.paymobIntegrationId)],
+            merchant_order_id: transaction._id.toString(),
             items: [
                 {
                     name: 'Wallet Top-up',
@@ -73,6 +85,7 @@ const createPaymentIntention = async (req, res) => {
             },
             extras: {
                 userId: user._id.toString(),
+                transactionId: transaction._id.toString(),
             },
         };
 
@@ -83,7 +96,7 @@ const createPaymentIntention = async (req, res) => {
             intentionPayload.redirection_url = `${baseUrl}/api/paymob/redirect`;
         }
 
-        console.log('[Paymob] Creating intention for user:', user._id, 'amount:', amount, 'EGP');
+        console.log('[Paymob] Creating intention for user:', user._id, 'amount:', amount, 'EGP', 'merchant_order_id:', transaction._id.toString());
 
         const response = await axios.post(
             `${PAYMOB_BASE_URL}/v1/intention/`,
@@ -100,22 +113,13 @@ const createPaymentIntention = async (req, res) => {
 
         console.log('[Paymob] Intention created: intentionId=', paymobIntentionId);
 
+        // Update transaction with Paymob data
+        transaction.paymobOrderId = paymobIntentionId?.toString();
+        transaction.clientSecret = client_secret;
+        await transaction.save();
+
         // Build the checkout URL using the public key
         const checkoutUrl = `https://accept.paymob.com/unifiedcheckout/?publicKey=${keys.paymobPublicKey}&clientSecret=${client_secret}`;
-
-        // Save transaction record
-        // NOTE: paymobOrderId stores the INTENTION id initially.
-        // The real Paymob order ID comes from the callback later.
-        const transaction = new PaymobTransaction({
-            user: user._id,
-            amount,
-            amountCents,
-            paymobOrderId: paymobIntentionId?.toString(),
-            clientSecret: client_secret,
-            status: 'pending',
-            description: `Wallet top-up of ${amount} EGP`,
-        });
-        await transaction.save();
 
         res.json({
             success: true,
@@ -151,8 +155,9 @@ const handleCallback = async (req, res) => {
         const amountCents = obj.amount_cents || obj.amount;
         const extras = obj.order?.extras || obj.extras || {};
         const userId = extras.userId;
+        const merchantOrderId = obj.order?.merchant_order_id || obj.merchant_order_id;
 
-        console.log('[Paymob Callback] Parsed: txnId=', transactionId, 'orderId=', orderId, 'success=', isSuccess, 'amountCents=', amountCents, 'userId=', userId);
+        console.log('[Paymob Callback] Parsed: txnId=', transactionId, 'orderId=', orderId, 'merchantOrderId=', merchantOrderId, 'success=', isSuccess, 'amountCents=', amountCents, 'userId=', userId);
 
         // Verify HMAC if secret is configured
         if (keys.paymobHmacSecret) {
@@ -195,15 +200,23 @@ const handleCallback = async (req, res) => {
             }
         }
 
-        // Find the transaction — multiple strategies since intention ID != order ID
+        // Find the transaction — merchant_order_id is the primary lookup (our MongoDB _id)
         let transaction = null;
 
-        // Strategy 1: By saved paymobOrderId (could be intention ID or real order ID)
-        if (orderId) {
+        // Strategy 1 (PRIMARY): By merchant_order_id — this is our transaction._id sent to Paymob
+        if (merchantOrderId) {
+            transaction = await PaymobTransaction.findOne({ _id: merchantOrderId });
+            if (transaction) {
+                console.log('[Paymob Callback] Found via merchant_order_id:', transaction._id);
+            }
+        }
+
+        // Strategy 2: By saved paymobOrderId
+        if (!transaction && orderId) {
             transaction = await PaymobTransaction.findOne({ paymobOrderId: orderId });
         }
 
-        // Strategy 2: By paymob transaction ID
+        // Strategy 3: By paymob transaction ID
         if (!transaction && transactionId) {
             transaction = await PaymobTransaction.findOne({ paymobTransactionId: transactionId });
         }
@@ -217,17 +230,6 @@ const handleCallback = async (req, res) => {
             }).sort({ created_at: -1 });
             if (transaction) {
                 console.log('[Paymob Callback] Found via userId+amount fallback:', transaction._id);
-            }
-        }
-
-        // Strategy 4: By userId + most recent pending
-        if (!transaction && userId) {
-            transaction = await PaymobTransaction.findOne({
-                user: userId,
-                status: 'pending',
-            }).sort({ created_at: -1 });
-            if (transaction) {
-                console.log('[Paymob Callback] Found via userId fallback:', transaction._id);
             }
         }
 

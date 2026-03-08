@@ -72,10 +72,6 @@ async function connectToDatabase() {
       console.error("AdminJS initialization error:", err.message);
     }
 
-    // BodyParser MUST come after AdminJS router (@adminjs/express requirement)
-    app.use(bodyParser.urlencoded({ extended: false }));
-    app.use(bodyParser.json());
-
     return mongooseDb;
   } catch (err) {
     console.error("Error connecting to database:", err.message);
@@ -101,8 +97,16 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-
-
+// BodyParser Middleware (skip AdminJS paths - it has its own body parser)
+const adminRoot = '/shoman-salah-not-expected';
+app.use((req, res, next) => {
+  if (req.path.startsWith(adminRoot)) return next();
+  bodyParser.urlencoded({ extended: false })(req, res, next);
+});
+app.use((req, res, next) => {
+  if (req.path.startsWith(adminRoot)) return next();
+  bodyParser.json()(req, res, next);
+});
 // Passport Config
 app.use(passport.initialize());
 require("./config/passport")(passport);

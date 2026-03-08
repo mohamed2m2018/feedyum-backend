@@ -65,7 +65,7 @@ const cancelOrderByUser = async (req, res) => {
         const wallet = await ChefWallet.findOne({ chef: order.chef._id });
 
         if (wallet) {
-          await wallet.refundServiceFee(order._id, order.totalPrice);
+          await wallet.refundServiceFee(order._id, order.subtotal);
           console.log(`[WALLET] Refunded service fee for cancelled order ${order._id} to chef ${order.chef._id}`);
         } else {
           console.warn(`[WALLET] No wallet found for chef ${order.chef._id}, skipping refund`);

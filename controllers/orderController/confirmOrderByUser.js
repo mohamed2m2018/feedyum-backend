@@ -74,8 +74,9 @@ const confirmOrderByUser = async (req, res) => {
             await wallet.addServiceFee(order._id, order.subtotal);
             console.log(`[WALLET] Deducted ${(CHEF_COMMISSION_PERCENTAGE * 100)}% commission (${commissionAmount} EGP) for order ${order._id}`);
         } catch (walletError) {
-            console.error('[WALLET] Failed to process commission:', walletError);
+            console.error(`[WALLET] CRITICAL: Failed to collect ${(CHEF_COMMISSION_PERCENTAGE * 100)}% commission for order ${order._id}, chef ${chefId}:`, walletError.message);
             // Don't fail the confirmation if wallet deduction fails
+            // The fee can be collected manually or via a reconciliation job
         }
 
         // Notify chef that user confirmed

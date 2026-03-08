@@ -1,5 +1,6 @@
 const Order = require('../../models/order');
 const User = require('../../models/user');
+const ChefWallet = require('../../models/chefWallet');
 const EnhancedNotificationService = require('../../services/enhancedNotificationService');
 
 const updateOrderStatus = async (req, res) => {
@@ -98,6 +99,19 @@ const updateOrderStatus = async (req, res) => {
 
     // NOTE: Wallet deduction is now handled in confirmOrderByUser.js
     // when the customer confirms the order
+
+    // Refund service fee if chef cancels a confirmed/preparing order
+    if (actualStatus === 'cancelled' && ['confirmed', 'preparing'].includes(previousStatus)) {
+      try {
+        const wallet = await ChefWallet.findOne({ chef: order.chef._id });
+        if (wallet) {
+          await wallet.refundServiceFee(order._id, order.subtotal);
+          console.log(`[WALLET] Refunded service fee for chef-cancelled order ${order._id}`);
+        }
+      } catch (walletError) {
+        console.error('[WALLET] Failed to refund service fee on chef cancellation:', walletError);
+      }
+    }
 
     // Send notification to customer about status change
     try {

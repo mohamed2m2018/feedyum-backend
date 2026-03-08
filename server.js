@@ -188,7 +188,9 @@ async function startServer() {
 
     // Start cron jobs
     const { startStaleOrderReminders } = require('./cron/staleOrderReminders');
+    const { startOrderExpiry } = require('./cron/orderExpiry');
     startStaleOrderReminders();
+    startOrderExpiry();
 
     // Start listening
     server.listen(port, () => {

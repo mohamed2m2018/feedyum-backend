@@ -4,10 +4,30 @@ import { useState } from 'react';
 import { Nav, Footer } from '../components/SharedComponents';
 
 export default function DeleteAccount() {
+    const [lang, setLang] = useState('ar');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [status, setStatus] = useState(null); // 'loading' | 'success' | 'error'
+    const [status, setStatus] = useState(null);
     const [message, setMessage] = useState('');
+    const isAr = lang === 'ar';
+
+    const t = {
+        title: isAr ? 'حذف الحساب' : 'Delete Account',
+        subtitle: isAr ? 'Delete Account' : 'حذف الحساب',
+        description: isAr
+            ? 'إذا كنت ترغب في حذف حسابك وجميع البيانات المرتبطة به، يرجى إدخال بريدك الإلكتروني وكلمة المرور أدناه. سيتم حذف حسابك وجميع بياناتك بشكل نهائي خلال ٣٠ يومًا.'
+            : 'If you wish to delete your account and all associated data, please enter your email and password below. Your account and all data will be permanently deleted within 30 days.',
+        deletedDataTitle: isAr ? 'البيانات التي سيتم حذفها:' : 'Data that will be deleted:',
+        deletedItems: isAr
+            ? ['معلومات الملف الشخصي', 'الطلبات والسجل', 'المحادثات والرسائل', 'التقييمات والتعليقات', 'المنشورات والفيديوهات', 'العناوين المحفوظة']
+            : ['Profile information', 'Orders & history', 'Chats & messages', 'Reviews & comments', 'Posts & videos', 'Saved addresses'],
+        emailLabel: isAr ? 'البريد الإلكتروني' : 'Email',
+        passwordLabel: isAr ? 'كلمة المرور' : 'Password',
+        submitBtn: isAr ? '🗑️ حذف حسابي' : '🗑️ Delete My Account',
+        loadingBtn: isAr ? '⏳ جاري المعالجة...' : '⏳ Processing...',
+        disclaimer: isAr ? 'هذا الإجراء لا يمكن التراجع عنه' : 'This action cannot be undone',
+        successTitle: isAr ? 'تم استلام طلبك' : 'Request Received',
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -25,37 +45,72 @@ export default function DeleteAccount() {
 
             if (res.ok) {
                 setStatus('success');
-                setMessage(data.message || 'Your account deletion request has been submitted. Your account and all associated data will be deleted within 30 days.');
+                setMessage(data.message || (isAr
+                    ? 'تم استلام طلب حذف حسابك. سيتم حذف حسابك وجميع البيانات المرتبطة به خلال ٣٠ يومًا.'
+                    : 'Your account deletion request has been submitted. Your account and all associated data will be deleted within 30 days.'));
             } else {
                 setStatus('error');
-                setMessage(data.error || 'Failed to process your request. Please check your credentials and try again.');
+                setMessage(data.error || (isAr
+                    ? 'فشل في معالجة طلبك. يرجى التحقق من بياناتك والمحاولة مرة أخرى.'
+                    : 'Failed to process your request. Please check your credentials and try again.'));
             }
         } catch (err) {
             setStatus('error');
-            setMessage('Network error. Please try again later.');
+            setMessage(isAr ? 'خطأ في الشبكة. يرجى المحاولة لاحقًا.' : 'Network error. Please try again later.');
         }
     };
 
     return (
-        <div className="rtl" style={{ direction: 'rtl', overflowX: 'hidden', maxWidth: '100vw', width: '100%' }}>
+        <div className={isAr ? 'rtl' : ''} style={{ direction: isAr ? 'rtl' : 'ltr', overflowX: 'hidden', maxWidth: '100vw', width: '100%' }}>
             <div className="animated-bg" />
-            <Nav lang="ar" />
+            <Nav lang={lang} />
 
             <section className="privacy-page">
                 <div className="container" style={{ maxWidth: '600px' }}>
                     <div className="section-header">
-                        <h1 className="section-title">حذف الحساب</h1>
-                        <p className="section-subtitle">Delete Account</p>
+                        <h1 className="section-title">{t.title}</h1>
+                        <p className="section-subtitle">{t.subtitle}</p>
                     </div>
 
-                    {/* Arabic description */}
-                    <div className="privacy-section" style={{ marginBottom: '16px' }}>
-                        <p>إذا كنت ترغب في حذف حسابك وجميع البيانات المرتبطة به، يرجى إدخال بريدك الإلكتروني وكلمة المرور أدناه. سيتم حذف حسابك وجميع بياناتك بشكل نهائي خلال ٣٠ يومًا.</p>
+                    {/* Language Toggle */}
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '32px' }}>
+                        <button
+                            onClick={() => setLang('ar')}
+                            style={{
+                                padding: '10px 28px',
+                                borderRadius: '50px',
+                                border: 'none',
+                                background: isAr ? 'var(--primary)' : 'var(--dark-secondary)',
+                                color: isAr ? 'white' : 'var(--light-muted)',
+                                fontSize: '0.95rem',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                transition: 'all 0.3s',
+                            }}
+                        >
+                            🇪🇬 العربية
+                        </button>
+                        <button
+                            onClick={() => setLang('en')}
+                            style={{
+                                padding: '10px 28px',
+                                borderRadius: '50px',
+                                border: 'none',
+                                background: !isAr ? 'var(--primary)' : 'var(--dark-secondary)',
+                                color: !isAr ? 'white' : 'var(--light-muted)',
+                                fontSize: '0.95rem',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                transition: 'all 0.3s',
+                            }}
+                        >
+                            🇬🇧 English
+                        </button>
                     </div>
 
-                    {/* English description */}
-                    <div className="privacy-section" dir="ltr" style={{ textAlign: 'left', marginBottom: '32px' }}>
-                        <p>If you wish to delete your account and all associated data, please enter your email and password below. Your account and all data will be permanently deleted within 30 days.</p>
+                    {/* Description */}
+                    <div className="privacy-section" style={{ marginBottom: '24px' }}>
+                        <p>{t.description}</p>
                     </div>
 
                     {/* What gets deleted */}
@@ -66,14 +121,11 @@ export default function DeleteAccount() {
                         padding: '24px',
                         marginBottom: '32px',
                     }}>
-                        <h3 style={{ fontSize: '1rem', marginBottom: '12px' }}>البيانات التي سيتم حذفها | Data that will be deleted:</h3>
-                        <ul style={{ color: 'var(--light-muted)', fontSize: '0.9rem', lineHeight: 2, paddingRight: '20px' }}>
-                            <li>معلومات الملف الشخصي | Profile information</li>
-                            <li>الطلبات والسجل | Orders & history</li>
-                            <li>المحادثات والرسائل | Chats & messages</li>
-                            <li>التقييمات والتعليقات | Reviews & comments</li>
-                            <li>المنشورات والفيديوهات | Posts & videos</li>
-                            <li>العناوين المحفوظة | Saved addresses</li>
+                        <h3 style={{ fontSize: '1rem', marginBottom: '12px' }}>{t.deletedDataTitle}</h3>
+                        <ul style={{ color: 'var(--light-muted)', fontSize: '0.9rem', lineHeight: 2, paddingRight: isAr ? '20px' : '0', paddingLeft: isAr ? '0' : '20px' }}>
+                            {t.deletedItems.map((item, i) => (
+                                <li key={i}>{item}</li>
+                            ))}
                         </ul>
                     </div>
 
@@ -86,14 +138,14 @@ export default function DeleteAccount() {
                             textAlign: 'center',
                         }}>
                             <div style={{ fontSize: '3rem', marginBottom: '16px' }}>✅</div>
-                            <h3 style={{ marginBottom: '8px' }}>تم استلام طلبك | Request Received</h3>
+                            <h3 style={{ marginBottom: '8px' }}>{t.successTitle}</h3>
                             <p style={{ color: 'var(--light-muted)', fontSize: '0.9rem' }}>{message}</p>
                         </div>
                     ) : (
-                        <form onSubmit={handleSubmit} dir="ltr" style={{ textAlign: 'left' }}>
+                        <form onSubmit={handleSubmit}>
                             <div style={{ marginBottom: '20px' }}>
                                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--light-muted)' }}>
-                                    Email / البريد الإلكتروني
+                                    {t.emailLabel}
                                 </label>
                                 <input
                                     type="email"
@@ -101,6 +153,7 @@ export default function DeleteAccount() {
                                     onChange={(e) => setEmail(e.target.value)}
                                     required
                                     placeholder="your@email.com"
+                                    dir="ltr"
                                     style={{
                                         width: '100%',
                                         padding: '14px 16px',
@@ -111,6 +164,7 @@ export default function DeleteAccount() {
                                         fontSize: '1rem',
                                         outline: 'none',
                                         transition: 'border-color 0.2s',
+                                        textAlign: 'left',
                                     }}
                                     onFocus={(e) => e.target.style.borderColor = 'var(--primary)'}
                                     onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
@@ -119,7 +173,7 @@ export default function DeleteAccount() {
 
                             <div style={{ marginBottom: '24px' }}>
                                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--light-muted)' }}>
-                                    Password / كلمة المرور
+                                    {t.passwordLabel}
                                 </label>
                                 <input
                                     type="password"
@@ -127,6 +181,7 @@ export default function DeleteAccount() {
                                     onChange={(e) => setPassword(e.target.value)}
                                     required
                                     placeholder="••••••••"
+                                    dir="ltr"
                                     style={{
                                         width: '100%',
                                         padding: '14px 16px',
@@ -137,6 +192,7 @@ export default function DeleteAccount() {
                                         fontSize: '1rem',
                                         outline: 'none',
                                         transition: 'border-color 0.2s',
+                                        textAlign: 'left',
                                     }}
                                     onFocus={(e) => e.target.style.borderColor = 'var(--primary)'}
                                     onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
@@ -173,7 +229,7 @@ export default function DeleteAccount() {
                                     transition: 'all 0.2s',
                                 }}
                             >
-                                {status === 'loading' ? '⏳ جاري المعالجة... | Processing...' : '🗑️ حذف حسابي | Delete My Account'}
+                                {status === 'loading' ? t.loadingBtn : t.submitBtn}
                             </button>
 
                             <p style={{
@@ -182,14 +238,14 @@ export default function DeleteAccount() {
                                 fontSize: '0.8rem',
                                 marginTop: '16px',
                             }}>
-                                هذا الإجراء لا يمكن التراجع عنه | This action cannot be undone
+                                {t.disclaimer}
                             </p>
                         </form>
                     )}
                 </div>
             </section>
 
-            <Footer lang="ar" />
+            <Footer lang={lang} />
         </div>
     );
 }

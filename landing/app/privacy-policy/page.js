@@ -1,9 +1,7 @@
-import { Nav, Footer } from '../components/SharedComponents';
+'use client';
 
-export const metadata = {
-    title: 'FeedYum - سياسة الخصوصية | Privacy Policy',
-    description: 'سياسة الخصوصية لتطبيق FeedYum - Privacy Policy for FeedYum app',
-};
+import { useState } from 'react';
+import { Nav, Footer } from '../components/SharedComponents';
 
 const policySections = {
     ar: [
@@ -29,34 +27,61 @@ const policySections = {
 };
 
 export default function PrivacyPolicy() {
+    const [lang, setLang] = useState('ar');
+    const isAr = lang === 'ar';
+    const sections = isAr ? policySections.ar : policySections.en;
+
     return (
-        <div className="rtl" style={{ direction: 'rtl', overflowX: 'hidden', maxWidth: '100vw', width: '100%' }}>
+        <div className={isAr ? 'rtl' : ''} style={{ direction: isAr ? 'rtl' : 'ltr', overflowX: 'hidden', maxWidth: '100vw', width: '100%' }}>
             <div className="animated-bg" />
-            <Nav lang="ar" />
+            <Nav lang={lang} />
 
             <section className="privacy-page">
                 <div className="container">
                     <div className="section-header">
-                        <h1 className="section-title">سياسة الخصوصية</h1>
-                        <p className="section-subtitle">Privacy Policy</p>
+                        <h1 className="section-title">{isAr ? 'سياسة الخصوصية' : 'Privacy Policy'}</h1>
+                        <p className="section-subtitle">{isAr ? 'Privacy Policy' : 'سياسة الخصوصية'}</p>
                     </div>
 
-                    {/* Arabic */}
-                    <div style={{ marginBottom: '60px' }}>
-                        {policySections.ar.map((s, i) => (
-                            <div className="privacy-section" key={i}>
-                                <h3>{s.title}</h3>
-                                <p>{s.text}</p>
-                            </div>
-                        ))}
+                    {/* Language Toggle */}
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '40px' }}>
+                        <button
+                            onClick={() => setLang('ar')}
+                            style={{
+                                padding: '10px 28px',
+                                borderRadius: '50px',
+                                border: 'none',
+                                background: isAr ? 'var(--primary)' : 'var(--dark-secondary)',
+                                color: isAr ? 'white' : 'var(--light-muted)',
+                                fontSize: '0.95rem',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                transition: 'all 0.3s',
+                            }}
+                        >
+                            🇪🇬 العربية
+                        </button>
+                        <button
+                            onClick={() => setLang('en')}
+                            style={{
+                                padding: '10px 28px',
+                                borderRadius: '50px',
+                                border: 'none',
+                                background: !isAr ? 'var(--primary)' : 'var(--dark-secondary)',
+                                color: !isAr ? 'white' : 'var(--light-muted)',
+                                fontSize: '0.95rem',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                transition: 'all 0.3s',
+                            }}
+                        >
+                            🇬🇧 English
+                        </button>
                     </div>
 
-                    {/* Divider */}
-                    <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)', margin: '40px 0' }} />
-
-                    {/* English */}
-                    <div dir="ltr" style={{ textAlign: 'left' }}>
-                        {policySections.en.map((s, i) => (
+                    {/* Content */}
+                    <div dir={isAr ? 'rtl' : 'ltr'} style={{ textAlign: isAr ? 'right' : 'left' }}>
+                        {sections.map((s, i) => (
                             <div className="privacy-section" key={i}>
                                 <h3>{s.title}</h3>
                                 <p>{s.text}</p>
@@ -65,13 +90,13 @@ export default function PrivacyPolicy() {
                     </div>
 
                     <div style={{ textAlign: 'center', marginTop: '40px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.1)', color: 'var(--light-muted)', fontSize: '0.85rem' }}>
-                        <p>آخر تحديث: مارس ٢٠٢٦ | Last updated: March 2026</p>
-                        <p>تواصل معنا | Contact us: <a href="mailto:support@feedyum.com" style={{ color: 'var(--primary)' }}>support@feedyum.com</a></p>
+                        <p>{isAr ? 'آخر تحديث: مارس ٢٠٢٦' : 'Last updated: March 2026'}</p>
+                        <p>{isAr ? 'تواصل معنا: ' : 'Contact us: '}<a href="mailto:support@feedyum.com" style={{ color: 'var(--primary)' }}>support@feedyum.com</a></p>
                     </div>
                 </div>
             </section>
 
-            <Footer lang="ar" />
+            <Footer lang={lang} />
         </div>
     );
 }

@@ -24,8 +24,11 @@ const InstagramIcon = () => (
     </svg>
 );
 
-export function Nav({ lang = 'ar' }) {
+export function Nav({ lang = 'ar', onLangChange }) {
     const isAr = lang === 'ar';
+    const handleToggle = () => {
+        if (onLangChange) onLangChange(isAr ? 'en' : 'ar');
+    };
     return (
         <nav className="nav">
             <div className="container nav-content">
@@ -39,12 +42,12 @@ export function Nav({ lang = 'ar' }) {
                         <li><a href="/#creators">{isAr ? 'للشيفات' : 'For Chefs'}</a></li>
                         <li><a href="/#download">{isAr ? 'تحميل' : 'Download'}</a></li>
                     </ul>
-                    <button className="lang-switch" aria-label="Switch language">
+                    <button className="lang-switch" aria-label="Switch language" onClick={handleToggle}>
                         {isAr ? '🇬🇧 EN' : '🇪🇬 عربي'}
                     </button>
                 </div>
                 <div className="mobile-nav">
-                    <button className="lang-switch" aria-label="Switch language">
+                    <button className="lang-switch" aria-label="Switch language" onClick={handleToggle}>
                         {isAr ? '🇬🇧' : '🇪🇬'}
                     </button>
                 </div>

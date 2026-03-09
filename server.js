@@ -157,6 +157,7 @@ app.use("/api/reviews", require("./routes/review"));
 app.use("/api/paymob", require("./routes/paymob"));
 app.use("/api/favorites", require("./routes/favorites"));
 app.use("/api/translate", require("./routes/translate"));
+app.use("/api/menu-upload", require("./routes/menuUpload"));
 // Sharing routes for deep linking fallback (must be before static files)
 app.use("/", require("./routes/sharing"));
 

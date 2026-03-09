@@ -20,3 +20,4 @@ require('../models/promocode');
 require('../models/chefWallet');
 require('../models/review');
 require('../models/chefBranch');
+require('../models/menuUpload');

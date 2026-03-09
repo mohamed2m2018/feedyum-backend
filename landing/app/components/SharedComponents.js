@@ -68,6 +68,7 @@ export function Footer({ lang = 'ar' }) {
                         <a href="/#creators">{isAr ? 'للشيفات' : 'For Chefs'}</a>
                         <a href="/#download">{isAr ? 'تحميل' : 'Download'}</a>
                         <Link href="/privacy-policy">{isAr ? 'سياسة الخصوصية' : 'Privacy Policy'}</Link>
+                        <Link href="/delete-account">{isAr ? 'حذف الحساب' : 'Delete Account'}</Link>
                     </div>
                     <div className="social-links">
                         <a href="https://www.facebook.com/FeedYum" className="social-link" target="_blank" rel="noopener noreferrer" aria-label="Facebook">

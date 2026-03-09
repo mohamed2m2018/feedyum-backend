@@ -111,6 +111,50 @@ router.patch(
   userController.updateUser
 );
 
+// @route  POST api/user/request-deletion
+// @desc   Public account deletion request (for Play Store compliance)
+// @access Public (verifies email + password)
+router.post('/request-deletion', authLimiter, async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    const mongoose = require('mongoose');
+    const bcrypt = require('bcryptjs');
+    const User = mongoose.model('user');
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user) {
+      return res.status(400).json({ error: 'Invalid email or password / بريد إلكتروني أو كلمة مرور غير صحيحة' });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ error: 'Invalid email or password / بريد إلكتروني أو كلمة مرور غير صحيحة' });
+    }
+
+    // Delete user and all associated data
+    const userId = user._id;
+    const models = ['story', 'comment', 'like', 'follow', 'message', 'order', 'cart', 'review', 'notification', 'favorite'];
+    for (const modelName of models) {
+      try {
+        const Model = mongoose.model(modelName);
+        await Model.deleteMany({ $or: [{ user: userId }, { userId }, { sender: userId }, { receiver: userId }] });
+      } catch (e) { /* model may not exist, skip */ }
+    }
+
+    await User.findByIdAndDelete(userId);
+
+    console.log(`[DELETION] Account deleted via web form: ${email}`);
+    return res.json({ message: 'Your account and all associated data have been deleted. / تم حذف حسابك وجميع البيانات المرتبطة به.' });
+  } catch (error) {
+    console.error('[DELETION] Error:', error.message);
+    return res.status(500).json({ error: 'Server error. Please try again later.' });
+  }
+});
+
 // @route  DELETE api/user
 // @desc   Delete logged in user
 // @access Private

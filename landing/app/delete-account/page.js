@@ -63,49 +63,13 @@ export default function DeleteAccount() {
     return (
         <div className={isAr ? 'rtl' : ''} style={{ direction: isAr ? 'rtl' : 'ltr', overflowX: 'hidden', maxWidth: '100vw', width: '100%' }}>
             <div className="animated-bg" />
-            <Nav lang={lang} />
+            <Nav lang={lang} onLangChange={setLang} />
 
             <section className="privacy-page">
                 <div className="container" style={{ maxWidth: '600px' }}>
                     <div className="section-header">
                         <h1 className="section-title">{t.title}</h1>
                         <p className="section-subtitle">{t.subtitle}</p>
-                    </div>
-
-                    {/* Language Toggle */}
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '32px' }}>
-                        <button
-                            onClick={() => setLang('ar')}
-                            style={{
-                                padding: '10px 28px',
-                                borderRadius: '50px',
-                                border: 'none',
-                                background: isAr ? 'var(--primary)' : 'var(--dark-secondary)',
-                                color: isAr ? 'white' : 'var(--light-muted)',
-                                fontSize: '0.95rem',
-                                fontWeight: 600,
-                                cursor: 'pointer',
-                                transition: 'all 0.3s',
-                            }}
-                        >
-                            🇪🇬 العربية
-                        </button>
-                        <button
-                            onClick={() => setLang('en')}
-                            style={{
-                                padding: '10px 28px',
-                                borderRadius: '50px',
-                                border: 'none',
-                                background: !isAr ? 'var(--primary)' : 'var(--dark-secondary)',
-                                color: !isAr ? 'white' : 'var(--light-muted)',
-                                fontSize: '0.95rem',
-                                fontWeight: 600,
-                                cursor: 'pointer',
-                                transition: 'all 0.3s',
-                            }}
-                        >
-                            🇬🇧 English
-                        </button>
                     </div>
 
                     {/* Description */}

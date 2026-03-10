@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 // Models
 const User = mongoose.model("user");
 const Follow = mongoose.model("follow");
+const Menu = require("../../models/menu");
 
 var ObjectId = require("mongoose").Types.ObjectId;
 
@@ -173,7 +174,23 @@ const searchUser = async (req, res) => {
       });
     }
 
-    // Add follow status
+    // Bulk lookup dish counts for chef users
+    const chefUserIds = users
+      .filter(u => u.type === 'chef')
+      .map(u => u._id);
+
+    let dishCountMap = {};
+    if (chefUserIds.length > 0) {
+      const menuCounts = await Menu.aggregate([
+        { $match: { chef: { $in: chefUserIds.map(id => new ObjectId(id)) } } },
+        { $project: { chef: 1, dishCount: { $size: { $ifNull: ['$dishes', []] } } } },
+      ]);
+      menuCounts.forEach(m => {
+        dishCountMap[m.chef.toString()] = m.dishCount;
+      });
+    }
+
+    // Add follow status and dish count
     const populatedUsers = await Promise.all(
       users.map(async (user) => {
         const currentUserFollowed = currentUserId ? await Follow.exists({
@@ -184,6 +201,7 @@ const searchUser = async (req, res) => {
         return {
           ...user,
           currentUserFollowed: Boolean(currentUserFollowed),
+          ...(user.type === 'chef' && { dishCount: dishCountMap[user._id.toString()] || 0 }),
         };
       })
     );

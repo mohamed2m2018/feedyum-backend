@@ -1,4 +1,28 @@
 const semanticSearchService = require('../../services/semanticSearchService');
+const mongoose = require('mongoose');
+const Menu = require('../../models/menu');
+
+/**
+ * Bulk lookup dish counts for chef users
+ */
+async function attachDishCounts(users) {
+  const chefIds = users
+    .filter(u => u.type === 'chef')
+    .map(u => new mongoose.Types.ObjectId(u._id));
+  if (chefIds.length === 0) return users;
+
+  const menuCounts = await Menu.aggregate([
+    { $match: { chef: { $in: chefIds } } },
+    { $project: { chef: 1, dishCount: { $size: { $ifNull: ['$dishes', []] } } } },
+  ]);
+  const countMap = {};
+  menuCounts.forEach(m => { countMap[m.chef.toString()] = m.dishCount; });
+
+  return users.map(u => ({
+    ...u,
+    ...(u.type === 'chef' && { dishCount: countMap[u._id?.toString()] || 0 }),
+  }));
+}
 
 const semanticSearchUser = async (req, res) => {
   try {
@@ -71,12 +95,15 @@ const semanticSearchUser = async (req, res) => {
         return userWithoutEmbedding;
       });
 
-      console.log(`Empty search returned ${usersWithoutEmbeddings.length} users`);
+      // Attach dish counts for chef users
+      const usersWithDishCounts = await attachDishCounts(usersWithoutEmbeddings);
+
+      console.log(`Empty search returned ${usersWithDishCounts.length} users`);
 
       return res.status(200).json({
         success: true,
         data: {
-          users: usersWithoutEmbeddings,
+          users: usersWithDishCounts,
           pagination: searchResults.data.pagination || {
             currentPage: parseInt(page),
             totalPages: 0,
@@ -135,13 +162,16 @@ const semanticSearchUser = async (req, res) => {
       return userWithoutEmbedding;
     });
 
-    console.log(`Semantic user search found ${usersWithoutEmbeddings.length} users for query: "${searchString}" with filters:`, parsedFilters);
+    // Attach dish counts for chef users
+    const usersWithDishCounts = await attachDishCounts(usersWithoutEmbeddings);
+
+    console.log(`Semantic user search found ${usersWithDishCounts.length} users for query: "${searchString}" with filters:`, parsedFilters);
 
     return res.status(200).json({
       ...searchResults,
       data: {
         ...searchResults.data,
-        users: usersWithoutEmbeddings
+        users: usersWithDishCounts
       }
     });
 

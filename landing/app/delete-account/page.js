@@ -13,7 +13,6 @@ export default function DeleteAccount() {
 
     const t = {
         title: isAr ? 'حذف الحساب' : 'Delete Account',
-        subtitle: isAr ? 'Delete Account' : 'حذف الحساب',
         description: isAr
             ? 'إذا كنت ترغب في حذف حسابك وجميع البيانات المرتبطة به، يرجى إدخال بريدك الإلكتروني وكلمة المرور أدناه. سيتم حذف حسابك وجميع بياناتك بشكل نهائي خلال ٣٠ يومًا.'
             : 'If you wish to delete your account and all associated data, please enter your email and password below. Your account and all data will be permanently deleted within 30 days.',
@@ -69,7 +68,6 @@ export default function DeleteAccount() {
                 <div className="container" style={{ maxWidth: '600px' }}>
                     <div className="section-header">
                         <h1 className="section-title">{t.title}</h1>
-                        <p className="section-subtitle">{t.subtitle}</p>
                     </div>
 
                     {/* Description */}

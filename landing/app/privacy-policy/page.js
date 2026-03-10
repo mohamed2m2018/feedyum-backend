@@ -40,7 +40,6 @@ export default function PrivacyPolicy() {
                 <div className="container">
                     <div className="section-header">
                         <h1 className="section-title">{isAr ? 'سياسة الخصوصية' : 'Privacy Policy'}</h1>
-                        <p className="section-subtitle">{isAr ? 'Privacy Policy' : 'سياسة الخصوصية'}</p>
                     </div>
 
                     {/* Content */}

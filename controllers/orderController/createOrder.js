@@ -8,7 +8,7 @@ const { calculateDeliveryFee } = require('../../config/feeConfig');
 
 const createOrder = async (req, res) => {
   try {
-    const { chefId, items, deliveryAddress, notes, promocode } = req.body;
+    const { chefId, items, deliveryAddress, notes, promocode, paymentMethod } = req.body;
     const userId = req.user._id;
 
     // Validate required fields
@@ -23,6 +23,10 @@ const createOrder = async (req, res) => {
         message: 'Delivery address with street and city is required'
       });
     }
+
+    // Validate payment method
+    const validPaymentMethods = ['cod', 'online'];
+    const selectedPaymentMethod = validPaymentMethods.includes(paymentMethod) ? paymentMethod : 'cod';
 
     // Verify chef exists and get chef details
     const chef = await User.findById(chefId).select('fullName username type avatar');
@@ -126,6 +130,7 @@ const createOrder = async (req, res) => {
       ...(appliedPromocode && { promocode: appliedPromocode }),
       deliveryAddress,
       specialInstructions: notes || '',
+      paymentMethod: selectedPaymentMethod,
       status: 'pending',
       created_at: new Date(),
       lastUpdated: new Date(), // For unseen order badge tracking

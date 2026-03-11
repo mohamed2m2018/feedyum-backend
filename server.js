@@ -161,6 +161,7 @@ app.use("/api/menu-upload", require("./routes/menuUpload"));
 // Sharing routes for deep linking fallback (must be before static files)
 app.use("/", require("./routes/sharing"));
 
+
 app.use(express.static(__dirname + '/public', { dotfiles: 'allow', extensions: ['html'] }));
 
 const port = process.env.PORT || 4800;

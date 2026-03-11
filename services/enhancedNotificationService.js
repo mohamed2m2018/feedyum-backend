@@ -159,9 +159,11 @@ class EnhancedNotificationService {
       // Add sound for Android/iOS if it's a chef order or critical
       if (type === 'chefDashboard' || type === 'orderTracking') {
         notification.priority = 10;
-        // notification.android_channel_id = 'order_channel_urgent_v2'; // Commented out to prevent error if not exists
-        notification.ios_sound = 'order_notification.wav';
-        notification.android_sound = 'order_notification';
+        notification.existing_android_channel_id = 'order_alarm_channel';
+        notification.ios_sound = 'default';
+        notification.android_sound = 'alarm_ringtone';
+        // Data payload for background handler
+        notification.data = { ...notification.data, alarmType: 'newOrder' };
       }
 
       // Add media if provided
@@ -225,6 +227,13 @@ class EnhancedNotificationService {
       case 'ready':
         titleObj = trans.orderReady;
         messageObj = trans.readyMessage;
+        break;
+      case 'out_for_delivery':
+        titleObj = trans.outForDeliveryTitle;
+        messageObj = {
+          en: trans.outForDeliveryMessage.en(chefName),
+          ar: trans.outForDeliveryMessage.ar(chefName)
+        };
         break;
       case 'completed':
         titleObj = trans.orderDelivered;

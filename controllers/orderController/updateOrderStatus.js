@@ -10,7 +10,7 @@ const updateOrderStatus = async (req, res) => {
     const chefId = req.user._id;
 
     // Validate status
-    const validStatuses = ['pending', 'awaiting_confirmation', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled'];
+    const validStatuses = ['pending', 'awaiting_confirmation', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'completed', 'cancelled'];
     if (!status || !validStatuses.includes(status)) {
       return res.status(400).json({
         message: 'Invalid status. Valid statuses are: ' + validStatuses.join(', ')
@@ -35,7 +35,7 @@ const updateOrderStatus = async (req, res) => {
     }
 
     // Prevent backwards status changes (except for cancellation)
-    const statusOrder = ['pending', 'awaiting_confirmation', 'confirmed', 'preparing', 'ready', 'completed'];
+    const statusOrder = ['pending', 'awaiting_confirmation', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'completed'];
     const currentStatusIndex = statusOrder.indexOf(order.status);
     const newStatusIndex = statusOrder.indexOf(status);
 

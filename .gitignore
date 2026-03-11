@@ -62,3 +62,6 @@ credentials.json
 # Sensitive data files
 CHEF_TEST_CREDENTIALS.md
 BACKEND_PERFORMANCE_OPTIMIZATIONS.md
+
+# Local data / Chrome profile / scripts data
+data/

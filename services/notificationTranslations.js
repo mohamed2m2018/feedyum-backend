@@ -56,6 +56,14 @@ const notificationTranslations = {
         en: 'Your order is ready for pickup/delivery!',
         ar: 'طلبك جاهز للاستلام/التوصيل!'
     },
+    outForDeliveryTitle: {
+        en: 'Order Out for Delivery! 🚗',
+        ar: 'الطلب في الطريق إليك! 🚗'
+    },
+    outForDeliveryMessage: {
+        en: (chefName) => `Your order from ${chefName} is on its way!`,
+        ar: (chefName) => `طلبك من ${chefName} في الطريق إليك!`
+    },
     completedMessage: {
         en: 'Your order has been delivered. Enjoy your meal!',
         ar: 'تم توصيل طلبك. استمتع بوجبتك!'

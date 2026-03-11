@@ -26,6 +26,7 @@ const OrderSchema = new mongoose.Schema({
     isPrimary: Boolean,
   },
   specialInstructions: { type: String, default: "" },
+  paymentMethod: { type: String, enum: ['cod', 'online'], default: 'cod' },
   created_at: {
     type: Date,
     default: Date.now,

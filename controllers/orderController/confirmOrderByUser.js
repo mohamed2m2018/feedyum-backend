@@ -69,10 +69,11 @@ const confirmOrderByUser = async (req, res) => {
                 });
             }
 
-            // Use configurable commission percentage
-            const commissionAmount = calculateCommission(order.subtotal);
-            await wallet.addServiceFee(order._id, order.subtotal);
-            console.log(`[WALLET] Deducted ${(CHEF_COMMISSION_PERCENTAGE * 100)}% commission (${commissionAmount} EGP) for order ${order._id}`);
+            // Use configurable commission percentage (on subtotal after discount)
+            const discountAmount = order.promocode?.discountAmount || 0;
+            const commissionAmount = calculateCommission(order.subtotal, discountAmount);
+            await wallet.addServiceFee(order._id, order.subtotal - discountAmount);
+            console.log(`[WALLET] Deducted ${(CHEF_COMMISSION_PERCENTAGE * 100)}% commission (${commissionAmount} EGP) on ${order.subtotal - discountAmount} EGP (subtotal ${order.subtotal} - discount ${discountAmount}) for order ${order._id}`);
         } catch (walletError) {
             console.error(`[WALLET] CRITICAL: Failed to collect ${(CHEF_COMMISSION_PERCENTAGE * 100)}% commission for order ${order._id}, chef ${chefId}:`, walletError.message);
             // Don't fail the confirmation if wallet deduction fails

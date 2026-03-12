@@ -36,13 +36,17 @@ const calculateDeliveryFee = (distance, tiers, fallbackFee = 0) => {
 };
 
 /**
- * Calculate chef commission amount from subtotal.
+ * Calculate chef commission amount from subtotal after discount.
+ * Commission is calculated on (subtotal - discount) so chefs
+ * only pay commission on what they actually earn.
  * 
  * @param {number} subtotal - Order subtotal
+ * @param {number} [discount=0] - Discount amount applied to the order
  * @returns {number} Commission amount
  */
-const calculateCommission = (subtotal) => {
-    return Number((subtotal * CHEF_COMMISSION_PERCENTAGE).toFixed(2));
+const calculateCommission = (subtotal, discount = 0) => {
+    const commissionBase = Math.max(0, subtotal - (discount || 0));
+    return Number((commissionBase * CHEF_COMMISSION_PERCENTAGE).toFixed(2));
 };
 
 module.exports = {

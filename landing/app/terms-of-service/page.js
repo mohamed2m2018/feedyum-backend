@@ -19,7 +19,7 @@ const termsSections = {
         },
         {
             title: '٤. الطلبات والدفع',
-            text: 'عند تقديم طلب عبر FeedYum، فإنك تدخل في اتفاقية مباشرة مع المطعم أو الطباخ. الأسعار المعروضة يتم تحديدها من قبل المطعم أو الطباخ وقد تتغير دون إشعار مسبق. يتم الدفع عند الاستلام (كاش) أو عبر بوابة الدفع الإلكتروني حسب الطريقة المتاحة. FeedYum غير مسؤولة عن أي أخطاء في الأسعار من قبل المطعم.',
+            text: 'عند تقديم طلب عبر FeedYum، فإنك تدخل في اتفاقية مباشرة مع المطعم أو الطباخ. الأسعار المعروضة يتم تحديدها من قبل المطعم أو الطباخ وقد تتغير دون إشعار مسبق. يتم الدفع عند الاستلام (كاش) فقط. FeedYum غير مسؤولة عن أي أخطاء في الأسعار من قبل المطعم.',
         },
         {
             title: '٥. الإلغاء والاسترداد',
@@ -73,7 +73,7 @@ const termsSections = {
         },
         {
             title: '4. Orders and Payment',
-            text: 'When placing an order through FeedYum, you enter into a direct agreement with the restaurant or chef. Prices displayed are set by the restaurant or chef and may change without prior notice. Payment is made upon delivery (cash on delivery) or through the electronic payment gateway depending on available methods. FeedYum is not responsible for any pricing errors by the restaurant.',
+            text: 'When placing an order through FeedYum, you enter into a direct agreement with the restaurant or chef. Prices displayed are set by the restaurant or chef and may change without prior notice. Payment is made upon delivery (cash on delivery) only. FeedYum is not responsible for any pricing errors by the restaurant.',
         },
         {
             title: '5. Cancellation and Refunds',

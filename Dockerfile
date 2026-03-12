@@ -29,6 +29,7 @@ COPY --from=landing-build /landing/out/about.html /app/public/about.html
 COPY --from=landing-build /landing/out/contact.html /app/public/contact.html
 COPY --from=landing-build /landing/out/delivery-policy.html /app/public/delivery-policy.html
 COPY --from=landing-build /landing/out/refund-policy.html /app/public/refund-policy.html
+COPY --from=landing-build /landing/out/terms-of-service.html /app/public/terms-of-service.html
 COPY --from=landing-build /landing/out/_next/ /app/public/_next/
 COPY --from=landing-build /landing/out/images/ /app/public/images/
 

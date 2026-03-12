@@ -9,12 +9,12 @@ const Follow = mongoose.model('follow');
 
 // Utils
 const {
-  getNearestLocation,
   calculateRecommendationScore,
   bucketByPriority,
   interleaveBuckets,
   FEED_EXPIRY
 } = require('../../utils/storyFeedUtils');
+const { getNearestBranchBatch } = require('../../utils/getNearestBranch');
 
 // Simple in-memory storage for pagination consistency (no external dependencies)
 const userFeeds = new Map();
@@ -215,16 +215,24 @@ async function generateNewFeed(userId, categoryIds, userLat, userLong, filters =
   const userLatNum = Number(userLat);
   const userLongNum = Number(userLong);
 
+  // Batch fetch branch distances for all unique authors
+  const uniqueAuthorIds = [...new Set(candidates.map(c => c.author?._id?.toString()).filter(Boolean))];
+  let branchDistMap = new Map();
+  if (hasValidCoordinates && uniqueAuthorIds.length > 0) {
+    branchDistMap = await getNearestBranchBatch(uniqueAuthorIds, userLatNum, userLongNum);
+  }
+
   // Process in batches of 100 to avoid blocking
   const BATCH_SIZE = 100;
   for (let i = 0; i < candidates.length; i += BATCH_SIZE) {
     const batch = candidates.slice(i, i + BATCH_SIZE);
 
     batch.forEach(story => {
-      // Calculate distance
-      if (hasValidCoordinates && story.author?.locations?.length > 0) {
-        const result = getNearestLocation(userLatNum, userLongNum, story.author.locations);
-        story.kmAway = result?.distance;
+      // Calculate distance from nearest branch
+      const authorId = story.author?._id?.toString();
+      if (hasValidCoordinates && authorId) {
+        const branchData = branchDistMap.get(authorId);
+        story.kmAway = branchData?.distance;
       } else {
         story.kmAway = undefined;
       }
@@ -467,6 +475,13 @@ const getStories = async (req, res) => {
       ]);
       const ratingMap = new Map(authorRatings.map(r => [r._id.toString(), r]));
 
+      // Batch fetch branch distances for story authors
+      const storyAuthorIds = [...new Set(orderedStories.map(s => s.author?._id?.toString()).filter(Boolean))];
+      let storyBranchMap = new Map();
+      if (lat && long && storyAuthorIds.length > 0) {
+        storyBranchMap = await getNearestBranchBatch(storyAuthorIds, Number(lat), Number(long));
+      }
+
       orderedStories.forEach(s => {
         if (s.author) {
           const r = ratingMap.get(s.author._id.toString());
@@ -474,10 +489,8 @@ const getStories = async (req, res) => {
           s.author.ratedDishesCount = r ? r.count : 0;
           if (!s.avatarUri && s.poster) s.avatarUri = s.poster;
 
-          if (lat && long && s.author.locations) {
-            const loc = getNearestLocation(Number(lat), Number(long), s.author.locations);
-            s.kmAway = loc?.distance;
-          }
+          const branchData = storyBranchMap.get(s.author._id.toString());
+          s.kmAway = branchData?.distance;
         }
       });
     }

@@ -5,7 +5,7 @@ const Story = mongoose.model("story");
 const Like = mongoose.model("like");
 
 // Utils
-const { getNearestLocation } = require('../../utils/storyFeedUtils');
+const { getNearestBranch } = require('../../utils/getNearestBranch');
 
 const getStoryById = (req, res) => {
   const errors = {};
@@ -17,10 +17,17 @@ const getStoryById = (req, res) => {
         post_id: req.params.id,
         user_id: req.user._id,
       });
+
+      let kmAway;
+      if (req?.query?.lat && req?.query?.lat !== 'undefined' && story?.author?._id) {
+        const branchData = await getNearestBranch(story.author._id, Number(req.query.lat), Number(req.query.long));
+        kmAway = branchData?.distance;
+      }
+
       res.json({
         story: {
           ...story?._doc,
-          kmAway: req?.query?.lat !== 'undefined' ? getNearestLocation(Number(req?.query?.lat), Number(req?.query?.long), story?.author?.locations)?.distance : undefined,
+          kmAway,
           currentUserLiked,
         },
         success: true,

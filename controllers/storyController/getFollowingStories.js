@@ -7,7 +7,8 @@ const Like = mongoose.model('like');
 const Dish = mongoose.model('dish');
 
 // Utils
-const { getNearestLocation, shuffleArray } = require('../../utils/storyFeedUtils');
+const { shuffleArray } = require('../../utils/storyFeedUtils');
+const { getNearestBranchBatch } = require('../../utils/getNearestBranch');
 
 const getFollowingStories = async (req, res) => {
   const { page = 1, limit = 10, userId, categoryIds } = req.query;
@@ -56,13 +57,20 @@ const getFollowingStories = async (req, res) => {
       });
     }
 
+    // Batch fetch branch distances for all unique authors
+    const hasValidCoordinates = req?.query?.lat && req?.query?.lat !== 'undefined' && req?.query?.long;
+    const uniqueStoryAuthorIds = [...new Set(followingStories.map(s => s.author?._id?.toString()).filter(Boolean))];
+    let branchDistMap = new Map();
+    if (hasValidCoordinates && uniqueStoryAuthorIds.length > 0) {
+      branchDistMap = await getNearestBranchBatch(uniqueStoryAuthorIds, Number(req.query.lat), Number(req.query.long));
+    }
+
     const mappedStories = await Promise.all(
       followingStories.map(async (item) => {
         // Check if the current user has liked the story
         const currentUserLiked = await Like.exists({ post_id: item?._id, user_id: userId });
 
         // Parity with getStories.js: Ensure avatarUri is populated for images
-        // This allows the frontend to correctly identify image stories and hide video controls
         let finalAvatarUri = item.avatarUri;
         if (!finalAvatarUri && item.poster) {
           finalAvatarUri = item.poster;
@@ -73,10 +81,12 @@ const getFollowingStories = async (req, res) => {
           item.author.currentUserFollowed = true;
         }
 
+        const branchData = branchDistMap.get(item?.author?._id?.toString());
+
         return {
           ...item,
           avatarUri: finalAvatarUri,
-          kmAway: req?.query?.lat !== 'undefined' ? getNearestLocation(Number(req.query.lat), Number(req.query.long), item?.author?.locations)?.distance : undefined,
+          kmAway: branchData?.distance,
           currentUserLiked
         };
       })

@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const User = require('../../models/user');
 const Dish = require('../../models/dish');
 const Story = require('../../models/story');
+const { getNearestBranchBatch } = require('../../utils/getNearestBranch');
 
 // Redis cache for performance (silent - logs disabled)
 let redisClient = null;
@@ -35,9 +36,9 @@ const getDiscoverData = async (req, res) => {
 
     console.log(`[DISCOVER BATCH] Starting batch data fetch for user ${userId}`);
 
-    // Define all categories we need
+    // Define tag-based categories ("All" is handled separately with dedicated queries)
     const categories = [
-      'Coupons', 'Homemade', 'Desserts', 'Fast food',
+      'Homemade', 'Desserts', 'Fast food',
       'Burger', 'Chicken', 'Bakery', 'Main Courses', 'Pizza'
     ];
 
@@ -70,22 +71,35 @@ const getDiscoverData = async (req, res) => {
     }
 
     // Batch fetch all data in parallel using Promise.all
-    const [usersData, dishesData] = await Promise.all([
-      // 1. Get users for all categories in one aggregation (includes rating data)
+    // "All" has its own dedicated queries that don't depend on tags
+    const [usersData, dishesData, allChefs, allDishes] = await Promise.all([
+      // 1. Get users for tag-based categories in one aggregation
       getUsersForAllCategories(categories, coordinates),
 
-      // 2. Get dishes for all categories in one aggregation  
-      getDishesForAllCategories(categories, coordinates)
+      // 2. Get dishes for tag-based categories in one aggregation  
+      getDishesForAllCategories(categories, coordinates),
+
+      // 3. Get ALL chefs (no tag filter) — dedicated query for "All" tab
+      getAllChefs(coordinates),
+
+      // 4. Get ALL visible dishes (no category filter) — dedicated query for "All" tab
+      getAllDishes(coordinates)
     ]);
 
     // Organize data by category
     const result = {
       success: true,
-      data: {},
+      data: {
+        // "All" tab: dedicated queries, server-side filtered to only include chefs with content
+        All: {
+          users: allChefs || [],
+          dishes: allDishes || []
+        }
+      },
       loadTime: Date.now() - startTime
     };
 
-    // Structure the response
+    // Structure the tag-based categories
     categories.forEach(category => {
       result.data[category] = {
         users: usersData[category] || [],
@@ -119,7 +133,7 @@ const getDiscoverData = async (req, res) => {
   }
 };
 
-// FIXED: Optimized aggregation to get users for all categories at once
+// Optimized aggregation to get users for tag-based categories at once
 async function getUsersForAllCategories(categories, coordinates) {
   try {
     // First, get the ObjectIds for all category names
@@ -145,31 +159,16 @@ async function getUsersForAllCategories(categories, coordinates) {
         $match: {
           tags: { $in: tagIds },
           type: 'chef',
-          // Only include active chefs with recent activity
-          date: { $gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) } // Last 90 days
+          date: { $gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) }
         }
       },
 
-      // Add distance calculation if coordinates provided
-      ...(coordinates ? [{
-        $addFields: {
-          distance: {
-            $sqrt: {
-              $add: [
-                { $pow: [{ $subtract: [{ $ifNull: [{ $arrayElemAt: ['$locations.lat', 0] }, 0] }, coordinates.lat] }, 2] },
-                { $pow: [{ $subtract: [{ $ifNull: [{ $arrayElemAt: ['$locations.long', 0] }, 0] }, coordinates.long] }, 2] }
-              ]
-            }
-          }
-        }
-      }] : []),
-
-      // Sort by distance (if coordinates) or by creation date
+      // Sort by creation date (distance sorting done post-pipeline with branch data)
       {
-        $sort: coordinates ? { distance: 1, date: -1 } : { date: -1 }
+        $sort: { date: -1 }
       },
 
-      // Project needed fields (stories fetched separately via batch query)
+      // Project needed fields
       {
         $project: {
           _id: 1,
@@ -177,11 +176,9 @@ async function getUsersForAllCategories(categories, coordinates) {
           avatar: 1,
           bio: 1,
           type: 1,
-          locations: 1,
           tags: 1,
           postsNo: 1,
-          date: 1,
-          distance: { $ifNull: ['$distance', null] }
+          date: 1
         }
       }
     ];
@@ -221,15 +218,26 @@ async function getUsersForAllCategories(categories, coordinates) {
       user.stories = storiesByUser.get(user._id.toString()) || [];
     });
 
-    // Add dish rating aggregation for each chef (like getUserByTag.js does)
-    const uniqueUserIds = [...new Set(users.map(u => u._id.toString()))];
+    // Batch fetch branch-based distances for all chefs
+    let branchDistanceMap = new Map();
+    if (coordinates && allUserIds.length > 0) {
+      try {
+        branchDistanceMap = await getNearestBranchBatch(allUserIds, coordinates.lat, coordinates.long);
+        console.log(`[DISCOVER BATCH] Branch distances: ${branchDistanceMap.size} chefs have branches`);
+      } catch (branchErr) {
+        console.error('[DISCOVER BATCH] Failed to fetch branch distances:', branchErr?.message);
+      }
+    }
+
+    // Add dish rating aggregation for each chef
+    const uniqueUserIds = [...new Set(allUserIds.map(id => id.toString()))];
     let ratingMap = new Map();
 
     if (uniqueUserIds.length > 0) {
       try {
         const ratings = await Dish.aggregate([
-          { $match: { user_id: { $in: uniqueUserIds.map(id => mongoose.Types.ObjectId(id)) } } },
-          { $match: { average_rating: { $gt: 0 } } }, // Only dishes with ratings
+          { $match: { user_id: { $in: uniqueUserIds.map(id => new mongoose.Types.ObjectId(id)) } } },
+          { $match: { average_rating: { $gt: 0 } } },
           {
             $group: {
               _id: "$user_id",
@@ -259,30 +267,30 @@ async function getUsersForAllCategories(categories, coordinates) {
     });
 
     users.forEach(user => {
+      const ratingData = ratingMap.get(user._id.toString());
+      const branchData = branchDistanceMap.get(user._id.toString());
+      const userData = {
+        _id: user._id,
+        fullName: user.fullName,
+        avatar: user.avatar,
+        bio: user.bio,
+        type: user.type,
+        tags: user.tags,
+        postsNo: user.postsNo,
+        date: user.date,
+        distance: branchData?.distance ?? null,
+        stories: user.stories || [],
+        averageDishRating: ratingData?.averageDishRating || 0,
+        ratedDishesCount: ratingData?.ratedDishesCount || 0
+      };
+
       // Find which categories this user belongs to
       user.tags.forEach(tagId => {
         const categoryName = tagNameMap[tagId.toString()];
         if (categoryName && usersData[categoryName]) {
           // Limit to 8 users per category
           if (usersData[categoryName].length < 8) {
-            // Get rating data from aggregation
-            const ratingData = ratingMap.get(user._id.toString());
-
-            usersData[categoryName].push({
-              _id: user._id,
-              fullName: user.fullName,
-              avatar: user.avatar,
-              bio: user.bio,
-              type: user.type,
-              locations: user.locations,
-              tags: user.tags,
-              postsNo: user.postsNo,
-              date: user.date,
-              distance: user.distance,
-              stories: user.stories || [],
-              averageDishRating: ratingData?.averageDishRating || 0,
-              ratedDishesCount: ratingData?.ratedDishesCount || 0
-            });
+            usersData[categoryName].push(userData);
           }
         }
       });
@@ -301,7 +309,7 @@ async function getUsersForAllCategories(categories, coordinates) {
   }
 }
 
-// Optimized aggregation to get dishes for all categories at once
+// Optimized aggregation to get dishes for tag-based categories at once
 async function getDishesForAllCategories(categories, coordinates) {
   try {
     const pipeline = [
@@ -310,8 +318,7 @@ async function getDishesForAllCategories(categories, coordinates) {
         $match: {
           category: { $in: categories },
           visible: true,
-          // Only include recent dishes for better relevance
-          created_at: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } // Last 30 days
+          created_at: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
         }
       },
 
@@ -410,6 +417,199 @@ async function getDishesForAllCategories(categories, coordinates) {
   } catch (error) {
     console.error('[DISCOVER BATCH] Error fetching dishes:', error);
     return {};
+  }
+}
+
+// ── Dedicated "All" queries ──────────────────────────────────────────────────
+// These run in parallel with tag-based queries. They fetch ALL chefs/dishes
+// without tag or category filters, and filter server-side to only return
+// chefs that have content (stories OR dishes).
+
+async function getAllChefs(coordinates) {
+  try {
+    // Step 1: Get all chefs with content (stories or dishes)
+    const pipeline = [
+      {
+        $match: {
+          type: 'chef',
+          date: { $gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) }
+        }
+      },
+
+      // Lookup stories to check content existence
+      {
+        $lookup: {
+          from: 'stories',
+          localField: '_id',
+          foreignField: 'author',
+          as: 'storyDocs'
+        }
+      },
+
+      // Lookup dishes to check content existence
+      {
+        $lookup: {
+          from: 'dishes',
+          let: { chefId: '$_id' },
+          pipeline: [
+            { $match: { $expr: { $eq: ['$user_id', '$$chefId'] }, visible: true } },
+            { $limit: 1 }
+          ],
+          as: 'dishCheck'
+        }
+      },
+
+      // SERVER-SIDE FILTER: only chefs with at least 1 story OR 1 dish
+      {
+        $match: {
+          $or: [
+            { 'storyDocs.0': { $exists: true } },
+            { 'dishCheck.0': { $exists: true } }
+          ]
+        }
+      },
+
+      // Sort by date (distance sorting done post-pipeline with branch data)
+      { $sort: { date: -1 } },
+
+      // Limit to 20 for the batch response
+      { $limit: 20 },
+
+      // Project only needed fields (drop the lookup arrays)
+      {
+        $project: {
+          _id: 1,
+          fullName: 1,
+          avatar: 1,
+          bio: 1,
+          type: 1,
+          tags: 1,
+          postsNo: 1,
+          date: 1
+        }
+      }
+    ];
+
+    const users = await User.aggregate(pipeline);
+    console.log(`[DISCOVER BATCH] "All" tab: found ${users.length} chefs with content`);
+
+    if (users.length === 0) return [];
+
+    const userIds = users.map(u => u._id);
+
+    // Step 2: Batch fetch branch distances, stories, and ratings in parallel
+    const [branchDistanceMap, allStories, ratingResults] = await Promise.all([
+      // Branch distances
+      coordinates
+        ? getNearestBranchBatch(userIds, coordinates.lat, coordinates.long)
+        : Promise.resolve(new Map()),
+
+      // Stories
+      Story.find({ author: { $in: userIds } })
+        .populate('dishes')
+        .populate('category', 'name')
+        .lean(),
+
+      // Ratings
+      Dish.aggregate([
+        { $match: { user_id: { $in: userIds.map(id => new mongoose.Types.ObjectId(id)) } } },
+        { $match: { average_rating: { $gt: 0 } } },
+        { $group: { _id: '$user_id', ratedDishesCount: { $sum: 1 }, totalRating: { $sum: '$average_rating' } } },
+        { $project: { ratedDishesCount: 1, averageDishRating: { $round: [{ $divide: ['$totalRating', '$ratedDishesCount'] }, 1] } } }
+      ]).exec().catch(err => { console.error('[DISCOVER BATCH] "All" ratings error:', err?.message); return []; })
+    ]);
+
+    // Build lookup maps
+    const storiesByUser = new Map();
+    allStories.forEach(story => {
+      const authorId = story.author.toString();
+      if (!storiesByUser.has(authorId)) storiesByUser.set(authorId, []);
+      storiesByUser.get(authorId).push(story);
+    });
+
+    const ratingMap = new Map(ratingResults.map(r => [r._id.toString(), r]));
+
+    // Step 3: Assemble final user objects with branch-based distance
+    let result = users.map(user => {
+      const ratingData = ratingMap.get(user._id.toString());
+      const branchData = branchDistanceMap.get(user._id.toString());
+      return {
+        ...user,
+        distance: branchData?.distance ?? null,
+        stories: storiesByUser.get(user._id.toString()) || [],
+        averageDishRating: ratingData?.averageDishRating || 0,
+        ratedDishesCount: ratingData?.ratedDishesCount || 0
+      };
+    });
+
+    // Sort by branch distance (closest first), nulls last
+    if (coordinates) {
+      result.sort((a, b) => {
+        if (a.distance == null && b.distance == null) return 0;
+        if (a.distance == null) return 1;
+        if (b.distance == null) return -1;
+        return a.distance - b.distance;
+      });
+    }
+
+    return result;
+
+  } catch (error) {
+    console.error('[DISCOVER BATCH] "All" tab: error fetching chefs:', error);
+    return [];
+  }
+}
+
+async function getAllDishes(coordinates) {
+  try {
+    const pipeline = [
+      // All visible dishes, no category filter
+      {
+        $match: {
+          visible: true,
+          created_at: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
+        }
+      },
+
+      // Lookup chef info
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'user_id',
+          foreignField: '_id',
+          as: 'chefInfo',
+          pipeline: [
+            { $project: { fullName: 1, avatar: 1, type: 1, locations: 1, bio: 1, averageRating: 1, totalReviews: 1 } }
+          ]
+        }
+      },
+      { $addFields: { chef: { $arrayElemAt: ['$chefInfo', 0] } } },
+
+      // No distance on dishes — distance comes from chef (user object)
+      { $sort: { created_at: -1 } },
+
+      // Limit for batch response
+      { $limit: 30 },
+
+      // Project final shape
+      {
+        $project: {
+          _id: 1, name: 1, title: 1, description: 1, image: 1, price: 1,
+          category: 1, chef: 1, user_id: 1, created_at: 1,
+          visible: 1,
+          average_rating: { $ifNull: ['$average_rating', 0] }
+        }
+      }
+    ];
+
+    const dishes = await Dish.aggregate(pipeline);
+    console.log(`[DISCOVER BATCH] "All" tab: found ${dishes.length} dishes`);
+
+    return dishes;
+
+  } catch (error) {
+    console.error('[DISCOVER BATCH] "All" tab: error fetching dishes:', error);
+    return [];
   }
 }
 

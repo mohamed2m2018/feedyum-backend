@@ -59,24 +59,28 @@ const getDishesByCategory = async (req, res) => {
       return res.status(400).json({ message: "Category is required" });
     }
 
-    // Find dishes by category (support legacy single `category` and new `categories` array)
-    // Performance optimization: use indexed query and limit fields
-    const dishes = await Dish.find({
-      $and: [
-        { visible: { $ne: false } },
-        {
-          $or: [
-            { category: { $regex: new RegExp(category, "i") } },
-            { categories: { $elemMatch: { $regex: new RegExp(category, "i") } } }
+    // Build query based on whether this is "All" or a specific category
+    const isAll = category === 'All';
+    const matchQuery = isAll
+      ? { visible: { $ne: false } } // All: just visible dishes, no category filter
+      : {
+          $and: [
+            { visible: { $ne: false } },
+            {
+              $or: [
+                { category: { $regex: new RegExp(category, "i") } },
+                { categories: { $elemMatch: { $regex: new RegExp(category, "i") } } }
+              ]
+            }
           ]
-        }
-      ]
-    })
-      .select('name image price category user_id visible created_at') // Only select needed fields
+        };
+
+    const dishes = await Dish.find(matchQuery)
+      .select('name image price category user_id visible created_at')
       .populate("user_id", "fullName avatar bio locations chefSettings")
       .sort({ created_at: -1 })
-      .limit(50) // Limit to 50 dishes for performance
-      .lean(); // Use lean for better performance
+      .limit(50)
+      .lean();
 
     // Import ChefBranch model for location-based filtering
     const ChefBranch = mongoose.model("chefBranch");
@@ -127,14 +131,6 @@ const getDishesByCategory = async (req, res) => {
         } catch (error) {
           console.error('Error checking chef availability:', error);
         }
-      }
-      
-      // Fallback to old location system if no branches
-      if (kmAway === undefined && hasValidCoordinates && dish.user_id?.locations && Array.isArray(dish.user_id.locations)) {
-        const userLat = Number(lat);
-        const userLong = Number(long);
-        const nearestLocation = getNearestLocation(userLat, userLong, dish.user_id.locations);
-        kmAway = nearestLocation?.distance;
       }
       
       return {

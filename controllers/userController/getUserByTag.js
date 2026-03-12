@@ -65,31 +65,44 @@ const getUserByTag = async (req, res) => {
   try {
     const skip = (page - 1) * limit;
 
-    // Fetch the tag and ensure it exists
-    const fetchedTag = await Tag.findOne({ name: tag }).lean().exec();
-    if (!fetchedTag) {
-      return res.status(404).json({ success: false, error: "Tag not found" });
-    }
+    // Special case: "All" returns all chefs, no tag filtering
+    const isAll = tag === 'All';
 
-    // Fetch the corresponding category
-    const category = await Category.findOne({ name: tag }).lean().exec();
-    if (!category) {
-      return res
-        .status(404)
-        .json({ success: false, error: "Category not found" });
+    let queryOptions;
+    let countQuery;
+
+    if (isAll) {
+      // No tag/category lookup needed — query all chefs directly
+      queryOptions = { type: 'chef' };
+      countQuery = { type: 'chef' };
+    } else {
+      // Fetch the tag and ensure it exists
+      const fetchedTag = await Tag.findOne({ name: tag }).lean().exec();
+      if (!fetchedTag) {
+        return res.status(404).json({ success: false, error: "Tag not found" });
+      }
+
+      // Fetch the corresponding category
+      const category = await Category.findOne({ name: tag }).lean().exec();
+      if (!category) {
+        return res
+          .status(404)
+          .json({ success: false, error: "Category not found" });
+      }
+
+      queryOptions = { tags: fetchedTag._id };
+      countQuery = { tags: fetchedTag._id };
     }
 
     // Check if we have valid coordinates for location-based sorting
     const hasValidCoordinates = lat !== 'undefined' && long !== 'undefined' && 
                                !isNaN(Number(lat)) && !isNaN(Number(long));
 
-    // Find users with the fetched tag ID and paginate the results
-    // Performance optimization: adjust query based on whether location sorting is needed
-    const queryOptions = { tags: fetchedTag._id };
-    const sortOptions = hasValidCoordinates ? {} : { _id: -1 }; // Only sort by _id if no location sorting
+    // Find users and paginate the results
+    const sortOptions = hasValidCoordinates ? {} : { _id: -1 };
     
     let users = await User.find(queryOptions)
-      .select('fullName avatar bio locations tags') // Only select needed fields for performance
+      .select('fullName avatar bio locations tags')
       .skip(skip)
       .limit(limit)
       .lean()
@@ -100,13 +113,14 @@ const getUserByTag = async (req, res) => {
       const userLat = Number(lat);
       const userLong = Number(long);
       
+      // Batch fetch branch distances for all chefs
+      const { getNearestBranchBatch } = require('../../utils/getNearestBranch');
+      const userIdList = users.map(u => u._id.toString());
+      const branchDistanceMap = await getNearestBranchBatch(userIdList, userLat, userLong);
+
       users = users.map(user => {
-        let kmAway = undefined;
-        if (user.locations && Array.isArray(user.locations) && user.locations.length > 0) {
-          const nearestLocation = getNearestLocation(userLat, userLong, user.locations);
-          kmAway = nearestLocation?.distance;
-        }
-        return { ...user, kmAway };
+        const branchData = branchDistanceMap.get(user._id.toString());
+        return { ...user, kmAway: branchData?.distance ?? undefined };
       });
       
       // Sort by distance (closest first) if location data available
@@ -118,9 +132,6 @@ const getUserByTag = async (req, res) => {
         if (b.kmAway !== undefined) return 1;
         return 0;
       });
-      
-      // Performance note: For very large datasets, consider implementing geospatial indexing
-      // using MongoDB's 2dsphere index for location-based queries
     }
     if (users.length === 0) {
       return res.status(404).json({
@@ -177,7 +188,7 @@ const getUserByTag = async (req, res) => {
       user.stories = userStories; // Attach stories to the user object
     }
 
-    const totalUsers = await User.countDocuments({ tags: fetchedTag._id });
+    const totalUsers = await User.countDocuments(countQuery);
 
     res.json({
       users,

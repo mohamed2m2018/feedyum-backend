@@ -72,6 +72,7 @@ export function Footer({ lang = 'ar' }) {
                         <Link href="/delivery-policy">{isAr ? 'سياسة التوصيل' : 'Delivery Policy'}</Link>
                         <Link href="/refund-policy">{isAr ? 'سياسة الاسترداد' : 'Refund Policy'}</Link>
                         <Link href="/privacy-policy">{isAr ? 'سياسة الخصوصية' : 'Privacy Policy'}</Link>
+                        <Link href="/terms-of-service">{isAr ? 'الشروط والأحكام' : 'Terms of Service'}</Link>
                         <Link href="/contact">{isAr ? 'تواصل معنا' : 'Contact Us'}</Link>
                         <Link href="/delete-account">{isAr ? 'حذف الحساب' : 'Delete Account'}</Link>
                     </div>

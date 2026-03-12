@@ -25,6 +25,10 @@ COPY . /app
 COPY --from=landing-build /landing/out/index.html /app/public/index.html
 COPY --from=landing-build /landing/out/delete-account.html /app/public/delete-account.html
 COPY --from=landing-build /landing/out/privacy-policy.html /app/public/privacy-policy.html
+COPY --from=landing-build /landing/out/about.html /app/public/about.html
+COPY --from=landing-build /landing/out/contact.html /app/public/contact.html
+COPY --from=landing-build /landing/out/delivery-policy.html /app/public/delivery-policy.html
+COPY --from=landing-build /landing/out/refund-policy.html /app/public/refund-policy.html
 COPY --from=landing-build /landing/out/_next/ /app/public/_next/
 COPY --from=landing-build /landing/out/images/ /app/public/images/
 

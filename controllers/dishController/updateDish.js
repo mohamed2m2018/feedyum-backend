@@ -21,6 +21,7 @@ const updateDish = async (req, res) => {
       tags,
       dietaryInfo,
       categories,
+      optionGroups,
       // Bilingual fields
       nameArabic,
       nameEnglish,
@@ -28,6 +29,36 @@ const updateDish = async (req, res) => {
       descriptionEnglish,
       ...updateData
     } = req.body;
+
+    // Process option groups if provided — auto-detect language for bilingual names
+    if (optionGroups !== undefined) {
+      if (Array.isArray(optionGroups)) {
+        updateData.optionGroups = optionGroups.map(group => {
+          const groupLang = translationService.detectLanguage(group.name || '');
+          return {
+            name: (group.name || '').trim(),
+            nameArabic: group.nameArabic || (groupLang === 'ar' ? (group.name || '').trim() : ''),
+            nameEnglish: group.nameEnglish || (groupLang === 'en' ? (group.name || '').trim() : ''),
+            type: group.type || 'single',
+            required: !!group.required,
+            min: group.min || 0,
+            max: group.max || 0,
+            options: (group.options || []).map(opt => {
+              const optLang = translationService.detectLanguage(opt.name || '');
+              return {
+                name: (opt.name || '').trim(),
+                nameArabic: opt.nameArabic || (optLang === 'ar' ? (opt.name || '').trim() : ''),
+                nameEnglish: opt.nameEnglish || (optLang === 'en' ? (opt.name || '').trim() : ''),
+                priceAdjustment: opt.priceAdjustment || 0,
+                isDefault: !!opt.isDefault,
+              };
+            }),
+          };
+        });
+      } else {
+        updateData.optionGroups = [];
+      }
+    }
 
     // Normalize categories if provided
     if (categories !== undefined) {

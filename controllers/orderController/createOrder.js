@@ -55,20 +55,55 @@ const createOrder = async (req, res) => {
         });
       }
 
-      const dish = await Dish.findById(item.dish).select('name price');
+      const dish = await Dish.findById(item.dish).select('name price optionGroups');
       if (!dish) {
         return res.status(404).json({
           message: `Dish with ID ${item.dish} not found`
         });
       }
 
-      const itemTotal = dish.price * item.quantity;
+      // Server-side price validation: recalculate unitPrice from dish + selected options
+      let totalAdjustment = 0;
+      let validatedOptions = [];
+
+      if (Array.isArray(item.selectedOptions) && item.selectedOptions.length > 0) {
+        for (const selection of item.selectedOptions) {
+          // Find the matching option group on the dish
+          const group = (dish.optionGroups || []).find(g => g.name === selection.groupName);
+          if (!group) continue; // Skip unknown groups (non-blocking)
+
+          let groupAdjustment = 0;
+          const validOptionNames = [];
+
+          for (const optName of (selection.optionNames || [])) {
+            const opt = group.options.find(o => o.name === optName);
+            if (opt) {
+              groupAdjustment += (opt.priceAdjustment || 0);
+              validOptionNames.push(optName);
+            }
+          }
+
+          if (validOptionNames.length > 0) {
+            totalAdjustment += groupAdjustment;
+            validatedOptions.push({
+              groupName: selection.groupName,
+              optionNames: validOptionNames,
+              totalAdjustment: groupAdjustment,
+            });
+          }
+        }
+      }
+
+      const unitPrice = dish.price + totalAdjustment;
+      const itemTotal = unitPrice * item.quantity;
       totalAmount += itemTotal;
 
       validatedItems.push({
         dish: item.dish,
         quantity: item.quantity,
-        price: dish.price,
+        selectedOptions: validatedOptions,
+        unitPrice,
+        price: unitPrice, // backward compat
         total: itemTotal
       });
     }

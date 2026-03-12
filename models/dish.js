@@ -56,6 +56,24 @@ const DishSchema = new mongoose.Schema({
   embedding: { type: [Number], default: null, select: false },
   embeddingGenerated: { type: Date, default: null, select: false },
 
+  // Option groups for variants and add-ons (Talabat-style)
+  optionGroups: [{
+    name: { type: String, required: true },           // "Size", "Extras", "Choose Sauce"
+    nameArabic: { type: String },                      // Arabic translation
+    nameEnglish: { type: String },                     // English translation
+    type: { type: String, enum: ['single', 'multiple'], required: true },
+    required: { type: Boolean, default: false },
+    min: { type: Number, default: 0 },                 // min selections (for multiple)
+    max: { type: Number, default: 0 },                 // max selections (0 = unlimited)
+    options: [{
+      name: { type: String, required: true },           // "Small", "Extra Cheese"
+      nameArabic: { type: String },
+      nameEnglish: { type: String },
+      priceAdjustment: { type: Number, default: 0 },    // +10, +15, etc. (0 = no extra cost)
+      isDefault: { type: Boolean, default: false },     // pre-selected option
+    }]
+  }],
+
   created_at: {
     type: Date,
     default: Date.now,

@@ -29,8 +29,7 @@ const content = {
       { icon: '📊', title: 'تحليلات', desc: 'تابع أداء محتواك' },
       { icon: '🔔', title: 'إشعارات', desc: 'تنبيهات فورية للطلبات' },
     ],
-    noteTitle: 'ملاحظة مهمة',
-    noteDesc: 'بعض حسابات المطاعم والشيفات تعتبر حسابات غير رسمية تعلن عن أطباقك مجاناً. لجعلها حسابات رسمية والحصول على التحكم الكامل فيها برجاء التواصل معنا.',
+
     ctaTitle: 'مستعد تستكشف؟',
     ctaDesc: 'حمل FeedYum دلوقتي وابدأ رحلتك اللذيذة!',
     storeLabel: 'حمل من',
@@ -64,8 +63,7 @@ const content = {
       { icon: '📊', title: 'Analytics', desc: 'Track your content performance' },
       { icon: '🔔', title: 'Notifications', desc: 'Instant alerts for orders' },
     ],
-    noteTitle: 'Important Note',
-    noteDesc: 'Some restaurant and chef accounts are unofficial accounts that promote your dishes for free. To make them official and gain full control, please contact us.',
+
     ctaTitle: 'Ready to explore?',
     ctaDesc: 'Download FeedYum now and start your delicious journey!',
     storeLabel: 'Get it on',
@@ -164,18 +162,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Note */}
-      <section className="note-section">
-        <div className="container">
-          <div className="note-card">
-            <div className="note-icon">📌</div>
-            <div className="note-content">
-              <h3>{t.noteTitle}</h3>
-              <p>{t.noteDesc}</p>
-            </div>
-          </div>
-        </div>
-      </section>
+
 
       {/* CTA */}
       <section className="cta" id="download">

@@ -40,7 +40,8 @@ export function Nav({ lang = 'ar', onLangChange }) {
                     <ul className="nav-links">
                         <li><a href="/#features">{isAr ? 'المميزات' : 'Features'}</a></li>
                         <li><a href="/#creators">{isAr ? 'للشيفات' : 'For Chefs'}</a></li>
-                        <li><a href="/#download">{isAr ? 'تحميل' : 'Download'}</a></li>
+                        <li><Link href="/about">{isAr ? 'عنّا' : 'About'}</Link></li>
+                        <li><Link href="/contact">{isAr ? 'تواصل معنا' : 'Contact'}</Link></li>
                     </ul>
                     <button className="lang-switch" aria-label="Switch language" onClick={handleToggle}>
                         {isAr ? '🇬🇧 EN' : '🇪🇬 عربي'}
@@ -67,10 +68,11 @@ export function Footer({ lang = 'ar' }) {
                         <span>FeedYum</span>
                     </Link>
                     <div className="footer-links">
-                        <a href="/#features">{isAr ? 'المميزات' : 'Features'}</a>
-                        <a href="/#creators">{isAr ? 'للشيفات' : 'For Chefs'}</a>
-                        <a href="/#download">{isAr ? 'تحميل' : 'Download'}</a>
+                        <Link href="/about">{isAr ? 'نبذة عنا' : 'About Us'}</Link>
+                        <Link href="/delivery-policy">{isAr ? 'سياسة التوصيل' : 'Delivery Policy'}</Link>
+                        <Link href="/refund-policy">{isAr ? 'سياسة الاسترداد' : 'Refund Policy'}</Link>
                         <Link href="/privacy-policy">{isAr ? 'سياسة الخصوصية' : 'Privacy Policy'}</Link>
+                        <Link href="/contact">{isAr ? 'تواصل معنا' : 'Contact Us'}</Link>
                         <Link href="/delete-account">{isAr ? 'حذف الحساب' : 'Delete Account'}</Link>
                     </div>
                     <div className="social-links">

@@ -23,6 +23,7 @@ const createDish = async (req, res) => {
       tags,
       nutritionalInfo,
       dietaryInfo,
+      optionGroups,
       // Bilingual fields
       nameArabic,
       nameEnglish,
@@ -132,6 +133,33 @@ const createDish = async (req, res) => {
       normalizedCategories = [category.trim()];
     }
 
+    // Process option groups — auto-detect language for bilingual names
+    let processedOptionGroups = [];
+    if (Array.isArray(optionGroups)) {
+      processedOptionGroups = optionGroups.map(group => {
+        const groupLang = translationService.detectLanguage(group.name || '');
+        return {
+          name: (group.name || '').trim(),
+          nameArabic: group.nameArabic || (groupLang === 'ar' ? (group.name || '').trim() : ''),
+          nameEnglish: group.nameEnglish || (groupLang === 'en' ? (group.name || '').trim() : ''),
+          type: group.type || 'single',
+          required: !!group.required,
+          min: group.min || 0,
+          max: group.max || 0,
+          options: (group.options || []).map(opt => {
+            const optLang = translationService.detectLanguage(opt.name || '');
+            return {
+              name: (opt.name || '').trim(),
+              nameArabic: opt.nameArabic || (optLang === 'ar' ? (opt.name || '').trim() : ''),
+              nameEnglish: opt.nameEnglish || (optLang === 'en' ? (opt.name || '').trim() : ''),
+              priceAdjustment: opt.priceAdjustment || 0,
+              isDefault: !!opt.isDefault,
+            };
+          }),
+        };
+      });
+    }
+
     // Detect original language for bilingual support
     const nameOriginalLang = translationService.detectLanguage(name);
     const descOriginalLang = description ? translationService.detectLanguage(description) : nameOriginalLang;
@@ -166,6 +194,7 @@ const createDish = async (req, res) => {
       tags: processedTags,
       nutritionalInfo: nutritionalInfo || {},
       dietaryInfo: processedDietaryInfo,
+      optionGroups: processedOptionGroups,
     });
 
     await dish.save();

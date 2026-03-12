@@ -5,7 +5,13 @@ const OrderSchema = new mongoose.Schema({
   chef: { type: mongoose.Schema.Types.ObjectId, ref: "user", required: true },
   items: [{
     dish: { type: mongoose.Schema.Types.ObjectId, ref: "dish", required: true },
-    quantity: { type: Number, required: true, default: 1 }
+    quantity: { type: Number, required: true, default: 1 },
+    selectedOptions: [{
+      groupName: String,
+      optionNames: [String],
+      totalAdjustment: Number,
+    }],
+    unitPrice: { type: Number },  // price at time of order (base + adjustments)
   }],
   totalPrice: { type: Number, required: true },
   subtotal: { type: Number, required: true },

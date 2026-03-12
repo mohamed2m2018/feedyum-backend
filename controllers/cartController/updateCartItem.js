@@ -2,10 +2,13 @@ const Cart = require('../../models/cart');
 
 const updateCartItem = async (req, res) => {
   try {
-    const { dishId, quantity } = req.body;
-    
-    if (!dishId || quantity === undefined) {
-      return res.status(400).json({ message: 'Dish ID and quantity are required' });
+    const { dishId, quantity, cartItemKey } = req.body;
+
+    // Identify item by cartItemKey (preferred) or dishId (backward compat)
+    const itemIdentifier = cartItemKey || dishId;
+
+    if (!itemIdentifier || quantity === undefined) {
+      return res.status(400).json({ message: 'Item identifier (cartItemKey or dishId) and quantity are required' });
     }
 
     if (quantity < 0 || quantity > 99) {
@@ -18,8 +21,14 @@ const updateCartItem = async (req, res) => {
       return res.status(404).json({ message: 'Cart not found' });
     }
 
-    const itemIndex = cart.items.findIndex(item => item.dish.toString() === dishId);
-    
+    // Find item by cartItemKey first, fall back to dishId
+    const itemIndex = cart.items.findIndex(item => {
+      if (cartItemKey) {
+        return (item.cartItemKey || item.dish.toString()) === cartItemKey;
+      }
+      return item.dish.toString() === dishId;
+    });
+
     if (itemIndex === -1) {
       return res.status(404).json({ message: 'Item not found in cart' });
     }
@@ -48,7 +57,7 @@ const updateCartItem = async (req, res) => {
 
     const totalItems = cart.items.reduce((total, item) => total + item.quantity, 0);
 
-    res.json({ 
+    res.json({
       ...cart.toObject(),
       totalItems,
       message: quantity === 0 ? 'Item removed from cart' : 'Cart updated successfully'
@@ -56,11 +65,11 @@ const updateCartItem = async (req, res) => {
 
   } catch (error) {
     console.error('Update cart error:', error);
-    res.status(500).json({ 
-      message: 'Failed to update cart', 
-      error: error.message 
+    res.status(500).json({
+      message: 'Failed to update cart',
+      error: error.message
     });
   }
 };
 
-module.exports = updateCartItem; 
+module.exports = updateCartItem;

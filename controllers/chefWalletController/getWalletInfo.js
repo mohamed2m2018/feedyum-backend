@@ -1,4 +1,5 @@
 const ChefWallet = require('../../models/chefWallet');
+const { CHEF_COMMISSION_PERCENTAGE } = require('../../config/feeConfig');
 
 const getWalletInfo = async (req, res) => {
   try {
@@ -60,6 +61,7 @@ const getWalletInfo = async (req, res) => {
         currentBalance: wallet.balance,
         totalServiceFees,
         totalPayments,
+        commissionPercentage: CHEF_COMMISSION_PERCENTAGE * 100,
         isPaymentRequired: wallet.isPaymentRequired,
         paymentDueAmount: wallet.paymentDueAmount,
         lastPaymentDate: wallet.lastPaymentDate

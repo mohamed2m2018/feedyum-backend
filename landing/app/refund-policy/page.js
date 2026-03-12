@@ -30,8 +30,8 @@ const refundSections = {
             text: 'نحن نأخذ جودة الطعام على محمل الجد. إذا تكررت الشكاوى تجاه مطعم أو طباخ معين، تقوم FeedYum بمراجعة حسابه وقد تتخذ إجراءات مناسبة لضمان جودة الخدمة المقدمة على المنصة.',
         },
         {
-            title: '٧. استرداد عمولة المطاعم والطباخين',
-            text: 'يحق للمطعم أو الطباخ طلب استرداد المبالغ المدفوعة كعمولة (شحن المحفظة) خلال ١٤ يوماً من تاريخ الدفع، بشرط عدم استخدام الرصيد المشحون في أي معاملات على المنصة. في حالة الموافقة على الاسترداد، يتم خصم رسوم إدارية بنسبة ١٥٪ من المبلغ المسترد لتغطية تكاليف بوابة الدفع والمصاريف الإدارية. لا يمكن استرداد أي رصيد تم استخدامه بالفعل حيث تكون الخدمة قد تم تقديمها. لطلب الاسترداد، يرجى التواصل معنا عبر البريد الإلكتروني support@feedyum.com مع ذكر بيانات الحساب ورقم المعاملة.',
+            title: '٧. استرداد رسوم المنصة',
+            text: 'يحق للمطعم أو الطباخ طلب استرداد المبالغ المدفوعة كرسوم منصة (شحن المحفظة) خلال ١٤ يوماً من تاريخ الدفع، بشرط عدم استخدام الرصيد المشحون في أي معاملات على المنصة. في حالة الموافقة على الاسترداد، يتم خصم رسوم إدارية بنسبة ١٥٪ من المبلغ المسترد لتغطية تكاليف بوابة الدفع والمصاريف الإدارية. لا يمكن استرداد أي رصيد تم استخدامه بالفعل حيث تكون الخدمة قد تم تقديمها. لطلب الاسترداد، يرجى التواصل معنا عبر البريد الإلكتروني support@feedyum.com مع ذكر بيانات الحساب ورقم المعاملة.',
         },
         {
             title: '٨. التواصل معنا',
@@ -64,8 +64,8 @@ const refundSections = {
             text: 'We take food quality seriously. If complaints against a specific restaurant or chef are repeated, FeedYum reviews their account and may take appropriate measures to ensure the quality of service provided on the platform.',
         },
         {
-            title: '7. Restaurant & Chef Commission Refund',
-            text: 'Restaurants and chefs have the right to request a refund of commissions paid (wallet top-up) within 14 days of the payment date, provided the charged balance has not been used in any transactions on the platform. If the refund is approved, an administrative fee of 15% of the refunded amount will be deducted to cover payment gateway costs and administrative expenses. Any balance that has already been used cannot be refunded as the service has been rendered. To request a refund, please contact us at support@feedyum.com with your account details and transaction number.',
+            title: '7. Restaurant & Chef Platform Fee Refund',
+            text: 'Restaurants and chefs have the right to request a refund of platform fees paid (wallet top-up) within 14 days of the payment date, provided the charged balance has not been used in any transactions on the platform. If the refund is approved, an administrative fee of 15% of the refunded amount will be deducted to cover payment gateway costs and administrative expenses. Any balance that has already been used cannot be refunded as the service has been rendered. To request a refund, please contact us at support@feedyum.com with your account details and transaction number.',
         },
         {
             title: '8. Contact Us',

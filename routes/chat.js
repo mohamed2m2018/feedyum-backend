@@ -34,6 +34,23 @@ router.get('/order-chats',
     messagesController.getOrderChats
 );
 
+// Route to check if a user has chat enabled
+router.get('/chat-status/:userId',
+    passport.authenticate('jwt', { session: false }),
+    async (req, res) => {
+        try {
+            const user = await User.findById(req.params.userId).select('chatEnabled').lean();
+            if (!user) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+            res.json({ chatEnabled: user.chatEnabled !== false });
+        } catch (error) {
+            console.error('Get chat status error:', error);
+            res.status(500).json({ error: 'Server error' });
+        }
+    }
+);
+
 // Route to get all unique chat participants for the current user with pagination
 router.get('/chats',
     passport.authenticate('jwt', { session: false }),
@@ -192,6 +209,12 @@ router.post('/message',
         const { chatUserId, content, orderId, audio, duration, messageType, replyTo } = req.body;
 
         try {
+            // Check if receiver has chat enabled
+            const receiver = await User.findById(chatUserId).select('chatEnabled').lean();
+            if (receiver && receiver.chatEnabled === false) {
+                return res.status(403).json({ error: 'Chat is disabled by this user', code: 'CHAT_DISABLED' });
+            }
+
             const newMessage = new Message({
                 sender: userId,
                 receiver: chatUserId,

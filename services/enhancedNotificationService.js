@@ -89,6 +89,10 @@ class EnhancedNotificationService {
       case 'sound':
         return `${baseUrl}/sound/${id}${query}`;
 
+      // Support
+      case 'supportChat':
+        return `${baseUrl}/support-chat${query}`;
+
       default:
         return `${baseUrl}/${query}`;
     }
@@ -263,6 +267,8 @@ class EnhancedNotificationService {
       additionalData: {
         status,
         chefName,
+        // Trigger alarm sound for awaiting_confirmation (customer must act)
+        ...(status === 'awaiting_confirmation' && { alarmType: 'awaitingConfirmation' }),
         ...orderDetails
       }
     });

@@ -1,10 +1,58 @@
 /**
  * Fee Configuration
  * Centralized config for all platform fees and delivery calculations.
+ *
+ * Business model:
+ *   - Customer pays a tiered SERVICE FEE (5/8/12 EGP based on subtotal)
+ *   - Chef pays a flat ORDER FEE (4 EGP per order, deducted from wallet)
  */
 
-// Chef commission: percentage of subtotal deducted from chef's wallet per order
-const CHEF_COMMISSION_PERCENTAGE = 0.05; // 5%
+// Flat fee deducted from chef's wallet per confirmed order
+const CHEF_ORDER_FEE = 4; // EGP
+
+// Special promocode that waives the customer service fee entirely
+const SERVICE_FEE_WAIVER_CODE = process.env.SERVICE_FEE_WAIVER_CODE || '';
+
+// Tiered service fee charged to the customer (added on top of subtotal)
+// Sorted ascending by maxSubtotal. fee is inclusive for subtotals <= maxSubtotal.
+const SERVICE_FEE_TIERS = [
+    { maxSubtotal: 150, fee: 5 },
+    { maxSubtotal: 400, fee: 8 },
+    { maxSubtotal: Infinity, fee: 12 },
+];
+
+/**
+ * Calculate customer service fee based on order subtotal.
+ * Uses tiered brackets: <150 → 5, 150-400 → 8, >400 → 12.
+ *
+ * @param {number} subtotal - Order subtotal (before fees/discounts)
+ * @returns {number} Service fee amount in EGP
+ */
+const calculateServiceFee = (subtotal) => {
+    for (const tier of SERVICE_FEE_TIERS) {
+        if (subtotal <= tier.maxSubtotal) {
+            return tier.fee;
+        }
+    }
+    // Fallback (should never reach here due to Infinity tier)
+    return SERVICE_FEE_TIERS[SERVICE_FEE_TIERS.length - 1].fee;
+};
+
+/**
+ * Check if a promocode is the special service fee waiver code.
+ * @param {string} code - Promocode string to check
+ * @returns {boolean}
+ */
+const isServiceFeeWaiverCode = (code) => {
+    if (!code || !SERVICE_FEE_WAIVER_CODE) return false;
+    return code.toUpperCase().trim() === SERVICE_FEE_WAIVER_CODE.toUpperCase().trim();
+};
+
+/**
+ * Get the flat chef order fee.
+ * @returns {number} Order fee in EGP
+ */
+const getChefOrderFee = () => CHEF_ORDER_FEE;
 
 /**
  * Calculate delivery fee based on distance and branch delivery tiers.
@@ -35,22 +83,12 @@ const calculateDeliveryFee = (distance, tiers, fallbackFee = 0) => {
     return sortedTiers[sortedTiers.length - 1].fee;
 };
 
-/**
- * Calculate chef commission amount from subtotal after discount.
- * Commission is calculated on (subtotal - discount) so chefs
- * only pay commission on what they actually earn.
- * 
- * @param {number} subtotal - Order subtotal
- * @param {number} [discount=0] - Discount amount applied to the order
- * @returns {number} Commission amount
- */
-const calculateCommission = (subtotal, discount = 0) => {
-    const commissionBase = Math.max(0, subtotal - (discount || 0));
-    return Number((commissionBase * CHEF_COMMISSION_PERCENTAGE).toFixed(2));
-};
-
 module.exports = {
-    CHEF_COMMISSION_PERCENTAGE,
+    CHEF_ORDER_FEE,
+    SERVICE_FEE_TIERS,
+    SERVICE_FEE_WAIVER_CODE,
+    calculateServiceFee,
+    isServiceFeeWaiverCode,
+    getChefOrderFee,
     calculateDeliveryFee,
-    calculateCommission,
 };

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Nav, Footer } from '../components/SharedComponents';
 
-const getAboutContent = (commissionPercentage) => ({
+const getAboutContent = (orderFee) => ({
     ar: {
         title: 'نبذة عنا',
         subtitle: 'تعرف على FeedYum ورؤيتنا',
@@ -18,7 +18,7 @@ const getAboutContent = (commissionPercentage) => ({
             },
             {
                 title: '⚙️ إزاي بنشتغل؟',
-                text: `FeedYum منصة وساطة - العميل بيتصفح الأطباق والمطاعم على التطبيق، بيختار اللي عايزه، وبيطلب مباشرة من المطعم أو الطباخ. الدفع بيتم عند الاستلام (كاش) مباشرة للمطعم. FeedYum بتحصّل عمولة ${commissionPercentage}٪ من المطاعم والطباخين مقابل استخدام المنصة.`,
+                text: `FeedYum منصة وساطة - العميل بيتصفح الأطباق والمطاعم على التطبيق، بيختار اللي عايزه، وبيطلب مباشرة من المطعم أو الطباخ. الدفع بيتم عند الاستلام (كاش) مباشرة للمطعم. FeedYum بتحصّل رسوم منصة ثابتة ${orderFee} ج.م لكل طلب من المطاعم والطباخين، بالإضافة إلى رسوم خدمة يتحملها العميل.`,
             },
             {
                 title: '📱 مميزات المنصة',
@@ -44,7 +44,7 @@ const getAboutContent = (commissionPercentage) => ({
             },
             {
                 title: '⚙️ How It Works',
-                text: `FeedYum is an intermediary platform – customers browse dishes and restaurants on the app, choose what they want, and order directly from the restaurant or chef. Payment is made upon delivery (cash on delivery) directly to the restaurant. FeedYum collects a ${commissionPercentage}% commission from restaurants and chefs for using the platform.`,
+                text: `FeedYum is an intermediary platform – customers browse dishes and restaurants on the app, choose what they want, and order directly from the restaurant or chef. Payment is made upon delivery (cash on delivery) directly to the restaurant. FeedYum charges a fixed ${orderFee} EGP platform fee per order from restaurants and chefs, plus a service fee paid by the customer.`,
             },
             {
                 title: '📱 Platform Features',
@@ -58,10 +58,10 @@ const getAboutContent = (commissionPercentage) => ({
     },
 });
 
-export default function AboutContent({ commissionPercentage }) {
+export default function AboutContent({ orderFee }) {
     const [lang, setLang] = useState('ar');
     const isAr = lang === 'ar';
-    const aboutContent = getAboutContent(commissionPercentage);
+    const aboutContent = getAboutContent(orderFee);
     const content = isAr ? aboutContent.ar : aboutContent.en;
 
     return (

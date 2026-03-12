@@ -1,5 +1,5 @@
 const { findNearestBranch, DEFAULT_DELIVERY_DISTANCE_KM } = require('../../utils/deliveryValidation');
-const { calculateDeliveryFee } = require('../../config/feeConfig');
+const { calculateDeliveryFee, calculateServiceFee } = require('../../config/feeConfig');
 
 /**
  * Check if a kitchen delivers to a given location and return calculated delivery fee
@@ -10,7 +10,7 @@ const { calculateDeliveryFee } = require('../../config/feeConfig');
 const checkDeliveryEligibility = async (req, res) => {
     try {
         const { chefId } = req.params;
-        const { lat, long } = req.query;
+        const { lat, long, subtotal } = req.query;
 
         // Validate required parameters
         if (!chefId) {
@@ -69,6 +69,7 @@ const checkDeliveryEligibility = async (req, res) => {
             nearestBranchName: nearestBranch.branchName || null,
             branchCount: allBranches.length,
             deliveryFee,
+            serviceFee: subtotal ? calculateServiceFee(parseFloat(subtotal)) : null,
         });
 
     } catch (error) {

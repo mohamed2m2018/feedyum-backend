@@ -1,5 +1,7 @@
 const keys = {
-  mongoURI: process.env.MONGO_URI,
+  mongoURI: process.env.NODE_ENV === 'production'
+    ? process.env.MONGO_URI
+    : (process.env.MONGO_URI_STAGING || process.env.MONGO_URI),
   secretOrKey: process.env.SECRET_OR_KEY,
   adminEmail: process.env.ADMIN_EMAIL,
   adminPassword: process.env.ADMIN_PASSWORD,

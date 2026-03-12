@@ -45,11 +45,14 @@ const updateOrderStatus = async (req, res) => {
       });
     }
 
-    // When chef sets 'confirmed', redirect to 'awaiting_confirmation' 
-    // (user must confirm the order)
+    // When chef accepts the order:
+    // - If requireCustomerConfirmation is enabled → redirect to 'awaiting_confirmation'
+    // - If disabled → go straight to 'confirmed'
     let actualStatus = status;
     if (status === 'confirmed' && order.status === 'pending') {
-      actualStatus = 'awaiting_confirmation';
+      const chef = await User.findById(chefId).select('chefSettings').lean();
+      const requireConfirmation = chef?.chefSettings?.requireCustomerConfirmation !== false;
+      actualStatus = requireConfirmation ? 'awaiting_confirmation' : 'confirmed';
     }
 
     // Track if delivery fee was overridden by the chef

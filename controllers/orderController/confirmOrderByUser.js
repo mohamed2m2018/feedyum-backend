@@ -1,7 +1,7 @@
 const Order = require('../../models/order');
 const ChefWallet = require('../../models/chefWallet');
 const EnhancedNotificationService = require('../../services/enhancedNotificationService');
-const { calculateCommission, CHEF_COMMISSION_PERCENTAGE } = require('../../config/feeConfig');
+const { CHEF_ORDER_FEE } = require('../../config/feeConfig');
 
 /**
  * Confirm order by user (after chef accepts and sets awaiting_confirmation)
@@ -59,38 +59,38 @@ const confirmOrderByUser = async (req, res) => {
             if (!wallet) {
                 wallet = new ChefWallet({
                     chef: chefId,
-                    balance: 500, // Initial balance from platform
+                    balance: 200, // Initial welcome credit
                     transactions: [{
                         type: 'initial_bonus',
-                        amount: 500,
-                        description: 'Welcome bonus from platform',
+                        amount: 200,
+                        description: 'Welcome credit from platform',
                         timestamp: new Date(),
                     }],
                 });
             }
 
-            // Use configurable commission percentage (on subtotal after discount)
-            const discountAmount = order.promocode?.discountAmount || 0;
-            const commissionAmount = calculateCommission(order.subtotal, discountAmount);
-            await wallet.addServiceFee(order._id, order.subtotal - discountAmount);
-            console.log(`[WALLET] Deducted ${(CHEF_COMMISSION_PERCENTAGE * 100)}% commission (${commissionAmount} EGP) on ${order.subtotal - discountAmount} EGP (subtotal ${order.subtotal} - discount ${discountAmount}) for order ${order._id}`);
+            // Deduct flat platform order fee
+            await wallet.addServiceFee(order._id);
+            console.log(`[WALLET] Deducted ${CHEF_ORDER_FEE} EGP platform fee for order ${order._id}`);
         } catch (walletError) {
-            console.error(`[WALLET] CRITICAL: Failed to collect ${(CHEF_COMMISSION_PERCENTAGE * 100)}% commission for order ${order._id}, chef ${chefId}:`, walletError.message);
+            console.error(`[WALLET] CRITICAL: Failed to collect ${CHEF_ORDER_FEE} EGP platform fee for order ${order._id}, chef ${chefId}:`, walletError.message);
             // Don't fail the confirmation if wallet deduction fails
             // The fee can be collected manually or via a reconciliation job
         }
 
-        // Notify chef that user confirmed
+        // Notify chef that user confirmed (high-priority alarm like new order)
         try {
-            await EnhancedNotificationService.sendOrderStatusNotification({
-                userId: order.chef._id.toString(),
-                orderId: order._id.toString(),
-                status: 'confirmed',
-                chefName: order.user.fullName,
-                orderDetails: {
-                    total: order.totalPrice.toFixed(2),
-                    itemCount: order.items.length,
-                    notes: 'Customer confirmed the order',
+            await EnhancedNotificationService.sendChefDashboardNotification({
+                chefId: order.chef._id.toString(),
+                title: { en: '✅ Order Confirmed!', ar: '✅ تم تأكيد الطلب!' },
+                message: {
+                    en: `${order.user.fullName} confirmed order #${order._id.toString().slice(-6)}`,
+                    ar: `${order.user.fullName} أكّد الطلب #${order._id.toString().slice(-6)}`
+                },
+                action: 'order_confirmed',
+                additionalData: {
+                    orderId: order._id.toString(),
+                    alarmType: 'orderConfirmed',
                 },
             });
         } catch (notificationError) {

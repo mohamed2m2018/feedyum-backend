@@ -37,7 +37,9 @@ async function connectToDatabase() {
       connectTimeoutMS: 30000,
     });
 
+    const dbName = mongoURI.match(/\.net\/([^?]+)/)?.[1] || 'unknown';
     console.log("MongoDB Connected Successfully");
+    console.log(`📦 DB: ${dbName} | Mode: ${process.env.NODE_ENV === 'production' ? 'PRODUCTION' : 'STAGING/DEV'}`);
 
     // Initialize AdminJS after successful connection
     try {
@@ -158,6 +160,8 @@ app.use("/api/paymob", require("./routes/paymob"));
 app.use("/api/favorites", require("./routes/favorites"));
 app.use("/api/translate", require("./routes/translate"));
 app.use("/api/menu-upload", require("./routes/menuUpload"));
+// Crisp webhook for support chat notifications (no auth - external webhook)
+app.use("/api/webhooks/crisp", require("./routes/crispWebhook"));
 // Sharing routes for deep linking fallback (must be before static files)
 app.use("/", require("./routes/sharing"));
 

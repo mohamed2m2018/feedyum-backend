@@ -4,7 +4,7 @@ const Dish = require('../../models/dish');
 const PromoCode = require('../../models/promocode');
 const EnhancedNotificationService = require('../../services/enhancedNotificationService');
 const { validateDeliveryDistance } = require('../../utils/deliveryValidation');
-const { calculateDeliveryFee } = require('../../config/feeConfig');
+const { calculateDeliveryFee, calculateServiceFee, isServiceFeeWaiverCode } = require('../../config/feeConfig');
 
 const createOrder = async (req, res) => {
   try {
@@ -137,7 +137,7 @@ const createOrder = async (req, res) => {
         deliveryFee = fullBranch.deliveryFee || 0;
       }
     }
-    const serviceFee = 0; // No customer service fee — platform charges chef commission instead
+    let serviceFee = calculateServiceFee(totalAmount);
 
     // Apply promocode discount if provided
     let discountAmount = 0;
@@ -149,9 +149,14 @@ const createOrder = async (req, res) => {
         discountAmount: Number(discountAmount.toFixed(2)),
         discountType: promocode.discountType || 'fixed',
       };
+
+      // Waive service fee if the special waiver code is used
+      if (isServiceFeeWaiverCode(promocode.code)) {
+        serviceFee = 0;
+      }
     }
 
-    const finalTotal = totalAmount + deliveryFee - discountAmount;
+    const finalTotal = totalAmount + deliveryFee + serviceFee - discountAmount;
 
     // Create the order
     const order = new Order({
@@ -160,7 +165,7 @@ const createOrder = async (req, res) => {
       items: validatedItems,
       subtotal: Number(totalAmount.toFixed(2)),
       totalPrice: Number(finalTotal.toFixed(2)),
-      serviceFee: 0,
+      serviceFee: Number(serviceFee.toFixed(2)),
       deliveryFee: Number(deliveryFee.toFixed(2)),
       ...(appliedPromocode && { promocode: appliedPromocode }),
       deliveryAddress,
@@ -202,17 +207,8 @@ const createOrder = async (req, res) => {
         customerAvatar: customer.avatar
       });
 
-      // Notify customer about order status (pending)
-      await EnhancedNotificationService.sendOrderStatusNotification({
-        userId: customer._id.toString(),
-        orderId: order._id.toString(),
-        status: 'pending',
-        chefName: chef.fullName,
-        orderDetails: {
-          total: finalTotal.toFixed(2),
-          itemCount: validatedItems.length
-        }
-      });
+      // Customer does NOT get notified here — they just placed the order
+      // They will be notified when the chef accepts/rejects
 
       console.log('Order notifications sent successfully');
     } catch (notificationError) {

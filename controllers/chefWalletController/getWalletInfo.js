@@ -1,5 +1,5 @@
 const ChefWallet = require('../../models/chefWallet');
-const { CHEF_COMMISSION_PERCENTAGE } = require('../../config/feeConfig');
+const { CHEF_ORDER_FEE } = require('../../config/feeConfig');
 
 const getWalletInfo = async (req, res) => {
   try {
@@ -13,11 +13,11 @@ const getWalletInfo = async (req, res) => {
     if (!wallet) {
       wallet = new ChefWallet({
         chef: chefId,
-        balance: 500, // Initial balance from platform
+        balance: 200, // Initial welcome credit
         transactions: [{
           type: 'initial_bonus',
-          amount: 500,
-          description: 'Welcome bonus from platform',
+          amount: 200,
+          description: 'Welcome credit from platform',
           timestamp: new Date()
         }]
       });
@@ -29,11 +29,11 @@ const getWalletInfo = async (req, res) => {
       if (!hasInitialBonus) {
         wallet.transactions.push({
           type: 'initial_bonus',
-          amount: 500,
-          description: 'Welcome bonus from platform',
+          amount: 200,
+          description: 'Welcome credit from platform',
           timestamp: new Date()
         });
-        wallet.balance += 500;
+        wallet.balance += 200;
         await wallet.save();
       }
     }
@@ -61,7 +61,7 @@ const getWalletInfo = async (req, res) => {
         currentBalance: wallet.balance,
         totalServiceFees,
         totalPayments,
-        commissionPercentage: CHEF_COMMISSION_PERCENTAGE * 100,
+        orderFee: CHEF_ORDER_FEE,
         isPaymentRequired: wallet.isPaymentRequired,
         paymentDueAmount: wallet.paymentDueAmount,
         lastPaymentDate: wallet.lastPaymentDate

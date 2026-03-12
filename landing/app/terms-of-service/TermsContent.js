@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Nav, Footer } from '../components/SharedComponents';
 
-const getTermsSections = (commissionPercentage) => ({
+const getTermsSections = (orderFee) => ({
     ar: [
         {
             title: '١. مقدمة',
@@ -22,8 +22,8 @@ const getTermsSections = (commissionPercentage) => ({
             text: 'عند تقديم طلب عبر FeedYum، فإنك تدخل في اتفاقية مباشرة مع المطعم أو الطباخ. الأسعار المعروضة يتم تحديدها من قبل المطعم أو الطباخ وقد تتغير دون إشعار مسبق. يتم الدفع عند الاستلام (كاش) فقط. FeedYum غير مسؤولة عن أي أخطاء في الأسعار من قبل المطعم.',
         },
         {
-            title: '٥. عمولة المنصة',
-            text: `تحصّل FeedYum عمولة بنسبة ${commissionPercentage}٪ من إجمالي كل طلب مؤكد، ويتم خصمها تلقائياً من محفظة المطعم أو الطباخ. هذه العمولة مقابل استخدام المنصة وخدمات التوصيل بالعملاء.`,
+            title: '٥. رسوم المنصة',
+            text: `تحصّل FeedYum رسوم منصة ثابتة ${orderFee} ج.م من كل طلب مؤكد، ويتم خصمها تلقائياً من محفظة المطعم أو الطباخ. بالإضافة إلى ذلك، يتم إضافة رسوم خدمة على الطلب يتحملها العميل مقابل استخدام المنصة.`,
         },
         {
             title: '٦. الإلغاء والاسترداد',
@@ -80,8 +80,8 @@ const getTermsSections = (commissionPercentage) => ({
             text: 'When placing an order through FeedYum, you enter into a direct agreement with the restaurant or chef. Prices displayed are set by the restaurant or chef and may change without prior notice. Payment is made upon delivery (cash on delivery) only. FeedYum is not responsible for any pricing errors by the restaurant.',
         },
         {
-            title: '5. Platform Commission',
-            text: `FeedYum charges a ${commissionPercentage}% commission on the subtotal of each confirmed order, automatically deducted from the restaurant's or chef's wallet. This commission is in exchange for using the platform and customer connection services.`,
+            title: '5. Platform Fees',
+            text: `FeedYum charges a fixed ${orderFee} EGP platform fee per confirmed order, automatically deducted from the restaurant's or chef's wallet. Additionally, a service fee is added to each order and paid by the customer in exchange for using the platform.`,
         },
         {
             title: '6. Cancellation and Refunds',
@@ -122,10 +122,10 @@ const getTermsSections = (commissionPercentage) => ({
     ],
 });
 
-export default function TermsOfServiceContent({ commissionPercentage }) {
+export default function TermsOfServiceContent({ orderFee }) {
     const [lang, setLang] = useState('ar');
     const isAr = lang === 'ar';
-    const termsSections = getTermsSections(commissionPercentage);
+    const termsSections = getTermsSections(orderFee);
     const sections = isAr ? termsSections.ar : termsSections.en;
 
     return (

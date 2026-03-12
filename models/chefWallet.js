@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { CHEF_ORDER_FEE } = require("../config/feeConfig");
 
 const ChefWalletSchema = new mongoose.Schema({
   chef: {
@@ -46,19 +47,19 @@ const ChefWalletSchema = new mongoose.Schema({
   },
 });
 
-// Method to add service fee transaction
-ChefWalletSchema.methods.addServiceFee = function (orderId, orderAmount) {
-  const serviceFeeAmount = orderAmount * 0.05; // 5% service fee
+// Method to deduct flat platform order fee from chef wallet
+ChefWalletSchema.methods.addServiceFee = function (orderId) {
+  const feeAmount = CHEF_ORDER_FEE; // Flat fee per order
 
   this.transactions.push({
     type: 'service_fee',
-    amount: -serviceFeeAmount, // Negative because it's deducted
+    amount: -feeAmount, // Negative because it's deducted
     orderId: orderId,
-    description: `Service fee (5%) for order ${orderId}`,
+    description: `Platform order fee (${feeAmount} EGP) for order ${orderId}`,
     timestamp: new Date()
   });
 
-  this.balance -= serviceFeeAmount;
+  this.balance -= feeAmount;
 
   // Check if payment is required (balance < -2000)
   if (this.balance < -2000) {
@@ -90,19 +91,19 @@ ChefWalletSchema.methods.processPayment = function (amount, description = 'Payme
   return this.save();
 };
 
-// Method to refund service fee when order is cancelled by user
-ChefWalletSchema.methods.refundServiceFee = function (orderId, orderAmount) {
-  const serviceFeeAmount = orderAmount * 0.05; // 5% service fee to refund
+// Method to refund platform order fee when order is cancelled by user
+ChefWalletSchema.methods.refundServiceFee = function (orderId) {
+  const feeAmount = CHEF_ORDER_FEE; // Flat fee to refund
 
   this.transactions.push({
     type: 'refund',
-    amount: serviceFeeAmount, // Positive because it's being returned
+    amount: feeAmount, // Positive because it's being returned
     orderId: orderId,
-    description: `Service fee refund for cancelled order ${orderId}`,
+    description: `Platform fee refund (${feeAmount} EGP) for cancelled order ${orderId}`,
     timestamp: new Date()
   });
 
-  this.balance += serviceFeeAmount;
+  this.balance += feeAmount;
 
   // Reset payment requirement if balance is above -2000
   if (this.balance >= -2000) {

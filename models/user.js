@@ -55,7 +55,8 @@ const UserSchema = new Schema({
     currencySymbol: { type: String }, // Currency symbol for display
     isCountryLocked: { type: Boolean, default: false }, // Once set, cannot be changed
     totalBranches: { type: Number, default: 0 }, // Count of active branches
-    hasBranches: { type: Boolean, default: false } // Whether chef has any branches
+    hasBranches: { type: Boolean, default: false }, // Whether chef has any branches
+    requireCustomerConfirmation: { type: Boolean, default: true }, // Require customer to confirm after chef accepts
   },
 
   // Enhanced location data (keeping for backward compatibility)
@@ -72,6 +73,9 @@ const UserSchema = new Schema({
   // Semantic search embedding - excluded by default for performance
   embedding: { type: [Number], default: null, select: false },
   embeddingGenerated: { type: Date, default: null, select: false },
+
+  // Chat availability (chefs can disable to pause incoming messages)
+  chatEnabled: { type: Boolean, default: true },
 
   // Password reset fields
   resetPasswordToken: { type: String, select: false },

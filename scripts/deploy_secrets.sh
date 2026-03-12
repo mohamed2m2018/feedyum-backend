@@ -3,7 +3,7 @@
 # Configuration
 SERVICE_NAME="makeit-be"
 REGION="europe-west1"
-PROJECT_ID="inseperable-73edb"
+PROJECT_ID="gen-lang-client-0254164349"
 ENV_FILE=".env"
 
 # Check if .env exists

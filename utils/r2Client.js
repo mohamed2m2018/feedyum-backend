@@ -50,10 +50,38 @@ const uploadToR2 = async ({ key, body, contentType }) => {
     };
 };
 
+/**
+ * Delete a file from R2 by its public URL or key
+ * @param {string} urlOrKey - Either a full CDN URL (https://cdn.feedyum.com/path/file.ext) or just the key (path/file.ext)
+ * @returns {Promise<boolean>} - True if deleted successfully
+ */
+const deleteFromR2 = async (urlOrKey) => {
+    if (!urlOrKey) return false;
+
+    try {
+        // Extract key from full URL if needed
+        const key = urlOrKey.startsWith('http')
+            ? urlOrKey.replace(`${R2_PUBLIC_URL}/`, '')
+            : urlOrKey;
+
+        await r2Client.deleteObject({
+            Bucket: R2_BUCKET,
+            Key: key,
+        }).promise();
+
+        console.log(`[R2] Deleted: ${key}`);
+        return true;
+    } catch (err) {
+        console.error(`[R2] Failed to delete ${urlOrKey}:`, err.message);
+        return false;
+    }
+};
+
 module.exports = {
     r2Client,
     R2_BUCKET,
     R2_PUBLIC_URL,
     getPublicUrl,
     uploadToR2,
+    deleteFromR2,
 };

@@ -56,6 +56,13 @@ const updateUser = (req, res) => {
       if(req.body.hasMenu){
         user.hasMenu = req.body.hasMenu;
       }
+      if(req.body.chatEnabled !== undefined){
+        user.chatEnabled = req.body.chatEnabled;
+      }
+      if(req.body.requireCustomerConfirmation !== undefined){
+        if (!user.chefSettings) user.chefSettings = {};
+        user.chefSettings.requireCustomerConfirmation = req.body.requireCustomerConfirmation;
+      }
 
       // Save the updated user document
       user

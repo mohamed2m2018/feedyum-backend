@@ -1,7 +1,7 @@
-import feeConfig from '../../../config/feeConfig';
+import feeConfig from '../../config/feeConfig';
 import TermsContent from './TermsContent';
 
 export default function TermsOfServicePage() {
-    const commissionPercentage = feeConfig.CHEF_COMMISSION_PERCENTAGE * 100;
-    return <TermsContent commissionPercentage={commissionPercentage} />;
+    const orderFee = feeConfig.CHEF_ORDER_FEE;
+    return <TermsContent orderFee={orderFee} />;
 }

@@ -17,7 +17,7 @@ const getOrdersByUser = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const orders = await Order.find({ user: userId })
-      .populate('chef', 'fullName username avatar type')
+      .populate('chef', 'fullName username avatar type chatEnabled')
       .populate({
         path: 'items.dish',
         select: 'name price image description'

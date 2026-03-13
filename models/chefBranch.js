@@ -65,6 +65,12 @@ const ChefBranchSchema = new mongoose.Schema({
   }],
   minimumOrderAmount: { type: Number, default: 0 },
 
+  // Scheduling / Order Mode
+  allowScheduledOrders: { type: Boolean, default: false }, // Legacy — use orderMode instead
+  orderMode: { type: String, enum: ['asap', 'scheduled', 'both'], default: 'asap' },
+  minLeadTime: { type: Number, default: 60 }, // Minimum lead time in minutes for scheduled orders
+  slotDuration: { type: Number, default: 60 }, // Duration of each delivery slot in minutes (30, 60, 120, 180, 360)
+
   // Metadata
   isPrimary: { type: Boolean, default: false }, // Primary branch for the chef
   created_at: { type: Date, default: Date.now },

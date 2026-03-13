@@ -81,6 +81,10 @@ const addBranch = async (req, res) => {
       operatingHours: req.body.operatingHours || [],
       timezone: req.body.timezone || getTimezoneFromCountry(req.body.country),
       manualOverride: req.body.manualOverride || 'auto',
+      allowScheduledOrders: req.body.orderMode ? req.body.orderMode !== 'asap' : (req.body.allowScheduledOrders || false),
+      orderMode: req.body.orderMode || (req.body.allowScheduledOrders ? 'both' : 'asap'),
+      minLeadTime: req.body.minLeadTime || 60,
+      slotDuration: req.body.slotDuration || 60,
     });
 
     // Save the branch

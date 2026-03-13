@@ -1,5 +1,6 @@
 const { findNearestBranch, DEFAULT_DELIVERY_DISTANCE_KM } = require('../../utils/deliveryValidation');
 const { calculateDeliveryFee, calculateServiceFee } = require('../../config/feeConfig');
+const User = require('../../models/user');
 
 /**
  * Check if a kitchen delivers to a given location and return calculated delivery fee
@@ -61,6 +62,10 @@ const checkDeliveryEligibility = async (req, res) => {
             ? calculateDeliveryFee(nearestDistance, nearestBranch.deliveryTiers, nearestBranch.deliveryFee)
             : 0;
 
+        // Check branch order mode
+        const allowScheduledOrders = nearestBranch?.allowScheduledOrders || false;
+        const orderMode = nearestBranch?.orderMode || (allowScheduledOrders ? 'both' : 'asap');
+
         return res.json({
             success: true,
             canDeliver,
@@ -70,6 +75,8 @@ const checkDeliveryEligibility = async (req, res) => {
             branchCount: allBranches.length,
             deliveryFee,
             serviceFee: subtotal ? calculateServiceFee(parseFloat(subtotal)) : null,
+            allowScheduledOrders,
+            orderMode,
         });
 
     } catch (error) {

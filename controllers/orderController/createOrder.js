@@ -1,6 +1,7 @@
 const Order = require('../../models/order');
 const User = require('../../models/user');
 const Dish = require('../../models/dish');
+const ChefBranch = require('../../models/chefBranch');
 const PromoCode = require('../../models/promocode');
 const EnhancedNotificationService = require('../../services/enhancedNotificationService');
 const { validateDeliveryDistance } = require('../../utils/deliveryValidation');
@@ -8,7 +9,7 @@ const { calculateDeliveryFee, calculateServiceFee, isServiceFeeWaiverCode } = re
 
 const createOrder = async (req, res) => {
   try {
-    const { chefId, items, deliveryAddress, notes, promocode, paymentMethod } = req.body;
+    const { chefId, items, deliveryAddress, notes, promocode, paymentMethod, scheduledFor, scheduledSlotLabel } = req.body;
     const userId = req.user._id;
 
     // Validate required fields
@@ -29,7 +30,7 @@ const createOrder = async (req, res) => {
     const selectedPaymentMethod = validPaymentMethods.includes(paymentMethod) ? paymentMethod : 'cod';
 
     // Verify chef exists and get chef details
-    const chef = await User.findById(chefId).select('fullName username type avatar');
+    const chef = await User.findById(chefId).select('fullName username type avatar chefSettings');
     if (!chef || chef.type !== 'chef') {
       return res.status(404).json({
         message: 'Chef not found'
@@ -136,17 +137,81 @@ const createOrder = async (req, res) => {
       }
     }
 
-    // Check if chef is currently open for orders
-    const { isChefOpen } = require('../../utils/branchAvailability');
-    const openStatus = await isChefOpen(chefId);
-    if (!openStatus.isOpen) {
-      return res.status(400).json({
-        message: 'This restaurant is currently closed',
-        messageAr: 'هذا المطعم مغلق حالياً',
-        errorCode: 'RESTAURANT_CLOSED',
-        nextOpenTime: openStatus.nextOpenTime,
-        nextOpenDay: openStatus.nextOpenDay,
-      });
+    // ─── Scheduling vs Instant Logic ──────────────────────────────────────────
+    let isScheduled = false;
+    let scheduledDate = null;
+
+    if (scheduledFor) {
+      // 1. Nearest branch must allow scheduling
+      const servingBranch = validationResult?.nearestBranch;
+      const fullServingBranch = servingBranch?.branchId
+        ? await ChefBranch.findById(servingBranch.branchId).select('allowScheduledOrders orderMode').lean()
+        : null;
+
+      const branchOrderMode = fullServingBranch?.orderMode || (fullServingBranch?.allowScheduledOrders ? 'both' : 'asap');
+      if (branchOrderMode === 'asap') {
+        return res.status(400).json({
+          message: 'This branch does not accept scheduled orders',
+          messageAr: 'هذا الفرع لا يقبل الطلبات المجدولة',
+          errorCode: 'SCHEDULING_NOT_ALLOWED',
+        });
+      }
+
+      // 2. Validate time bounds
+      scheduledDate = new Date(scheduledFor);
+      if (isNaN(scheduledDate.getTime())) {
+        return res.status(400).json({
+          message: 'Invalid scheduled date',
+          messageAr: 'تاريخ غير صالح',
+        });
+      }
+
+      const now = Date.now();
+      const MIN_ADVANCE_MS = 30 * 60 * 1000; // 30 min
+      const MAX_ADVANCE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+      if (scheduledDate.getTime() < now + MIN_ADVANCE_MS) {
+        return res.status(400).json({
+          message: 'Scheduled time must be at least 30 minutes from now',
+          messageAr: 'يجب أن يكون الموعد بعد 30 دقيقة على الأقل',
+          errorCode: 'TOO_SOON',
+        });
+      }
+
+      if (scheduledDate.getTime() > now + MAX_ADVANCE_MS) {
+        return res.status(400).json({
+          message: 'Cannot schedule more than 7 days ahead',
+          messageAr: 'لا يمكن الجدولة لأكثر من 7 أيام',
+          errorCode: 'TOO_FAR',
+        });
+      }
+
+      // 3. Validate slot is within chef's operating hours
+      const { validateScheduledSlot } = require('./getAvailableSlots');
+      const isValidSlot = await validateScheduledSlot(chefId, scheduledDate);
+      if (!isValidSlot) {
+        return res.status(400).json({
+          message: 'The selected time is outside the kitchen\'s working hours',
+          messageAr: 'الوقت المختار خارج ساعات عمل المطبخ',
+          errorCode: 'OUTSIDE_HOURS',
+        });
+      }
+
+      isScheduled = true;
+      // Skip isChefOpen() — chef might be closed NOW but open at scheduledFor
+    } else {
+      // INSTANT order: chef must be open right now
+      const { isChefOpen } = require('../../utils/branchAvailability');
+      const openStatus = await isChefOpen(chefId);
+      if (!openStatus.isOpen) {
+        return res.status(400).json({
+          message: 'This restaurant is currently closed',
+          messageAr: 'هذا المطعم مغلق حالياً',
+          errorCode: 'RESTAURANT_CLOSED',
+          nextOpenTime: openStatus.nextOpenTime,
+          nextOpenDay: openStatus.nextOpenDay,
+        });
+      }
     }
 
     // Calculate delivery fee from nearest branch tiers
@@ -196,8 +261,10 @@ const createOrder = async (req, res) => {
       specialInstructions: notes || '',
       paymentMethod: selectedPaymentMethod,
       status: 'pending',
+      orderType: isScheduled ? 'scheduled' : 'instant',
+      ...(isScheduled && { scheduledFor: scheduledDate, scheduledSlotLabel: scheduledSlotLabel || null }),
       created_at: new Date(),
-      lastUpdated: new Date(), // For unseen order badge tracking
+      lastUpdated: new Date(),
     });
 
     await order.save();
@@ -221,7 +288,7 @@ const createOrder = async (req, res) => {
 
     // Send notifications
     try {
-      // Notify chef about new order
+      // Notify chef about new order (instant or scheduled — chef needs to prepare)
       await EnhancedNotificationService.sendNewOrderNotification({
         chefId: chef._id.toString(),
         orderId: order._id.toString(),
@@ -250,7 +317,7 @@ const createOrder = async (req, res) => {
           orderId: order._id.toString(),
           order: order
         });
-        console.log(`[SOCKET] Emitted chefDashboardUpdate (newOrder) to chef: ${chefId}`);
+        console.log(`[SOCKET] Emitted chefDashboardUpdate (newOrder) to chef: ${chefId}${isScheduled ? ` [scheduled for ${scheduledDate.toISOString()}]` : ''}`);
       }
     } catch (socketError) {
       console.error('[SOCKET] Failed to emit chefDashboardUpdate:', socketError.message);

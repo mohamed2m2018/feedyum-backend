@@ -53,13 +53,11 @@ const getBadgeCounts = async (userId) => {
     }
 };
 
-// Export helper for use by other modules
-module.exports.getBadgeCounts = getBadgeCounts;
-
+// Export helper for use by other modules  — attached AFTER main export to avoid being overwritten
 // Store io instance for use by other modules
 let ioInstance = null;
 
-module.exports = (server) => {
+const initSocket = (server) => {
     const io = socketIo(server, {
         cors: {
             origin: "*", // Adjust this as needed for your environment
@@ -69,7 +67,6 @@ module.exports = (server) => {
 
     // Store io instance globally for access by routes
     ioInstance = io;
-    module.exports.getIO = () => ioInstance;
 
     io.on('connection', (socket) => {
         console.log('New client connected');
@@ -254,3 +251,7 @@ module.exports = (server) => {
         });
     });
 };
+
+module.exports = initSocket;
+module.exports.getBadgeCounts = getBadgeCounts;
+module.exports.getIO = () => ioInstance;

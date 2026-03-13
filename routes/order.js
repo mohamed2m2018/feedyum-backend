@@ -88,6 +88,13 @@ router.get('/unseen/count',
   orderController.getUnseenOrderCount
 );
 
+// @route  GET api/orders/available-slots/:chefId
+// @desc   Get available scheduling time slots for a chef
+// @access Public (no auth required for browsing)
+router.get('/available-slots/:chefId',
+  orderController.getAvailableSlots
+);
+
 // @route  GET api/orders/check-delivery/:chefId
 // @desc   Check if a kitchen delivers to a given location
 // @access Public (no auth required for menu browsing)

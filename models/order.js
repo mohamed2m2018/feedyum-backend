@@ -38,6 +38,9 @@ const OrderSchema = new mongoose.Schema({
     default: Date.now,
   },
   status: { type: String, default: "pending" },
+  orderType: { type: String, enum: ['instant', 'scheduled'], default: 'instant' },
+  scheduledFor: { type: Date, default: null }, // null = instant order
+  scheduledSlotLabel: { type: String, default: null }, // e.g. "10:00 AM – 12:00 PM"
   cancelledBy: { type: String, enum: ['user', 'chef', null], default: null },
   cancellationReason: { type: String, default: null },
   lastUpdated: { type: Date },
@@ -60,6 +63,7 @@ OrderSchema.index({ user: 1, created_at: -1 });
 OrderSchema.index({ chef: 1, created_at: -1 });
 OrderSchema.index({ status: 1 });
 OrderSchema.index({ created_at: -1 });
+OrderSchema.index({ scheduledFor: 1, status: 1 }); // For cron: activate scheduled orders
 
 const Order = mongoose.model("order", OrderSchema);
 

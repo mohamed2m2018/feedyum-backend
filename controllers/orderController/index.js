@@ -11,6 +11,7 @@ const confirmOrderByUser = require('./confirmOrderByUser');
 const getUnseenOrderCount = require('./getUnseenOrderCount');
 const markOrderSeen = require('./markOrderSeen');
 const checkDeliveryEligibility = require('./checkDeliveryEligibility');
+const getAvailableSlots = require('./getAvailableSlots');
 
 module.exports = {
   getOrderById,
@@ -26,4 +27,5 @@ module.exports = {
   getUnseenOrderCount,
   markOrderSeen,
   checkDeliveryEligibility,
+  getAvailableSlots,
 };

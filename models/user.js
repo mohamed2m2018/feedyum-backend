@@ -57,6 +57,7 @@ const UserSchema = new Schema({
     totalBranches: { type: Number, default: 0 }, // Count of active branches
     hasBranches: { type: Boolean, default: false }, // Whether chef has any branches
     requireCustomerConfirmation: { type: Boolean, default: true }, // Require customer to confirm after chef accepts
+    allowScheduledOrders: { type: Boolean, default: false }, // Chef must opt-in to accept scheduled orders
   },
 
   // Enhanced location data (keeping for backward compatibility)

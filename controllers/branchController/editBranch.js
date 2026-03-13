@@ -83,6 +83,13 @@ const editBranch = async (req, res) => {
     if (req.body.operatingHours) branch.operatingHours = req.body.operatingHours;
     if (req.body.timezone) branch.timezone = req.body.timezone;
     if (req.body.manualOverride !== undefined) branch.manualOverride = req.body.manualOverride;
+    if (req.body.allowScheduledOrders !== undefined) branch.allowScheduledOrders = req.body.allowScheduledOrders;
+    if (req.body.orderMode !== undefined) {
+      branch.orderMode = req.body.orderMode;
+      branch.allowScheduledOrders = req.body.orderMode !== 'asap'; // Keep legacy field in sync
+    }
+    if (req.body.minLeadTime !== undefined) branch.minLeadTime = req.body.minLeadTime;
+    if (req.body.slotDuration !== undefined) branch.slotDuration = req.body.slotDuration;
 
     // Handle active status change
     if (req.body.isActive !== undefined) {

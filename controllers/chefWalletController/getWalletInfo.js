@@ -1,5 +1,5 @@
 const ChefWallet = require('../../models/chefWallet');
-const { CHEF_ORDER_FEE } = require('../../config/feeConfig');
+const { CHEF_ORDER_FEE, INITIAL_WELCOME_CREDIT } = require('../../config/feeConfig');
 
 const getWalletInfo = async (req, res) => {
   try {
@@ -13,10 +13,10 @@ const getWalletInfo = async (req, res) => {
     if (!wallet) {
       wallet = new ChefWallet({
         chef: chefId,
-        balance: 200, // Initial welcome credit
+        balance: INITIAL_WELCOME_CREDIT,
         transactions: [{
           type: 'initial_bonus',
-          amount: 200,
+          amount: INITIAL_WELCOME_CREDIT,
           description: 'Welcome credit from platform',
           timestamp: new Date()
         }]
@@ -29,11 +29,11 @@ const getWalletInfo = async (req, res) => {
       if (!hasInitialBonus) {
         wallet.transactions.push({
           type: 'initial_bonus',
-          amount: 200,
+          amount: INITIAL_WELCOME_CREDIT,
           description: 'Welcome credit from platform',
           timestamp: new Date()
         });
-        wallet.balance += 200;
+        wallet.balance += INITIAL_WELCOME_CREDIT;
         await wallet.save();
       }
     }

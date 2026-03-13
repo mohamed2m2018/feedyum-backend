@@ -10,6 +10,9 @@
 // Flat fee deducted from chef's wallet per confirmed order
 const CHEF_ORDER_FEE = 4; // EGP
 
+// Initial welcome credit given to new chef wallets
+const INITIAL_WELCOME_CREDIT = 200; // EGP
+
 // Special promocode that waives the customer service fee entirely
 const SERVICE_FEE_WAIVER_CODE = process.env.SERVICE_FEE_WAIVER_CODE || '';
 
@@ -85,6 +88,7 @@ const calculateDeliveryFee = (distance, tiers, fallbackFee = 0) => {
 
 module.exports = {
     CHEF_ORDER_FEE,
+    INITIAL_WELCOME_CREDIT,
     SERVICE_FEE_TIERS,
     SERVICE_FEE_WAIVER_CODE,
     calculateServiceFee,

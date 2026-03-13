@@ -1,7 +1,7 @@
 const Order = require('../../models/order');
 const ChefWallet = require('../../models/chefWallet');
 const EnhancedNotificationService = require('../../services/enhancedNotificationService');
-const { CHEF_ORDER_FEE } = require('../../config/feeConfig');
+const { CHEF_ORDER_FEE, INITIAL_WELCOME_CREDIT } = require('../../config/feeConfig');
 
 /**
  * Confirm order by user (after chef accepts and sets awaiting_confirmation)
@@ -59,10 +59,10 @@ const confirmOrderByUser = async (req, res) => {
             if (!wallet) {
                 wallet = new ChefWallet({
                     chef: chefId,
-                    balance: 200, // Initial welcome credit
+                    balance: INITIAL_WELCOME_CREDIT,
                     transactions: [{
                         type: 'initial_bonus',
-                        amount: 200,
+                        amount: INITIAL_WELCOME_CREDIT,
                         description: 'Welcome credit from platform',
                         timestamp: new Date(),
                     }],

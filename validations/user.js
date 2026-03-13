@@ -25,7 +25,7 @@ const validateSignupUser = (data) => {
 
   }
 
-  if (!data.isGoogleSignIn){
+  if (!data.googleIdToken){
     data.password = !isEmpty(data.password) ? data.password : '';
 
     // password

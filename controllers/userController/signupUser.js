@@ -5,6 +5,13 @@ const jwt = require('jsonwebtoken');
 const keys = require('../../config/keys');
 const embeddingService = require('../../services/embeddingService');
 const { cleanResponseData } = require('../../utils/embeddingUtils');
+const { OAuth2Client } = require('google-auth-library');
+
+// Google OAuth2 client for ID token verification
+// GOOGLE_WEB_CLIENT_ID: from Google Cloud Console > APIs & Services > Credentials > OAuth 2.0 Client IDs > "Web client"
+// Must match the webClientId in the mobile app's GoogleSignin.configure()
+const GOOGLE_WEB_CLIENT_ID = process.env.GOOGLE_WEB_CLIENT_ID;
+const googleClient = new OAuth2Client(GOOGLE_WEB_CLIENT_ID);
 
 // Models
 const User = mongoose.model('user');
@@ -12,12 +19,33 @@ const User = mongoose.model('user');
 // Validations
 const validateUser = require('../../validations/user');
 
-const signupUser = (req, res) => {
+const signupUser = async (req, res) => {
   // Validate
   let { errors, isValid } = validateUser(req.body);
 
   if (!isValid) {
     return res.status(400).json(errors);
+  }
+
+  const googleIdToken = req.body.googleIdToken;
+  let isGoogleVerified = false;
+
+  // If Google signup, verify the ID token first
+  if (googleIdToken) {
+    try {
+      const ticket = await googleClient.verifyIdToken({
+        idToken: googleIdToken,
+        audience: GOOGLE_WEB_CLIENT_ID,
+      });
+      const payload = ticket.getPayload();
+      if (payload.email !== req.body.email) {
+        return res.status(401).json({ error: 'Google token email mismatch' });
+      }
+      isGoogleVerified = true;
+    } catch (error) {
+      console.error('[signupUser] Google token verification failed:', error.message);
+      return res.status(401).json({ error: 'Invalid Google authentication token' });
+    }
   }
 
   // Check if there is a user with the same email
@@ -41,7 +69,7 @@ const signupUser = (req, res) => {
         postsNo: 0,
         likesNo: 0,
         avatar: req.body.avatar,
-        isGoogleUser: req.body.isGoogleSignIn,
+        isGoogleUser: isGoogleVerified,
         bio: req.body.bio,
         locations: req.body.locations
       });

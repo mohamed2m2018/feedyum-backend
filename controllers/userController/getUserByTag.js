@@ -6,6 +6,7 @@ const Tag = mongoose.model("tag");
 const Story = mongoose.model("story");
 const Category = mongoose.model("category");
 const Dish = mongoose.model("dish");
+const { getBlockedChefIds } = require('../../utils/getBlockedChefIds');
 
 // Helper function to calculate nearest location distance
 function getNearestLocation(targetLat, targetLong, locations) {
@@ -58,7 +59,7 @@ function deg2rad(degrees) {
 const getUserByTag = async (req, res) => {
   const { tag } = req.params;
   const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 5; // Assuming you want to fetch 5 users per page
+  const limit = Math.min(50, parseInt(req.query.limit) || 10);
   const { lat, long } = req.query;
   console.log(`[DISCOVER] getUserByTag - Tag: ${tag}, Coordinates: lat=${lat}, long=${long}`);
 
@@ -68,13 +69,17 @@ const getUserByTag = async (req, res) => {
     // Special case: "All" returns all chefs, no tag filtering
     const isAll = tag === 'All';
 
+    // Exclude blocked chefs (wallet grace period expired)
+    const blockedChefIds = await getBlockedChefIds();
+    const blockedFilter = blockedChefIds.length > 0 ? { _id: { $nin: blockedChefIds } } : {};
+
     let queryOptions;
     let countQuery;
 
     if (isAll) {
       // No tag/category lookup needed — query all chefs directly
-      queryOptions = { type: 'chef' };
-      countQuery = { type: 'chef' };
+      queryOptions = { type: 'chef', ...blockedFilter };
+      countQuery = { type: 'chef', ...blockedFilter };
     } else {
       // Fetch the tag and ensure it exists
       const fetchedTag = await Tag.findOne({ name: tag }).lean().exec();
@@ -90,8 +95,8 @@ const getUserByTag = async (req, res) => {
           .json({ success: false, error: "Category not found" });
       }
 
-      queryOptions = { tags: fetchedTag._id };
-      countQuery = { tags: fetchedTag._id };
+      queryOptions = { tags: fetchedTag._id, ...blockedFilter };
+      countQuery = { tags: fetchedTag._id, ...blockedFilter };
     }
 
     // Check if we have valid coordinates for location-based sorting
@@ -178,14 +183,26 @@ const getUserByTag = async (req, res) => {
       }
     }
 
-    // Fetch stories for each user that match the category and attach them to the user object
-    for (let user of users) {
-      const userStories = await Story.find({ author: user._id })
+    // BATCH fetch stories for ALL users in ONE query (N+1 fix)
+    const userIds = users.map(u => u._id);
+    if (userIds.length > 0) {
+      const allStories = await Story.find({ author: { $in: userIds } })
         .populate("dishes")
-        .populate("category", "name") // Assuming the category schema has a 'name' field
+        .populate("category", "name")
         .lean()
         .exec();
-      user.stories = userStories; // Attach stories to the user object
+
+      // Group stories by author for O(1) lookup
+      const storiesByUser = new Map();
+      allStories.forEach(story => {
+        const authorId = story.author.toString();
+        if (!storiesByUser.has(authorId)) storiesByUser.set(authorId, []);
+        storiesByUser.get(authorId).push(story);
+      });
+
+      users.forEach(user => {
+        user.stories = storiesByUser.get(user._id.toString()) || [];
+      });
     }
 
     const totalUsers = await User.countDocuments(countQuery);

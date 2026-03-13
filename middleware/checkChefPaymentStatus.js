@@ -13,12 +13,11 @@ const checkChefPaymentStatus = async (req, res, next) => {
         await wallet.save();
       }
 
-      // Check if payment is required (balance < -2000)
-      if (wallet.balance < -2000) {
-        wallet.isPaymentRequired = true;
-        wallet.paymentDueAmount = Math.abs(wallet.balance);
-        await wallet.save();
+      // Use the model's built-in logic: balance <= 0 + grace period expired
+      wallet._updatePaymentStatus();
+      await wallet.save();
 
+      if (wallet.isOrderBlocked()) {
         return res.status(402).json({
           success: false,
           paymentRequired: true,

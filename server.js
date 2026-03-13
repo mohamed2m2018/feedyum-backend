@@ -124,6 +124,9 @@ app.use(function (req, res, next) {
   next();
 });
 
+// App config (no auth - needed before login for force update check)
+app.use("/api/config", require("./routes/config"));
+
 // Optimized batch endpoint for Discover screen (HIGH PRIORITY)
 app.use("/api/discover", require("./routes/discover"));
 

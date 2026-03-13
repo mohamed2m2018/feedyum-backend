@@ -36,6 +36,17 @@ const createOrder = async (req, res) => {
       });
     }
 
+    // Check if chef's wallet requires payment (grace period expired)
+    const ChefWallet = require('../../models/chefWallet');
+    const chefWallet = await ChefWallet.findOne({ chef: chefId });
+    if (chefWallet && chefWallet.isOrderBlocked()) {
+      return res.status(400).json({
+        message: 'This restaurant is temporarily unavailable',
+        messageAr: 'هذا المطعم غير متاح مؤقتاً',
+        errorCode: 'CHEF_PAYMENT_REQUIRED',
+      });
+    }
+
     // Get customer details for notifications
     const customer = await User.findById(userId).select('fullName username avatar');
     if (!customer) {

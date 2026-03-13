@@ -9,6 +9,7 @@ const Dish = mongoose.model('dish');
 // Utils
 const { shuffleArray } = require('../../utils/storyFeedUtils');
 const { getNearestBranchBatch } = require('../../utils/getNearestBranch');
+const { getBlockedChefIds } = require('../../utils/getBlockedChefIds');
 
 const getFollowingStories = async (req, res) => {
   const { page = 1, limit = 10, userId, categoryIds } = req.query;
@@ -21,9 +22,16 @@ const getFollowingStories = async (req, res) => {
       "following_id"
     );
 
+    // Filter out blocked chefs from following list
+    const blockedChefIds = await getBlockedChefIds();
+    const blockedIdStrings = new Set(blockedChefIds.map(id => id.toString()));
+    const filteredFollowing = currentUserFollowing.filter(
+      f => !blockedIdStrings.has(f.following_id.toString())
+    );
+
     let params = {
       author: {
-        $in: currentUserFollowing.map((follow) => follow.following_id),
+        $in: filteredFollowing.map((follow) => follow.following_id),
       },
     };
 

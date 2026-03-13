@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { getBlockedChefIds } = require('../../utils/getBlockedChefIds');
 
 // Validations
 
@@ -18,8 +19,15 @@ async function getFollowing(req, res) {
       .skip((page - 1) * limit)
       .limit(limit);
 
+    // Filter out blocked users
+    const blockedChefIds = await getBlockedChefIds();
+    const blockedIdStrings = new Set(blockedChefIds.map(id => id.toString()));
+    const visibleFollowing = following.filter(
+      f => f.following_id && !blockedIdStrings.has(f.following_id._id.toString())
+    );
+
     const followingWithCurrentUserFollowed = await Promise.all(
-      following.map(async followedUser => {
+      visibleFollowing.map(async followedUser => {
         const currentUserFollowed = await Follow.exists({
           follower_id: currentUserId,
           following_id: followedUser.following_id._id,

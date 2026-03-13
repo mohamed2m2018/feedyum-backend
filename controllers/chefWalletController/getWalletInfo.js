@@ -1,5 +1,5 @@
 const ChefWallet = require('../../models/chefWallet');
-const { CHEF_ORDER_FEE, INITIAL_WELCOME_CREDIT } = require('../../config/feeConfig');
+const { CHEF_ORDER_FEE, INITIAL_WELCOME_CREDIT, GRACE_PERIOD_DAYS } = require('../../config/feeConfig');
 
 const getWalletInfo = async (req, res) => {
   try {
@@ -38,6 +38,10 @@ const getWalletInfo = async (req, res) => {
       }
     }
 
+    // Recalculate payment status
+    wallet._updatePaymentStatus();
+    await wallet.save();
+
     // Calculate summary statistics
     const totalServiceFees = wallet.transactions
       .filter(t => t.type === 'service_fee')
@@ -51,6 +55,16 @@ const getWalletInfo = async (req, res) => {
       .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
       .slice(0, 10);
 
+    // Grace period info
+    let isInGracePeriod = false;
+    let gracePeriodEndsAt = null;
+    if (wallet.gracePeriodStartDate && !wallet.isPaymentRequired) {
+      isInGracePeriod = true;
+      const endDate = new Date(wallet.gracePeriodStartDate);
+      endDate.setDate(endDate.getDate() + GRACE_PERIOD_DAYS);
+      gracePeriodEndsAt = endDate.toISOString();
+    }
+
     res.json({
       success: true,
       wallet: {
@@ -63,6 +77,10 @@ const getWalletInfo = async (req, res) => {
         totalPayments,
         orderFee: CHEF_ORDER_FEE,
         isPaymentRequired: wallet.isPaymentRequired,
+        isOrderBlocked: wallet.isOrderBlocked(),
+        isInGracePeriod,
+        gracePeriodEndsAt,
+        gracePeriodDays: GRACE_PERIOD_DAYS,
         paymentDueAmount: wallet.paymentDueAmount,
         lastPaymentDate: wallet.lastPaymentDate
       }

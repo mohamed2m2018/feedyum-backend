@@ -1,6 +1,7 @@
 const Dish = require('../../models/dish');
 const User = require('../../models/user');
 const mongoose = require('mongoose');
+const { getBlockedChefIds } = require('../../utils/getBlockedChefIds');
 
 const searchDishes = async (req, res) => {
   try {
@@ -14,7 +15,8 @@ const searchDishes = async (req, res) => {
       const limitNum = parseInt(limit);
       const skip = (pageNum - 1) * limitNum;
 
-      const query = { visible: { $ne: false } };
+      const blockedChefIds = await getBlockedChefIds();
+      const query = { visible: { $ne: false }, ...(blockedChefIds.length > 0 && { user_id: { $nin: blockedChefIds } }) };
       if (chefId) {
         query.user_id = mongoose.Types.ObjectId.isValid(chefId) ? new mongoose.Types.ObjectId(chefId) : chefId;
       }
@@ -64,8 +66,10 @@ const searchDishes = async (req, res) => {
     const skip = (pageNum - 1) * limitNum;
 
     // Create search query
+    const blockedChefIds = await getBlockedChefIds();
     const searchQuery = {
       visible: { $ne: false }, // Only visible dishes
+      ...(blockedChefIds.length > 0 && { user_id: { $nin: blockedChefIds } }),
       $or: [
         { name: { $regex: searchString, $options: 'i' } },
         { description: { $regex: searchString, $options: 'i' } },

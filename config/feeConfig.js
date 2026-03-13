@@ -13,6 +13,9 @@ const CHEF_ORDER_FEE = 4; // EGP
 // Initial welcome credit given to new chef wallets
 const INITIAL_WELCOME_CREDIT = 200; // EGP
 
+// Grace period (in days) after wallet balance hits 0 before orders are blocked
+const GRACE_PERIOD_DAYS = 2;
+
 // Special promocode that waives the customer service fee entirely
 const SERVICE_FEE_WAIVER_CODE = process.env.SERVICE_FEE_WAIVER_CODE || '';
 
@@ -89,6 +92,7 @@ const calculateDeliveryFee = (distance, tiers, fallbackFee = 0) => {
 module.exports = {
     CHEF_ORDER_FEE,
     INITIAL_WELCOME_CREDIT,
+    GRACE_PERIOD_DAYS,
     SERVICE_FEE_TIERS,
     SERVICE_FEE_WAIVER_CODE,
     calculateServiceFee,

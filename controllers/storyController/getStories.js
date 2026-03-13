@@ -15,6 +15,7 @@ const {
   FEED_EXPIRY
 } = require('../../utils/storyFeedUtils');
 const { getNearestBranchBatch } = require('../../utils/getNearestBranch');
+const { getBlockedChefIds } = require('../../utils/getBlockedChefIds');
 
 // Simple in-memory storage for pagination consistency (no external dependencies)
 const userFeeds = new Map();
@@ -159,6 +160,9 @@ async function generateNewFeed(userId, categoryIds, userLat, userLong, filters =
   const startTime = Date.now();
   console.log(`[FEED GEN] Starting optimized feed generation for user ${userId}`);
 
+  // Fetch blocked chef IDs to exclude from feed
+  const blockedChefIds = await getBlockedChefIds();
+
   // 1. Build Category Query
   let categoryQuery = {};
   if (categoryIds && categoryIds.length > 0) {
@@ -199,6 +203,13 @@ async function generateNewFeed(userId, categoryIds, userLat, userLong, filters =
   // Has orderable dishes filter
   if (filters.hasDishes) {
     extraFilters.dishes = { $exists: true, $not: { $size: 0 } };
+  }
+
+  // Add blocked chef exclusion
+  if (blockedChefIds.length > 0) {
+    extraFilters.author = extraFilters.author
+      ? { ...extraFilters.author, $nin: blockedChefIds }
+      : { $nin: blockedChefIds };
   }
 
   // 2. Fetch Candidates (Tiered)

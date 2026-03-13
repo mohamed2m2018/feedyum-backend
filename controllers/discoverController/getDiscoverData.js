@@ -3,6 +3,7 @@ const User = require('../../models/user');
 const Dish = require('../../models/dish');
 const Story = require('../../models/story');
 const { getNearestBranchBatch } = require('../../utils/getNearestBranch');
+const { getBlockedChefIds } = require('../../utils/getBlockedChefIds');
 
 // Redis cache for performance (silent - logs disabled)
 let redisClient = null;
@@ -70,20 +71,23 @@ const getDiscoverData = async (req, res) => {
       }
     }
 
+    // Fetch blocked chef IDs once (wallet grace period expired)
+    const blockedChefIds = await getBlockedChefIds();
+
     // Batch fetch all data in parallel using Promise.all
     // "All" has its own dedicated queries that don't depend on tags
     const [usersData, dishesData, allChefs, allDishes] = await Promise.all([
       // 1. Get users for tag-based categories in one aggregation
-      getUsersForAllCategories(categories, coordinates),
+      getUsersForAllCategories(categories, coordinates, blockedChefIds),
 
       // 2. Get dishes for tag-based categories in one aggregation  
-      getDishesForAllCategories(categories, coordinates),
+      getDishesForAllCategories(categories, coordinates, blockedChefIds),
 
       // 3. Get ALL chefs (no tag filter) — dedicated query for "All" tab
-      getAllChefs(coordinates),
+      getAllChefs(coordinates, blockedChefIds),
 
       // 4. Get ALL visible dishes (no category filter) — dedicated query for "All" tab
-      getAllDishes(coordinates)
+      getAllDishes(coordinates, blockedChefIds)
     ]);
 
     // Organize data by category
@@ -134,7 +138,7 @@ const getDiscoverData = async (req, res) => {
 };
 
 // Optimized aggregation to get users for tag-based categories at once
-async function getUsersForAllCategories(categories, coordinates) {
+async function getUsersForAllCategories(categories, coordinates, blockedChefIds = []) {
   try {
     // First, get the ObjectIds for all category names
     const Tag = require('../../models/tag');
@@ -159,7 +163,8 @@ async function getUsersForAllCategories(categories, coordinates) {
         $match: {
           tags: { $in: tagIds },
           type: 'chef',
-          date: { $gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) }
+          date: { $gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) },
+          ...(blockedChefIds.length > 0 && { _id: { $nin: blockedChefIds } })
         }
       },
 
@@ -310,7 +315,7 @@ async function getUsersForAllCategories(categories, coordinates) {
 }
 
 // Optimized aggregation to get dishes for tag-based categories at once
-async function getDishesForAllCategories(categories, coordinates) {
+async function getDishesForAllCategories(categories, coordinates, blockedChefIds = []) {
   try {
     const pipeline = [
       // Match dishes in our categories that are available
@@ -318,7 +323,8 @@ async function getDishesForAllCategories(categories, coordinates) {
         $match: {
           category: { $in: categories },
           visible: true,
-          created_at: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
+          created_at: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+          ...(blockedChefIds.length > 0 && { user_id: { $nin: blockedChefIds } })
         }
       },
 
@@ -425,14 +431,15 @@ async function getDishesForAllCategories(categories, coordinates) {
 // without tag or category filters, and filter server-side to only return
 // chefs that have content (stories OR dishes).
 
-async function getAllChefs(coordinates) {
+async function getAllChefs(coordinates, blockedChefIds = []) {
   try {
     // Step 1: Get all chefs with content (stories or dishes)
     const pipeline = [
       {
         $match: {
           type: 'chef',
-          date: { $gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) }
+          date: { $gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) },
+          ...(blockedChefIds.length > 0 && { _id: { $nin: blockedChefIds } })
         }
       },
 
@@ -560,14 +567,15 @@ async function getAllChefs(coordinates) {
   }
 }
 
-async function getAllDishes(coordinates) {
+async function getAllDishes(coordinates, blockedChefIds = []) {
   try {
     const pipeline = [
       // All visible dishes, no category filter
       {
         $match: {
           visible: true,
-          created_at: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
+          created_at: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+          ...(blockedChefIds.length > 0 && { user_id: { $nin: blockedChefIds } })
         }
       },
 

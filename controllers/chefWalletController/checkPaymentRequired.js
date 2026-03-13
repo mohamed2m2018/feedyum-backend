@@ -1,10 +1,10 @@
 const ChefWallet = require('../../models/chefWallet');
+const { GRACE_PERIOD_DAYS } = require('../../config/feeConfig');
 
 const checkPaymentRequired = async (req, res) => {
   try {
     const chefId = req.user._id;
 
-    // Find chef wallet
     let wallet = await ChefWallet.findOne({ chef: chefId });
     
     if (!wallet) {
@@ -12,25 +12,38 @@ const checkPaymentRequired = async (req, res) => {
       await wallet.save();
     }
 
-    const paymentRequired = wallet.balance < -2000;
-    const paymentDueAmount = paymentRequired ? Math.abs(wallet.balance) : 0;
+    // Recalculate payment status (in case of stale flags)
+    wallet._updatePaymentStatus();
+    await wallet.save();
 
-    // Update wallet if payment requirement status changed
-    if (wallet.isPaymentRequired !== paymentRequired) {
-      wallet.isPaymentRequired = paymentRequired;
-      wallet.paymentDueAmount = paymentDueAmount;
-      await wallet.save();
+    const paymentRequired = wallet.isPaymentRequired;
+    const paymentDueAmount = paymentRequired ? Math.abs(wallet.balance) : 0;
+    const isOrderBlocked = wallet.isOrderBlocked();
+
+    // Calculate grace period info
+    let isInGracePeriod = false;
+    let gracePeriodEndsAt = null;
+    if (wallet.gracePeriodStartDate && !paymentRequired) {
+      isInGracePeriod = true;
+      const endDate = new Date(wallet.gracePeriodStartDate);
+      endDate.setDate(endDate.getDate() + GRACE_PERIOD_DAYS);
+      gracePeriodEndsAt = endDate.toISOString();
     }
 
     res.json({
       success: true,
       paymentRequired,
+      isOrderBlocked,
+      isInGracePeriod,
+      gracePeriodEndsAt,
       currentBalance: wallet.balance,
       paymentDueAmount,
       balanceInPounds: Math.abs(wallet.balance),
       message: paymentRequired 
-        ? `Payment of £${paymentDueAmount.toFixed(2)} is required to continue receiving orders`
-        : 'No payment required at this time'
+        ? `Payment of ${paymentDueAmount.toFixed(2)} EGP is required to continue receiving orders`
+        : isInGracePeriod
+          ? `Your balance is 0. Top up before ${gracePeriodEndsAt} to avoid order blocking`
+          : 'No payment required at this time'
     });
 
   } catch (error) {

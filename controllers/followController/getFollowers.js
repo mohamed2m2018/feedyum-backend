@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { getBlockedChefIds } = require('../../utils/getBlockedChefIds');
 
 // Validations
 
@@ -12,6 +13,9 @@ async function getFollowers(req, res) {
     const page = parseInt(req.query.page) || 1; // Get the page number from the query parameters
     const limit = parseInt(req.query.limit) || 10; // Get the limit from the query parameters
 
+    // Get blocked chef IDs
+    const blockedChefIds = await getBlockedChefIds();
+    const blockedIdStrings = new Set(blockedChefIds.map(id => id.toString()));
 
     // Retrieve the followers of the user with pagination
     const followers = await Follow.find({ following_id: userId })
@@ -19,8 +23,13 @@ async function getFollowers(req, res) {
       .skip((page - 1) * limit)
       .limit(limit);
 
+    // Filter out blocked users
+    const visibleFollowers = followers.filter(
+      f => f.follower_id && !blockedIdStrings.has(f.follower_id._id.toString())
+    );
+
     const followersWithCurrentUserFollowed = await Promise.all(
-      followers.map(async follower => {
+      visibleFollowers.map(async follower => {
         const currentUserFollowed = await Follow.exists({
           follower_id: currentUserId,
           following_id: follower.follower_id._id,

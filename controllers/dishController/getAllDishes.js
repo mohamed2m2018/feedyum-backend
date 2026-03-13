@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Dish = require('../../models/dish');
 const User = require('../../models/user');
 const { cleanResponseData } = require('../../utils/embeddingUtils');
+const { getBlockedChefIds } = require('../../utils/getBlockedChefIds');
 
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -20,12 +21,17 @@ const getAllDishes = async (req, res) => {
     const limitNum = parseInt(limit);
     const skip = (pageNum - 1) * limitNum;
 
+    // Exclude blocked chefs
+    const blockedChefIds = await getBlockedChefIds();
+
     let dishes;
     let totalCount;
 
     if (hasLocation) {
       // Use aggregation to calculate distance BEFORE pagination
       const pipeline = [
+        // Filter out blocked chefs
+        ...(blockedChefIds.length > 0 ? [{ $match: { user_id: { $nin: blockedChefIds } } }] : []),
         // Lookup chef/user info
         {
           $lookup: {
@@ -138,7 +144,8 @@ const getAllDishes = async (req, res) => {
 
     } else {
       // No location - simple query
-      dishes = await Dish.find()
+      const baseFilter = blockedChefIds.length > 0 ? { user_id: { $nin: blockedChefIds } } : {};
+      dishes = await Dish.find(baseFilter)
         .populate('menu')
         .populate('user_id', 'fullName username avatar locations averageRating')
         .skip(skip)

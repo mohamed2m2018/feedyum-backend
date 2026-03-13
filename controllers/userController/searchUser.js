@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const User = mongoose.model("user");
 const Follow = mongoose.model("follow");
 const Menu = require("../../models/menu");
+const { getBlockedChefIds } = require('../../utils/getBlockedChefIds');
 
 var ObjectId = require("mongoose").Types.ObjectId;
 
@@ -47,9 +48,13 @@ const searchUser = async (req, res) => {
     const limitNum = parseInt(limit);
     const skip = (pageNum - 1) * limitNum;
 
+    // Exclude blocked chefs from search results
+    const blockedChefIds = await getBlockedChefIds();
+
     // Build match conditions
     const matchConditions = {
       type: { $ne: "guest" },
+      ...(blockedChefIds.length > 0 && { _id: { $nin: blockedChefIds } }),
       ...rest,
       ...parsedFilters,
     };

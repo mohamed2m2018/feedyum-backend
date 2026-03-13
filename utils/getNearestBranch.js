@@ -18,7 +18,7 @@ async function getNearestBranch(chefId, lat, long) {
   if (!chefId || isNaN(lat) || isNaN(long)) return undefined;
 
   const branches = await ChefBranch.find({ chef: chefId, isActive: true })
-    .select('location branchName addressDetails')
+    .select('location branchName addressDetails operatingHours timezone manualOverride')
     .lean();
 
   if (!branches || branches.length === 0) return undefined;
@@ -47,7 +47,7 @@ async function getNearestBranchBatch(chefIds, lat, long) {
     chef: { $in: chefIds },
     isActive: true
   })
-    .select('chef location branchName addressDetails')
+    .select('chef location branchName addressDetails operatingHours timezone manualOverride')
     .lean();
 
   // Group branches by chef ID

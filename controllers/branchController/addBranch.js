@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 // Models
 const ChefBranch = mongoose.model("chefBranch");
 const User = mongoose.model("user");
+const { getTimezoneFromCountry } = require('../../utils/countryTimezone');
 
 const addBranch = async (req, res) => {
   const errors = {};
@@ -77,7 +78,9 @@ const addBranch = async (req, res) => {
       deliveryFee: req.body.deliveryFee || 0,
       deliveryTiers: req.body.deliveryTiers || [],
       minimumOrderAmount: req.body.minimumOrderAmount || 0,
-      operatingHours: req.body.operatingHours || []
+      operatingHours: req.body.operatingHours || [],
+      timezone: req.body.timezone || getTimezoneFromCountry(req.body.country),
+      manualOverride: req.body.manualOverride || 'auto',
     });
 
     // Save the branch

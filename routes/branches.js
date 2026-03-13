@@ -8,7 +8,9 @@ const {
   getBranches,
   editBranch,
   deleteBranch,
-  getCoverageAreas
+  getCoverageAreas,
+  toggleBranchStatus,
+  getChefOpenStatus
 } = require('../controllers/branchController');
 
 // @route   POST /api/branches/add
@@ -35,5 +37,15 @@ router.put('/edit', passport.authenticate("jwt", { session: false }), editBranch
 // @desc    Delete a branch
 // @access  Private (Chef only, own branches)
 router.delete('/delete', passport.authenticate("jwt", { session: false }), deleteBranch);
+
+// @route   PUT /api/branches/toggle-status
+// @desc    Toggle branch open/close (manual override)
+// @access  Private (Chef only)
+router.put('/toggle-status', passport.authenticate("jwt", { session: false }), toggleBranchStatus);
+
+// @route   GET /api/branches/status/:chefId
+// @desc    Get open/closed status for a chef's branches
+// @access  Public
+router.get('/status/:chefId', getChefOpenStatus);
 
 module.exports = router; 

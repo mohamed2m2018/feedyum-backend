@@ -125,6 +125,19 @@ const createOrder = async (req, res) => {
       }
     }
 
+    // Check if chef is currently open for orders
+    const { isChefOpen } = require('../../utils/branchAvailability');
+    const openStatus = await isChefOpen(chefId);
+    if (!openStatus.isOpen) {
+      return res.status(400).json({
+        message: 'This restaurant is currently closed',
+        messageAr: 'هذا المطعم مغلق حالياً',
+        errorCode: 'RESTAURANT_CLOSED',
+        nextOpenTime: openStatus.nextOpenTime,
+        nextOpenDay: openStatus.nextOpenDay,
+      });
+    }
+
     // Calculate delivery fee from nearest branch tiers
     let deliveryFee = 0;
     if (validationResult && validationResult.nearestBranch) {

@@ -3,5 +3,7 @@ module.exports = {
   getBranches: require('./getBranches'),
   editBranch: require('./editBranch'),
   deleteBranch: require('./deleteBranch'),
-  getCoverageAreas: require('./getCoverageAreas')
+  getCoverageAreas: require('./getCoverageAreas'),
+  toggleBranchStatus: require('./toggleBranchStatus'),
+  getChefOpenStatus: require('./getChefOpenStatus'),
 }; 

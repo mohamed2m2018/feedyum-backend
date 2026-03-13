@@ -81,6 +81,8 @@ const editBranch = async (req, res) => {
     }
     if (req.body.minimumOrderAmount !== undefined) branch.minimumOrderAmount = req.body.minimumOrderAmount;
     if (req.body.operatingHours) branch.operatingHours = req.body.operatingHours;
+    if (req.body.timezone) branch.timezone = req.body.timezone;
+    if (req.body.manualOverride !== undefined) branch.manualOverride = req.body.manualOverride;
 
     // Handle active status change
     if (req.body.isActive !== undefined) {

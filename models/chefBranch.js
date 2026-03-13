@@ -45,6 +45,17 @@ const ChefBranchSchema = new mongoose.Schema({
     closeTime: { type: String }, // Format: "22:00"
   }],
 
+  // Timezone for this branch (IANA format, e.g. "Africa/Cairo")
+  timezone: { type: String, default: 'Africa/Cairo' },
+
+  // Manual override: 'auto' = follow operatingHours schedule,
+  // 'forceOpen' = always open, 'forceClosed' = always closed
+  manualOverride: {
+    type: String,
+    enum: ['auto', 'forceOpen', 'forceClosed'],
+    default: 'auto'
+  },
+
   // Delivery settings
   deliveryRadius: { type: Number, default: 10 }, // in kilometers
   deliveryFee: { type: Number, default: 0 }, // Fallback flat fee if no tiers configured

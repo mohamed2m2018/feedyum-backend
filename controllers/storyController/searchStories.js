@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { getBlockedChefIds } = require('../../utils/getBlockedChefIds');
 
 // Models
 const Story = mongoose.model("story");
@@ -38,7 +39,11 @@ const searchStories = async (req, res) => {
     const skip = (pageNum - 1) * limitNum;
 
     // Build match conditions
-    const matchConditions = { ...rest };
+    const blockedChefIds = await getBlockedChefIds();
+    const matchConditions = {
+      ...rest,
+      ...(blockedChefIds.length > 0 && { author: { $nin: blockedChefIds } }),
+    };
 
     // Text search
     if (searchString && searchString.trim() !== '') {

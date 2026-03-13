@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const ChefBranch = mongoose.model("chefBranch");
 const User = mongoose.model("user");
 const Dish = mongoose.model("dish");
+const { getBlockedChefIds } = require('../../utils/getBlockedChefIds');
 
 /**
  * Get available chefs based on client location
@@ -25,10 +26,15 @@ const getAvailableChefsByLocation = async (req, res) => {
     const limitNum = parseInt(limit);
     const skip = (pageNum - 1) * limitNum;
 
+    // Exclude blocked chefs
+    const blockedChefIds = await getBlockedChefIds();
+    const blockedFilter = blockedChefIds.length > 0 ? { chef: { $nin: blockedChefIds } } : {};
+
     // Find all active branches in the same city (available chefs)
     const availableBranches = await ChefBranch.find({
       'addressDetails.city': new RegExp(city, 'i'),
-      isActive: true
+      isActive: true,
+      ...blockedFilter
     }).populate('chef', 'fullName avatar bio type chefSettings')
       .sort({ isPrimary: -1 });
 
@@ -38,7 +44,8 @@ const getAvailableChefsByLocation = async (req, res) => {
       unavailableBranches = await ChefBranch.find({
         'addressDetails.country': new RegExp(country, 'i'),
         'addressDetails.city': { $not: new RegExp(city, 'i') },
-        isActive: true
+        isActive: true,
+        ...blockedFilter
       }).populate('chef', 'fullName avatar bio type chefSettings');
     }
 

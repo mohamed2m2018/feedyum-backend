@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const Dish = require("../../models/dish");
+const { getBlockedChefIds } = require('../../utils/getBlockedChefIds');
 
 // Helper function to calculate nearest location distance
 function getNearestLocation(targetLat, targetLong, locations) {
@@ -59,13 +60,18 @@ const getDishesByCategory = async (req, res) => {
       return res.status(400).json({ message: "Category is required" });
     }
 
+    // Exclude blocked chefs
+    const blockedChefIds = await getBlockedChefIds();
+
     // Build query based on whether this is "All" or a specific category
     const isAll = category === 'All';
+    const blockedFilter = blockedChefIds.length > 0 ? { user_id: { $nin: blockedChefIds } } : {};
     const matchQuery = isAll
-      ? { visible: { $ne: false } } // All: just visible dishes, no category filter
+      ? { visible: { $ne: false }, ...blockedFilter }
       : {
           $and: [
             { visible: { $ne: false } },
+            blockedFilter,
             {
               $or: [
                 { category: { $regex: new RegExp(category, "i") } },

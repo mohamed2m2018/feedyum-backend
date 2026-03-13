@@ -1,4 +1,5 @@
 const semanticSearchService = require('../../services/semanticSearchService');
+const { getBlockedChefIds } = require('../../utils/getBlockedChefIds');
 
 const semanticSearchStories = async (req, res) => {
   try {
@@ -73,12 +74,19 @@ const semanticSearchStories = async (req, res) => {
         return storyObj;
       });
       
-      console.log(`Empty search returned ${storiesWithoutEmbeddings.length} stories`);
+      // Filter out blocked chefs' stories
+      const blockedChefIds = await getBlockedChefIds();
+      const blockedIdStrings = new Set(blockedChefIds.map(id => id.toString()));
+      const filteredStories = storiesWithoutEmbeddings.filter(
+        s => !s.author || !blockedIdStrings.has((s.author._id || s.author).toString())
+      );
+      
+      console.log(`Empty search returned ${filteredStories.length} stories (${storiesWithoutEmbeddings.length - filteredStories.length} blocked)`);
       
       return res.status(200).json({
         success: true,
         data: {
-          stories: storiesWithoutEmbeddings,
+          stories: filteredStories,
           pagination: {
             currentPage: parseInt(page),
             totalPages: Math.ceil(searchResults.data.totalItems / limit),
@@ -150,12 +158,19 @@ const semanticSearchStories = async (req, res) => {
       return storyObj;
     });
 
-    console.log(`Semantic search found ${storiesWithoutEmbeddings.length} stories for query: "${searchString}"`);
+    // Filter out blocked chefs' stories
+    const blockedChefIds = await getBlockedChefIds();
+    const blockedIdStrings = new Set(blockedChefIds.map(id => id.toString()));
+    const filteredStories = storiesWithoutEmbeddings.filter(
+      s => !s.author || !blockedIdStrings.has((s.author._id || s.author).toString())
+    );
+
+    console.log(`Semantic search found ${filteredStories.length} stories for query: "${searchString}"`);
 
     return res.status(200).json({
         success: true,
         data: {
-            stories: storiesWithoutEmbeddings,
+            stories: filteredStories,
             pagination: {
                 currentPage: parseInt(page),
                 totalPages: Math.ceil(searchResults.data.totalItems / limit),

@@ -1,4 +1,5 @@
 const semanticSearchService = require('../../services/semanticSearchService');
+const { getBlockedChefIds } = require('../../utils/getBlockedChefIds');
 
 // Request timeout and concurrency control
 const SEARCH_TIMEOUT = 15000; // 15 seconds
@@ -61,6 +62,12 @@ const semanticSearchDishes = async (req, res) => {
           ...(chefId ? { user_id: chefId, chefId: chefId } : {})
         }
       };
+
+      // Exclude blocked chefs
+      const blockedChefIds = await getBlockedChefIds();
+      if (blockedChefIds.length > 0) {
+        options.filters.user_id = options.filters.user_id || { $nin: blockedChefIds };
+      }
       
       // Create promise for search operation
       const searchPromise = (async () => {
@@ -133,6 +140,12 @@ const semanticSearchDishes = async (req, res) => {
         ...(chefId ? { user_id: chefId, chefId: chefId } : {})
       }
     };
+
+    // Exclude blocked chefs
+    const blockedChefIds = await getBlockedChefIds();
+    if (blockedChefIds.length > 0 && !chefId) {
+      options.filters.user_id = { $nin: blockedChefIds };
+    }
 
     // Create promise for this search request
     const searchPromise = (async () => {

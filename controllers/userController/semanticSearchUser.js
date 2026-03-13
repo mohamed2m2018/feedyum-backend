@@ -1,6 +1,7 @@
 const semanticSearchService = require('../../services/semanticSearchService');
 const mongoose = require('mongoose');
 const Menu = require('../../models/menu');
+const { getBlockedChefIds } = require('../../utils/getBlockedChefIds');
 
 /**
  * Bulk lookup dish counts for chef users
@@ -98,12 +99,19 @@ const semanticSearchUser = async (req, res) => {
       // Attach dish counts for chef users
       const usersWithDishCounts = await attachDishCounts(usersWithoutEmbeddings);
 
-      console.log(`Empty search returned ${usersWithDishCounts.length} users`);
+      // Filter out blocked chefs
+      const blockedChefIds = await getBlockedChefIds();
+      const blockedIdStrings = new Set(blockedChefIds.map(id => id.toString()));
+      const filteredUsers = usersWithDishCounts.filter(
+        u => !blockedIdStrings.has((u._id || '').toString())
+      );
+
+      console.log(`Empty search returned ${filteredUsers.length} users`);
 
       return res.status(200).json({
         success: true,
         data: {
-          users: usersWithDishCounts,
+          users: filteredUsers,
           pagination: searchResults.data.pagination || {
             currentPage: parseInt(page),
             totalPages: 0,
@@ -165,13 +173,20 @@ const semanticSearchUser = async (req, res) => {
     // Attach dish counts for chef users
     const usersWithDishCounts = await attachDishCounts(usersWithoutEmbeddings);
 
-    console.log(`Semantic user search found ${usersWithDishCounts.length} users for query: "${searchString}" with filters:`, parsedFilters);
+    // Filter out blocked chefs
+    const blockedChefIds = await getBlockedChefIds();
+    const blockedIdStrings = new Set(blockedChefIds.map(id => id.toString()));
+    const filteredUsers = usersWithDishCounts.filter(
+      u => !blockedIdStrings.has((u._id || '').toString())
+    );
+
+    console.log(`Semantic user search found ${filteredUsers.length} users for query: "${searchString}" with filters:`, parsedFilters);
 
     return res.status(200).json({
       ...searchResults,
       data: {
         ...searchResults.data,
-        users: usersWithDishCounts
+        users: filteredUsers
       }
     });
 

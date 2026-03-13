@@ -1,6 +1,6 @@
 const multer = require("multer");
 const path = require("path");
-const { r2Client, R2_BUCKET, getPublicUrl } = require("../../utils/r2Client");
+const { uploadToR2 } = require("../../utils/r2Client");
 
 
 // Configure multer for file upload
@@ -96,34 +96,28 @@ const uploadImage = async (req, res) => {
         // Generate filename
         const imageFileName = `chat_images/${userId}/${timestamp}_${randomString}${extension}`;
 
-        // Upload to Cloudflare R2
-        const uploadParams = {
-          Bucket: R2_BUCKET,
-          Key: imageFileName,
-          Body: file.buffer,
-          ContentType: file.mimetype || "image/jpeg",
-        };
-
         console.log("Uploading image to R2:", {
-          bucket: R2_BUCKET,
           key: imageFileName,
           contentType: file.mimetype,
           size: file.size,
         });
 
-        await r2Client.putObject(uploadParams).promise();
-        const publicUrl = getPublicUrl(imageFileName);
+        const result = await uploadToR2({
+          key: imageFileName,
+          body: file.buffer,
+          contentType: file.mimetype || "image/jpeg",
+        });
 
         console.log("R2 upload successful:", {
-          url: publicUrl,
-          key: imageFileName,
+          url: result.url,
+          key: result.key,
         });
 
         // Return success response
         const responseData = {
           success: true,
-          url: publicUrl,
-          key: imageFileName,
+          url: result.url,
+          key: result.key,
           size: file.size,
           message: "Image uploaded successfully",
         };

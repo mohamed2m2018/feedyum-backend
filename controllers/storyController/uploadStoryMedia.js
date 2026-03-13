@@ -1,6 +1,6 @@
 const multer = require("multer");
 const path = require("path");
-const { r2Client, R2_BUCKET, getPublicUrl } = require("../../utils/r2Client");
+const { uploadToR2 } = require("../../utils/r2Client");
 
 // Configure multer for memory storage
 const storage = multer.memoryStorage();
@@ -54,35 +54,29 @@ const uploadStoryMedia = async (req, res) => {
             const mediaKey = `${folder}/${userId}/${timestamp}_${randomString}${extension}`;
 
             try {
-                // Upload to Cloudflare R2
-                const uploadParams = {
-                    Bucket: R2_BUCKET,
-                    Key: mediaKey,
-                    Body: file.buffer,
-                    ContentType: file.mimetype,
-                };
-
                 console.log("Uploading story media to R2:", {
-                    bucket: R2_BUCKET,
                     key: mediaKey,
                     contentType: file.mimetype,
                     size: file.size,
                     isVideo,
                 });
 
-                await r2Client.putObject(uploadParams).promise();
-                const publicUrl = getPublicUrl(mediaKey);
+                const result = await uploadToR2({
+                    key: mediaKey,
+                    body: file.buffer,
+                    contentType: file.mimetype,
+                });
 
                 console.log("R2 upload successful:", {
-                    url: publicUrl,
-                    key: mediaKey,
+                    url: result.url,
+                    key: result.key,
                 });
 
                 // Return success response
                 const responseData = {
                     success: true,
-                    url: publicUrl,
-                    key: mediaKey,
+                    url: result.url,
+                    key: result.key,
                     size: file.size,
                     isVideo,
                     message: isVideo ? "Video uploaded successfully" : "Image uploaded successfully",

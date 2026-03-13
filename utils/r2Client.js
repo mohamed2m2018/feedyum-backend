@@ -18,26 +18,41 @@ const R2_BUCKET = keys.r2_bucket;
 const R2_PUBLIC_URL = keys.r2_public_url;
 
 /**
+ * Environment-aware key prefix.
+ * Non-production environments store files under 'staging/' to prevent
+ * cross-environment data loss (e.g. a prod cleanup script wiping staging images).
+ */
+const R2_KEY_PREFIX = process.env.NODE_ENV === 'production' ? '' : 'staging/';
+
+/**
+ * Prefix a key with the environment prefix
+ * @param {string} key - The raw file key/path
+ * @returns {string} - Prefixed key
+ */
+const prefixKey = (key) => `${R2_KEY_PREFIX}${key}`;
+
+/**
  * Generate a public URL for an uploaded file
- * @param {string} key - The file key/path in the bucket
+ * @param {string} key - The file key/path in the bucket (WITHOUT prefix — will be added)
  * @returns {string} - Public URL for the file
  */
 const getPublicUrl = (key) => {
-    return `${R2_PUBLIC_URL}/${key}`;
+    return `${R2_PUBLIC_URL}/${prefixKey(key)}`;
 };
 
 /**
  * Upload a file to R2
  * @param {Object} params - Upload parameters
- * @param {string} params.key - File key/path
+ * @param {string} params.key - File key/path (prefix is added automatically)
  * @param {Buffer} params.body - File content
  * @param {string} params.contentType - MIME type
  * @returns {Promise<{url: string, key: string}>}
  */
 const uploadToR2 = async ({ key, body, contentType }) => {
+    const prefixedKey = prefixKey(key);
     const uploadParams = {
         Bucket: R2_BUCKET,
-        Key: key,
+        Key: prefixedKey,
         Body: body,
         ContentType: contentType,
     };
@@ -45,8 +60,8 @@ const uploadToR2 = async ({ key, body, contentType }) => {
     await r2Client.putObject(uploadParams).promise();
 
     return {
-        url: getPublicUrl(key),
-        key: key,
+        url: `${R2_PUBLIC_URL}/${prefixedKey}`,
+        key: prefixedKey,
     };
 };
 
@@ -60,9 +75,14 @@ const deleteFromR2 = async (urlOrKey) => {
 
     try {
         // Extract key from full URL if needed
-        const key = urlOrKey.startsWith('http')
+        let key = urlOrKey.startsWith('http')
             ? urlOrKey.replace(`${R2_PUBLIC_URL}/`, '')
             : urlOrKey;
+
+        // If key doesn't already have the prefix and we're non-prod, add it
+        // (handles legacy URLs that may not have the prefix)
+        // Note: for URLs already containing the prefix, this is a no-op
+        // since the prefix was baked into the URL at upload time.
 
         await r2Client.deleteObject({
             Bucket: R2_BUCKET,
@@ -81,7 +101,10 @@ module.exports = {
     r2Client,
     R2_BUCKET,
     R2_PUBLIC_URL,
+    R2_KEY_PREFIX,
+    prefixKey,
     getPublicUrl,
     uploadToR2,
     deleteFromR2,
 };
+

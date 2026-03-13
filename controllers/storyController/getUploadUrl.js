@@ -1,4 +1,4 @@
-const { r2Client, R2_BUCKET, getPublicUrl } = require("../../utils/r2Client");
+const { r2Client, R2_BUCKET, prefixKey, R2_PUBLIC_URL } = require("../../utils/r2Client");
 
 /**
  * Generate a presigned URL for direct upload to R2
@@ -24,8 +24,9 @@ const getUploadUrl = async (req, res) => {
             folder = 'story_images';
         }
 
-        // Generate unique key for the file
-        const key = `${folder}/${userId}/${timestamp}_${randomString}.${ext}`;
+        // Generate unique key for the file (with environment prefix)
+        const rawKey = `${folder}/${userId}/${timestamp}_${randomString}.${ext}`;
+        const key = prefixKey(rawKey);
 
         // Generate presigned URL for PUT operation
         const presignedUrl = await r2Client.getSignedUrl('putObject', {
@@ -36,7 +37,7 @@ const getUploadUrl = async (req, res) => {
         });
 
         // Generate the public URL that will be used after upload
-        const publicUrl = getPublicUrl(key);
+        const publicUrl = `${R2_PUBLIC_URL}/${key}`;
 
         console.log("Generated presigned URL:", {
             key,

@@ -194,20 +194,40 @@ function mergeOperatingHours(branches) {
  * Used by createOrder to validate scheduling.
  */
 async function validateScheduledSlot(chefId, scheduledDate) {
-  const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  const dayKey = dayNames[scheduledDate.getDay()];
-  const timeStr = `${String(scheduledDate.getHours()).padStart(2, '0')}:${String(scheduledDate.getMinutes()).padStart(2, '0')}`;
+  // CRITICAL: Operating hours are stored in the branch's local timezone.
+  // scheduledDate is a UTC Date object (parsed from ISO string).
+  // We must extract hour, minute, and day-of-week in each branch's timezone.
 
   const branches = await ChefBranch.find({ chef: chefId, isActive: true })
-    .select('operatingHours manualOverride')
+    .select('operatingHours manualOverride timezone')
     .lean();
 
   if (!branches.length) return false;
 
-  // Check if ANY branch is open at this day+time
+  // Check if ANY branch is open at this day+time (in the branch's own timezone)
   for (const branch of branches) {
     if (branch.manualOverride === 'forceClosed') continue;
     if (branch.manualOverride === 'forceOpen') return true;
+
+    const tz = branch.timezone || 'Africa/Cairo';
+
+    // Extract local hour, minute, and day in the branch's timezone
+    const localParts = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: false,
+    }).formatToParts(scheduledDate);
+
+    const localHour = parseInt(localParts.find(p => p.type === 'hour')?.value || '0', 10);
+    const localMinute = parseInt(localParts.find(p => p.type === 'minute')?.value || '0', 10);
+    const h = localHour === 24 ? 0 : localHour;
+    const timeStr = `${String(h).padStart(2, '0')}:${String(localMinute).padStart(2, '0')}`;
+
+    const dayKey = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'long' })
+      .format(scheduledDate).toLowerCase();
+
+    console.log(`[validateScheduledSlot] UTC: ${scheduledDate.toISOString()} → Branch TZ (${tz}): ${dayKey} ${timeStr}`);
 
     const hours = (branch.operatingHours || []).find(h => h.day === dayKey);
     if (hours && hours.isOpen && hours.openTime && hours.closeTime) {

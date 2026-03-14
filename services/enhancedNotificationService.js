@@ -166,8 +166,10 @@ class EnhancedNotificationService {
         notification.existing_android_channel_id = 'order_alarm_channel';
         notification.ios_sound = 'default';
         notification.android_sound = 'alarm_ringtone';
-        // Data payload for background handler
-        notification.data = { ...notification.data, alarmType: 'newOrder' };
+        // Data payload for background handler — only set alarmType if not already specified by caller
+        if (!notification.data.alarmType) {
+          notification.data.alarmType = 'newOrder';
+        }
       }
 
       // Add media if provided

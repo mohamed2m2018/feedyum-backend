@@ -45,6 +45,15 @@ const updateOrderStatus = async (req, res) => {
       });
     }
 
+    // CRITICAL: Block chef from confirming an order that awaits customer confirmation.
+    // Only the customer can confirm via PUT /orders/:id/confirm (confirmOrderByUser).
+    if (order.status === 'awaiting_confirmation' && status !== 'cancelled') {
+      return res.status(403).json({
+        message: 'This order is awaiting customer confirmation. Only the customer can confirm it.',
+        messageAr: 'هذا الطلب في انتظار تأكيد العميل. فقط العميل يمكنه التأكيد.',
+      });
+    }
+
     // When chef accepts the order:
     // - If requireCustomerConfirmation is enabled → redirect to 'awaiting_confirmation'
     // - If disabled → go straight to 'confirmed'

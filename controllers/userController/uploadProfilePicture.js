@@ -1,5 +1,5 @@
 const multer = require("multer");
-const { r2Client, R2_BUCKET, getPublicUrl } = require("../../utils/r2Client");
+const { r2Client, R2_BUCKET, getPublicUrl, prefixKey } = require("../../utils/r2Client");
 
 // Configure multer for file upload
 const storage = multer.memoryStorage();
@@ -101,7 +101,7 @@ const uploadProfilePicture = async (req, res) => {
                 // Upload to Cloudflare R2
                 const uploadParams = {
                     Bucket: R2_BUCKET,
-                    Key: imageFileName,
+                    Key: prefixKey(imageFileName),
                     Body: file.buffer,
                     ContentType: file.mimetype || "image/jpeg",
                 };

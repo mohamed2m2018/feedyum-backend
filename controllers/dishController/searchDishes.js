@@ -2,118 +2,160 @@ const Dish = require('../../models/dish');
 const User = require('../../models/user');
 const mongoose = require('mongoose');
 const { getBlockedChefIds } = require('../../utils/getBlockedChefIds');
+const { getDeliveryPipelineStages } = require('../../utils/deliveryAwareSorting');
 
+/**
+ * Search dishes with optional delivery-priority sorting.
+ * When lat/lng is provided, deliverable dishes appear first.
+ */
 const searchDishes = async (req, res) => {
   try {
-    const { searchString, page = 1, limit = 10, chefId } = req.query;
-    console.log('Traditional dish search called with:', { searchString, page, limit });
+    const { searchString, page = 1, limit = 10, chefId, lat, lng } = req.query;
+    console.log('Dish search called with:', { searchString, page, limit, lat, lng });
 
-    // If no search string, return all visible dishes
-    if (!searchString || searchString.trim() === '') {
-      console.log('No search string provided, returning all visible dishes');
-      const pageNum = parseInt(page);
-      const limitNum = parseInt(limit);
-      const skip = (pageNum - 1) * limitNum;
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+    const userLat = parseFloat(lat);
+    const userLng = parseFloat(lng);
+    const hasLocation = !isNaN(userLat) && !isNaN(userLng);
 
-      const blockedChefIds = await getBlockedChefIds();
-      const query = { visible: { $ne: false }, ...(blockedChefIds.length > 0 && { user_id: { $nin: blockedChefIds } }) };
-      if (chefId) {
-        query.user_id = mongoose.Types.ObjectId.isValid(chefId) ? new mongoose.Types.ObjectId(chefId) : chefId;
-      }
-      const totalDishes = await Dish.countDocuments(query);
-      const totalPages = Math.ceil(totalDishes / limitNum);
+    const blockedChefIds = await getBlockedChefIds();
 
-      const dishes = await Dish.find(query)
-        .populate('user_id', 'fullName avatar averageRating')
-        .sort({ averageRating: -1, createdAt: -1 })
-        .skip(skip)
-        .limit(limitNum)
-        .lean();
+    // Build the base match filter
+    const baseMatch = {
+      visible: { $ne: false },
+      ...(blockedChefIds.length > 0 && { user_id: { $nin: blockedChefIds } }),
+    };
+    if (chefId) {
+      baseMatch.user_id = mongoose.Types.ObjectId.isValid(chefId)
+        ? new mongoose.Types.ObjectId(chefId)
+        : chefId;
+    }
 
-      // Remove embeddings, normalize ratings, and add chef field
-      const dishesWithoutEmbeddings = dishes.map(dish => {
-        const { embedding, embeddingGenerated, ...dishWithoutEmbedding } = dish;
-        return {
-          ...dishWithoutEmbedding,
-          averageRating: dish.average_rating || 0,
-          chef: dish.user_id ? {
-            _id: dish.user_id._id,
-            fullName: dish.user_id.fullName,
-            avatar: dish.user_id.avatar,
-            averageRating: dish.user_id.averageRating || 0,
-          } : null,
-        };
-      });
+    // Build text search conditions if provided
+    let searchMatch = {};
+    if (searchString && searchString.trim() !== '') {
+      searchMatch = {
+        $or: [
+          { name: { $regex: searchString, $options: 'i' } },
+          { description: { $regex: searchString, $options: 'i' } },
+          { category: { $regex: searchString, $options: 'i' } },
+          { tags: { $in: [new RegExp(searchString, 'i')] } },
+          { 'dietaryInfo': { $in: [new RegExp(searchString, 'i')] } },
+        ],
+      };
+    }
 
-      console.log(`Traditional dishes search found ${dishesWithoutEmbeddings.length} dishes for query: "${searchString}"`);
+    // When location is available, use aggregation for delivery-aware sorting
+    if (hasLocation) {
+      const pipeline = [
+        { $match: { ...baseMatch, ...searchMatch } },
+        // Lookup chef info
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'user_id',
+            foreignField: '_id',
+            as: '_chef',
+          },
+        },
+        { $unwind: { path: '$_chef', preserveNullAndEmptyArrays: true } },
+
+        // Add delivery eligibility from branches
+        ...getDeliveryPipelineStages(userLat, userLng),
+
+        // Sort: deliverable first, then by rating
+        { $sort: { canDeliver: -1, average_rating: -1, created_at: -1 } },
+
+        // Facet for count + paginated data
+        {
+          $facet: {
+            metadata: [{ $count: 'total' }],
+            data: [
+              { $skip: skip },
+              { $limit: limitNum },
+              {
+                $project: {
+                  _id: { $toString: '$_id' },
+                  name: 1,
+                  description: 1,
+                  price: 1,
+                  image: 1,
+                  images: 1,
+                  category: 1,
+                  tags: 1,
+                  isAvailable: 1,
+                  menu: 1,
+                  user_id: { $toString: '$user_id' },
+                  canDeliver: 1,
+                  nearestBranchDistance: 1,
+                  averageRating: { $ifNull: ['$average_rating', 0] },
+                  chef: {
+                    _id: { $toString: '$_chef._id' },
+                    fullName: '$_chef.fullName',
+                    avatar: '$_chef.avatar',
+                    averageRating: { $ifNull: ['$_chef.averageRating', 0] },
+                  },
+                },
+              },
+            ],
+          },
+        },
+      ];
+
+      const result = await Dish.aggregate(pipeline);
+      const dishes = result[0]?.data || [];
+      const totalCount = result[0]?.metadata[0]?.total || 0;
+      const totalPages = Math.ceil(totalCount / limitNum);
+
+      console.log(`Dish search (delivery-aware) found ${dishes.length} dishes for query: "${searchString}"`);
 
       return res.status(200).json({
         success: true,
-        dishes: dishesWithoutEmbeddings,
-        pagination: {
-          currentPage: pageNum,
-          totalPages,
-          totalItems: totalDishes,
-          hasNextPage: pageNum < totalPages,
-          hasPrevPage: pageNum > 1,
+        data: {
+          dishes,
+          pagination: {
+            currentPage: pageNum,
+            totalPages,
+            totalItems: totalCount,
+            hasNextPage: pageNum < totalPages,
+            hasPrevPage: pageNum > 1,
+          },
         },
       });
     }
 
-    console.log(`Searching for dishes with term: "${searchString}"`);
-    const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
-    const skip = (pageNum - 1) * limitNum;
-
-    // Create search query
-    const blockedChefIds = await getBlockedChefIds();
-    const searchQuery = {
-      visible: { $ne: false }, // Only visible dishes
-      ...(blockedChefIds.length > 0 && { user_id: { $nin: blockedChefIds } }),
-      $or: [
-        { name: { $regex: searchString, $options: 'i' } },
-        { description: { $regex: searchString, $options: 'i' } },
-        { category: { $regex: searchString, $options: 'i' } },
-        { tags: { $in: [new RegExp(searchString, 'i')] } },
-        { 'dietaryInfo': { $in: [new RegExp(searchString, 'i')] } }
-      ]
-    };
-    if (chefId) {
-      searchQuery.user_id = mongoose.Types.ObjectId.isValid(chefId) ? new mongoose.Types.ObjectId(chefId) : chefId;
-    }
-
-    console.log('Dish search query:', JSON.stringify(searchQuery, null, 2));
-
-    // Get total count for pagination
-    const totalDishes = await Dish.countDocuments(searchQuery);
+    // No location — fallback to simple find (no delivery sorting possible)
+    const query = { ...baseMatch, ...searchMatch };
+    const totalDishes = await Dish.countDocuments(query);
     const totalPages = Math.ceil(totalDishes / limitNum);
 
-    console.log(`Found ${totalDishes} dishes matching search criteria`);
-
-    // Get dishes with pagination
-    const dishes = await Dish.find(searchQuery)
+    const dishes = await Dish.find(query)
       .populate('user_id', 'fullName avatar averageRating')
       .sort({ average_rating: -1, created_at: -1 })
       .skip(skip)
       .limit(limitNum)
       .lean();
 
-    // Format dishes with chef information, normalize ratings, and convert ObjectIds to strings
+    // Normalize format
     const formattedDishes = dishes.map(dish => ({
       ...dish,
       _id: dish._id.toString(),
       user_id: dish.user_id?._id?.toString() || dish.user_id,
       menu: dish.menu ? dish.menu.toString() : dish.menu,
       averageRating: dish.average_rating || 0,
-      chef: dish.user_id ? {
-        _id: dish.user_id._id?.toString() || dish.user_id._id,
-        fullName: dish.user_id.fullName,
-        avatar: dish.user_id.avatar,
-        averageRating: dish.user_id.averageRating || 0,
-      } : null
+      chef: dish.user_id
+        ? {
+            _id: dish.user_id._id?.toString() || dish.user_id._id,
+            fullName: dish.user_id.fullName,
+            avatar: dish.user_id.avatar,
+            averageRating: dish.user_id.averageRating || 0,
+          }
+        : null,
     }));
 
-    console.log(`Returning ${formattedDishes.length} dishes for page ${pageNum}`);
+    console.log(`Dish search found ${formattedDishes.length} dishes for query: "${searchString}"`);
 
     return res.status(200).json({
       success: true,
@@ -124,11 +166,10 @@ const searchDishes = async (req, res) => {
           totalPages,
           totalItems: totalDishes,
           hasNextPage: pageNum < totalPages,
-          hasPrevPage: pageNum > 1
-        }
-      }
+          hasPrevPage: pageNum > 1,
+        },
+      },
     });
-
   } catch (error) {
     console.error('Dish search error:', error);
     return res.status(500).json({
@@ -141,9 +182,9 @@ const searchDishes = async (req, res) => {
           totalPages: 0,
           totalItems: 0,
           hasNextPage: false,
-          hasPrevPage: false
-        }
-      }
+          hasPrevPage: false,
+        },
+      },
     });
   }
 };

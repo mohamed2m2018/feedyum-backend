@@ -3,12 +3,14 @@ const Dish = require('../../models/dish');
 const User = require('../../models/user');
 const { cleanResponseData } = require('../../utils/embeddingUtils');
 const { getBlockedChefIds } = require('../../utils/getBlockedChefIds');
+const { getDeliveryPipelineStages } = require('../../utils/deliveryAwareSorting');
 
 const ObjectId = mongoose.Types.ObjectId;
 
 /**
- * Get all dishes with proper distance-based pagination
- * Distance is calculated in MongoDB BEFORE pagination for correct results
+ * Get all dishes with delivery-priority sorting.
+ * Deliverable dishes appear first, then non-deliverable.
+ * Within each group, sorted by distance (nearest first).
  */
 const getAllDishes = async (req, res) => {
   try {
@@ -98,8 +100,12 @@ const getAllDishes = async (req, res) => {
           }
         },
         { $addFields: { distance: { $round: ["$distance", 1] } } },
-        // Sort by distance BEFORE pagination
-        { $sort: { distance: 1 } },
+
+        // Delivery eligibility from ChefBranch collection
+        ...getDeliveryPipelineStages(userLat, userLng),
+
+        // Sort: deliverable first, then by distance within each group
+        { $sort: { canDeliver: -1, distance: 1 } },
         // Facet for total count and paginated data
         {
           $facet: {
@@ -122,6 +128,8 @@ const getAllDishes = async (req, res) => {
                   user_id: { $toString: "$user_id" },
                   menu: 1,
                   distance: 1,
+                  canDeliver: 1,
+                  nearestBranchDistance: 1,
                   averageRating: { $ifNull: ["$average_rating", 0] },
                   chef: {
                     _id: { $toString: "$chef._id" },

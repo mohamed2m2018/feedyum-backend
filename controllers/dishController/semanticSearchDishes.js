@@ -1,5 +1,6 @@
 const semanticSearchService = require('../../services/semanticSearchService');
 const { getBlockedChefIds } = require('../../utils/getBlockedChefIds');
+const { postFetchDeliverySort } = require('../../utils/deliveryAwareSorting');
 
 // Request timeout and concurrency control
 const SEARCH_TIMEOUT = 15000; // 15 seconds
@@ -24,8 +25,14 @@ const semanticSearchDishes = async (req, res) => {
       cursor = null,
       limit = 10, 
       searchType = 'hybrid', // 'semantic', 'text', or 'hybrid'
-      chefId
+      chefId,
+      lat,
+      lng,
     } = req.query;
+
+    const userLat = parseFloat(lat);
+    const userLng = parseFloat(lng);
+    const hasLocation = !isNaN(userLat) && !isNaN(userLng);
 
     console.log('Semantic search dishes called with:', { 
       searchString, 
@@ -222,10 +229,15 @@ const semanticSearchDishes = async (req, res) => {
     }
 
     // Remove embedding from response to reduce size
-    const dishesWithoutEmbeddings = searchResults.data.dishes.map(dish => {
+    let dishesWithoutEmbeddings = searchResults.data.dishes.map(dish => {
       const { embedding, embeddingGenerated, ...dishWithoutEmbedding } = dish;
       return dishWithoutEmbedding;
     });
+
+    // Post-fetch delivery sort: deliverable first, preserving relevance within each group
+    if (hasLocation) {
+      dishesWithoutEmbeddings = await postFetchDeliverySort(dishesWithoutEmbeddings, userLat, userLng);
+    }
 
     const duration = Date.now() - startTime;
     console.log(`Semantic dishes search found ${dishesWithoutEmbeddings.length} dishes for query: "${searchString}" in ${duration}ms`);

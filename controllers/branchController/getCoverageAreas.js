@@ -1,5 +1,6 @@
 const axios = require('axios');
 const keys = require('../../config/keys');
+const { reverseGeocodeArea } = require('../../utils/reverseGeocodeArea');
 
 /**
  * Calculate points around a circle perimeter for coverage area detection
@@ -30,49 +31,6 @@ const calculatePerimeterPoints = (centerLat, centerLng, radiusKm, numPoints = 8)
     }
 
     return points;
-};
-
-/**
- * Reverse geocode a single point to get area/neighborhood name
- * @param {number} lat - Latitude
- * @param {number} lng - Longitude
- * @returns {Promise<string|null>} Area name or null
- */
-const reverseGeocodePoint = async (lat, lng) => {
-    try {
-        const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${keys.googleMapsApiKey}&language=ar,en`;
-
-        const response = await axios.get(url, { timeout: 5000 });
-
-        if (response.data.status === 'OK' && response.data.results.length > 0) {
-            const result = response.data.results[0];
-
-            // Extract area/neighborhood name
-            for (const component of result.address_components) {
-                const types = component.types;
-
-                // Priority: sublocality_level_1 > sublocality > neighborhood > locality
-                if (types.includes('sublocality_level_1') || types.includes('sublocality')) {
-                    return component.long_name;
-                }
-                if (types.includes('neighborhood')) {
-                    return component.long_name;
-                }
-            }
-
-            // Fallback to locality (city district)
-            for (const component of result.address_components) {
-                if (component.types.includes('locality') || component.types.includes('administrative_area_level_2')) {
-                    return component.long_name;
-                }
-            }
-        }
-
-        return null;
-    } catch (error) {
-        console.error(`Geocode error for point (${lat}, ${lng}):`, error.message);
-        return null;
-    }
 };
 
 /**
@@ -140,14 +98,21 @@ const getCoverageAreas = async (req, res) => {
         }
 
         // Reverse geocode all points in parallel
-        const areaPromises = allPoints.map(point => reverseGeocodePoint(point.lat, point.lng));
+        const areaPromises = allPoints.map(point => reverseGeocodeArea(point.lat, point.lng));
         const areaResults = await Promise.all(areaPromises);
 
-        // Extract unique, non-null area names
-        const uniqueAreas = [...new Set(areaResults.filter(area => area !== null))];
+        // Deduplicate by placeId (reliable) — keeps first occurrence's name
+        const seenPlaceIds = new Set();
+        const uniqueAreas = [];
+        for (const area of areaResults) {
+            if (area && area.placeId && !seenPlaceIds.has(area.placeId)) {
+                seenPlaceIds.add(area.placeId);
+                uniqueAreas.push({ name: area.name, placeId: area.placeId });
+            }
+        }
 
-        // Sort alphabetically
-        uniqueAreas.sort((a, b) => a.localeCompare(b, 'ar'));
+        // Sort alphabetically by name
+        uniqueAreas.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
 
         res.json({
             success: true,

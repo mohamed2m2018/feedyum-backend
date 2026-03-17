@@ -78,6 +78,7 @@ const addBranch = async (req, res) => {
       deliveryFee: req.body.deliveryFee || 0,
       deliveryTiers: req.body.deliveryTiers || [],
       minimumOrderAmount: req.body.minimumOrderAmount || 0,
+      excludedAreas: req.body.excludedAreas || [],
       operatingHours: req.body.operatingHours || [],
       timezone: req.body.timezone || getTimezoneFromCountry(req.body.country),
       manualOverride: req.body.manualOverride || 'auto',

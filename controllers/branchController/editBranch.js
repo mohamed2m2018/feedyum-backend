@@ -90,6 +90,10 @@ const editBranch = async (req, res) => {
     }
     if (req.body.minLeadTime !== undefined) branch.minLeadTime = req.body.minLeadTime;
     if (req.body.slotDuration !== undefined) branch.slotDuration = req.body.slotDuration;
+    if (req.body.excludedAreas !== undefined) {
+      branch.excludedAreas = req.body.excludedAreas;
+      branch.markModified('excludedAreas');
+    }
 
     // Handle active status change
     if (req.body.isActive !== undefined) {

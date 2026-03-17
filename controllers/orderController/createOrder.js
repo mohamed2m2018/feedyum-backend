@@ -128,11 +128,14 @@ const createOrder = async (req, res) => {
       if (!validationResult.canDeliver) {
         return res.status(400).json({
           message: validationResult.errorMessage,
+          messageAr: validationResult.errorMessageAr || '',
           error: validationResult.error,
+          errorCode: validationResult.error === 'excluded_area' ? 'EXCLUDED_AREA' : 'DELIVERY_DISTANCE',
           chefId,
           nearestDistance: validationResult.nearestDistance,
           maxDistance: validationResult.maxDistance,
-          nearestBranch: validationResult.nearestBranch?.branchName
+          nearestBranch: validationResult.nearestBranch?.branchName,
+          excludedAreaName: validationResult.excludedAreaName || null,
         });
       }
     }

@@ -162,6 +162,34 @@ const validateDeliveryDistance = async (chefId, deliveryAddress) => {
         };
     }
 
+    // Area exclusion check: distance is OK, but is the user's area excluded?
+    // Uses Google place_id for reliable, language-agnostic matching.
+    if (nearestBranch.excludedAreas && nearestBranch.excludedAreas.length > 0 && deliveryAddress.deliveryAreaPlaceId) {
+        const isExcluded = nearestBranch.excludedAreas.some(
+            excluded => excluded.placeId === deliveryAddress.deliveryAreaPlaceId
+        );
+        if (isExcluded) {
+            const excludedArea = nearestBranch.excludedAreas.find(
+                ex => ex.placeId === deliveryAddress.deliveryAreaPlaceId
+            );
+            return {
+                canDeliver: false,
+                nearestBranch: {
+                    branchId: nearestBranch._id,
+                    branchName: nearestBranch.branchName,
+                    deliveryRadius: branchDeliveryRadius
+                },
+                nearestDistance: Math.round(nearestDistance * 10) / 10,
+                error: 'excluded_area',
+                errorMessage: 'This kitchen does not deliver to your area',
+                errorMessageAr: 'هذا المطبخ لا يوصل لمنطقتك',
+                excludedAreaName: excludedArea?.name || '',
+                maxDistance: branchDeliveryRadius,
+                allBranches
+            };
+        }
+    }
+
     return {
         canDeliver: true,
         nearestBranch: {

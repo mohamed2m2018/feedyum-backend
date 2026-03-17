@@ -37,6 +37,14 @@ const AddressSchema = new Schema({
     },
     formattedAddress: { type: String, default: '' }, // Full formatted address
     isCurrentLocation: { type: Boolean, default: false },
+
+    // Reverse-geocoded area info — populated once when address is saved.
+    // Used for delivery area exclusion matching (via place_id).
+    deliveryArea: {
+      name: { type: String, default: '' },      // e.g. "El Marg"
+      placeId: { type: String, default: '' },    // Google place_id
+    },
+
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now }
 });

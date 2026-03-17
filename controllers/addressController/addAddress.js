@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { reverseGeocodeArea } = require('../../utils/reverseGeocodeArea');
 
 // Models
 const Address = mongoose.model("address");
@@ -83,6 +84,24 @@ const addAddress = async (req, res) => {
 
     const savedAddress = await address.save();
     console.log('Backend addAddress: Address saved successfully:', savedAddress._id);
+
+    // Fire-and-forget: reverse geocode to populate deliveryArea (name + placeId)
+    // Non-blocking — response returns immediately to the user
+    const lat = parseFloat(req.body.lat);
+    const lng = parseFloat(req.body.long);
+    if (!isNaN(lat) && !isNaN(lng)) {
+      reverseGeocodeArea(lat, lng)
+        .then(areaInfo => {
+          if (areaInfo && areaInfo.placeId) {
+            Address.findByIdAndUpdate(savedAddress._id, {
+              deliveryArea: { name: areaInfo.name, placeId: areaInfo.placeId }
+            }).catch(err => console.error('Failed to update deliveryArea:', err.message));
+            console.log(`[addAddress] deliveryArea set: ${areaInfo.name} (${areaInfo.placeId})`);
+          }
+        })
+        .catch(err => console.error('[addAddress] reverseGeocodeArea failed:', err.message));
+    }
+
     res.json({ address: savedAddress, success: true });
     
   } catch (err) {

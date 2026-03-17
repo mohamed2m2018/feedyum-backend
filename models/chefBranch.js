@@ -65,6 +65,14 @@ const ChefBranchSchema = new mongoose.Schema({
   }],
   minimumOrderAmount: { type: Number, default: 0 },
 
+  // Areas within the delivery radius that the chef chooses NOT to deliver to.
+  // Matched via Google place_id (language-agnostic, deterministic).
+  excludedAreas: [{
+    name: { type: String, required: true },      // Display name (e.g. "El Marg")
+    placeId: { type: String, required: true },    // Google place_id for reliable matching
+    _id: false,
+  }],
+
   // Scheduling / Order Mode
   allowScheduledOrders: { type: Boolean, default: false }, // Legacy — use orderMode instead
   orderMode: { type: String, enum: ['asap', 'scheduled', 'both'], default: 'asap' },

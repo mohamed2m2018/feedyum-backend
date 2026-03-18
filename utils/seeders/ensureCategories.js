@@ -42,12 +42,6 @@ const DEFAULT_CATEGORIES = [
   { name: 'Snacks', nameArabic: 'سناكس', description: 'Light snacks and appetizers', descriptionArabic: 'سناكس ومقبلات خفيفة', image: 'https://images.unsplash.com/photo-1621939514649-280e2ee25f60?w=200&h=200&fit=crop' },
   { name: 'Side Dishes', nameArabic: 'أطباق جانبية', description: 'Sides and accompaniments', descriptionArabic: 'أطباق جانبية ومرافقة', image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&h=200&fit=crop' },
   { name: 'Homemade', nameArabic: 'أكل بيتي', description: 'Homestyle cooking', descriptionArabic: 'طبخ بيتي', image: 'https://images.unsplash.com/photo-1466637574441-749b8f19452f?w=200&h=200&fit=crop' },
-  { name: 'Coupons', nameArabic: 'كوبونات', description: 'Special offers and coupons', descriptionArabic: 'عروض خاصة وكوبونات', image: 'https://images.unsplash.com/photo-1607083206968-13611e3d76db?w=200&h=200&fit=crop' },
-
-  // Legacy duplicates (some exist in DB with singular names)
-  { name: 'Dessert', nameArabic: 'حلويات', description: 'Sweet treats and desserts', descriptionArabic: 'حلويات ومقرمشات', image: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=200&h=200&fit=crop' },
-  { name: 'Main Course', nameArabic: 'طبق رئيسي', description: 'Main course dishes', descriptionArabic: 'الأطباق الرئيسية', image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=200&h=200&fit=crop' },
-  { name: 'Food', nameArabic: 'طعام', description: 'General food category', descriptionArabic: 'تصنيف طعام عام', image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=200&h=200&fit=crop' },
 ];
 
 async function ensureCategoriesSeeded() {

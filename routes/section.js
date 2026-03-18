@@ -27,4 +27,12 @@ router.get('/chef/:chefId',
   sectionController.getSectionsByChef
 );
 
+// @route  DELETE api/sections/:sectionId
+// @desc   Delete a section (only if not used by any dishes)
+// @access Private
+router.delete('/:sectionId',
+  passport.authenticate('jwt', { session: false }),
+  sectionController.deleteSection
+);
+
 module.exports = router; 

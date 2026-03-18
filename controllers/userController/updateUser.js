@@ -62,6 +62,58 @@ const updateUser = (req, res) => {
       if(req.body.requireCustomerConfirmation !== undefined){
         if (!user.chefSettings) user.chefSettings = {};
         user.chefSettings.requireCustomerConfirmation = req.body.requireCustomerConfirmation;
+        // Cascade: turning confirmation OFF disables deposit
+        if (req.body.requireCustomerConfirmation === false) {
+          user.chefSettings.requireDeposit = false;
+        }
+      }
+
+      // Deposit configuration
+      if (req.body.requireDeposit !== undefined) {
+        if (!user.chefSettings) user.chefSettings = {};
+        if (req.body.requireDeposit === true) {
+          // Validate instapayHandle exists (from request or already saved)
+          const instapay = req.body.instapayHandle?.trim() || user.chefSettings.instapayHandle;
+          if (!instapay) {
+            return res.status(400).json({
+              message: 'InstaPay number is required to enable deposit',
+              messageAr: 'رقم إنستاباي مطلوب لتفعيل العربون',
+            });
+          }
+          // Force confirmation ON
+          user.chefSettings.requireCustomerConfirmation = true;
+        }
+        user.chefSettings.requireDeposit = req.body.requireDeposit;
+      }
+      if (req.body.instapayHandle !== undefined) {
+        if (!user.chefSettings) user.chefSettings = {};
+        user.chefSettings.instapayHandle = req.body.instapayHandle.trim();
+      }
+      if (req.body.instapayType !== undefined) {
+        if (!user.chefSettings) user.chefSettings = {};
+        const validTypes = ['phone', 'handle'];
+        if (validTypes.includes(req.body.instapayType)) {
+          user.chefSettings.instapayType = req.body.instapayType;
+        }
+      }
+      if (req.body.depositType !== undefined) {
+        if (!user.chefSettings) user.chefSettings = {};
+        const validTypes = ['percentage', 'fixed'];
+        if (validTypes.includes(req.body.depositType)) {
+          user.chefSettings.depositType = req.body.depositType;
+        }
+      }
+      if (req.body.depositValue !== undefined) {
+        if (!user.chefSettings) user.chefSettings = {};
+        const val = Number(req.body.depositValue);
+        if (val > 0) {
+          // Clamp percentage to 1-100
+          if (user.chefSettings.depositType === 'percentage' || req.body.depositType === 'percentage') {
+            user.chefSettings.depositValue = Math.min(Math.max(val, 1), 100);
+          } else {
+            user.chefSettings.depositValue = val;
+          }
+        }
       }
 
       // Save the updated user document

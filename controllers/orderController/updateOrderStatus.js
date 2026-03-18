@@ -174,6 +174,10 @@ const updateOrderStatus = async (req, res) => {
             previousDeliveryFee: deliveryFeeOverridden ? previousDeliveryFee : undefined,
             totalPrice: order.totalPrice,
             chefName: order.chef.fullName,
+            // Deposit info for confirmation banner
+            depositRequired: order.depositRequired,
+            depositAmount: order.depositAmount,
+            depositInstapayHandle: order.depositInstapayHandle,
           });
         }
 

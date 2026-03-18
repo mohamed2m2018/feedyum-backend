@@ -250,6 +250,22 @@ const createOrder = async (req, res) => {
 
     const finalTotal = totalAmount + deliveryFee + serviceFee - discountAmount;
 
+    // Snapshot deposit settings from chef's configuration
+    let depositRequired = false;
+    let depositAmount = 0;
+    let depositInstapayHandle = '';
+    let depositInstapayType = 'phone';
+    if (chef.chefSettings?.requireDeposit && chef.chefSettings?.instapayHandle) {
+      depositRequired = true;
+      depositInstapayHandle = chef.chefSettings.instapayHandle;
+      depositInstapayType = chef.chefSettings.instapayType || 'phone';
+      if (chef.chefSettings.depositType === 'percentage') {
+        depositAmount = Number(((finalTotal * (chef.chefSettings.depositValue || 50)) / 100).toFixed(2));
+      } else {
+        depositAmount = Number((chef.chefSettings.depositValue || 0).toFixed(2));
+      }
+    }
+
     // Create the order
     const order = new Order({
       user: userId,
@@ -266,6 +282,10 @@ const createOrder = async (req, res) => {
       status: 'pending',
       orderType: isScheduled ? 'scheduled' : 'instant',
       ...(isScheduled && { scheduledFor: scheduledDate, scheduledSlotLabel: scheduledSlotLabel || null }),
+      depositRequired,
+      depositAmount,
+      depositInstapayHandle,
+      depositInstapayType,
       created_at: new Date(),
       lastUpdated: new Date(),
     });

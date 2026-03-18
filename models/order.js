@@ -56,6 +56,13 @@ const OrderSchema = new mongoose.Schema({
   userLastSeenAt: { type: Date, default: null },
   chefLastSeenAt: { type: Date, default: null },
   lastReminderSentAt: { type: Date, default: null },
+  // Deposit tracking (snapshot from chef settings at order creation)
+  depositRequired: { type: Boolean, default: false },
+  depositAmount: { type: Number, default: 0 },
+  depositInstapayHandle: { type: String, default: '' }, // Frozen chef InstaPay at order time
+  depositInstapayType: { type: String, enum: ['phone', 'handle'], default: 'phone' }, // Type of InstaPay identifier
+  depositConfirmedByChef: { type: Boolean, default: false },
+  depositConfirmedAt: { type: Date, default: null },
 });
 
 // Add indexes for better query performance

@@ -58,6 +58,11 @@ const UserSchema = new Schema({
     hasBranches: { type: Boolean, default: false }, // Whether chef has any branches
     requireCustomerConfirmation: { type: Boolean, default: true }, // Require customer to confirm after chef accepts
     allowScheduledOrders: { type: Boolean, default: false }, // Chef must opt-in to accept scheduled orders
+    requireDeposit: { type: Boolean, default: false }, // Chef opt-in to require deposit before confirmation
+    instapayHandle: { type: String, default: '' }, // Chef's InstaPay phone or IPA handle
+    instapayType: { type: String, enum: ['phone', 'handle'], default: 'phone' }, // Type of InstaPay identifier
+    depositType: { type: String, enum: ['percentage', 'fixed'], default: 'percentage' }, // Deposit calculation method
+    depositValue: { type: Number, default: 50 }, // Deposit amount (50% or 50 EGP depending on depositType)
   },
 
   // Enhanced location data (keeping for backward compatibility)

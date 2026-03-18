@@ -80,6 +80,14 @@ router.put('/:id/confirm',
   orderController.confirmOrderByUser
 );
 
+// @route  PUT api/orders/:id/confirm-deposit
+// @desc   Chef confirms deposit received for an order
+// @access Private
+router.put('/:id/confirm-deposit',
+  passport.authenticate('jwt', { session: false }),
+  orderController.confirmDepositReceived
+);
+
 // @route  GET api/orders/unseen/count
 // @desc   Get count of orders with unseen status changes
 // @access Private

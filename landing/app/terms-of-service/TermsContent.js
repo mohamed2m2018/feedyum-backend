@@ -26,39 +26,43 @@ const getTermsSections = (orderFee) => ({
             text: `تحصّل FeedYum رسوم منصة ثابتة ${orderFee} ج.م من كل طلب مؤكد، ويتم خصمها تلقائياً من محفظة المطعم أو الطباخ. بالإضافة إلى ذلك، يتم إضافة رسوم خدمة على الطلب يتحملها العميل مقابل استخدام المنصة.`,
         },
         {
-            title: '٦. الإلغاء والاسترداد',
+            title: '٦. العربون والمدفوعات المسبقة',
+            text: 'قد يطلب بعض الطباخين عربوناً مسبقاً عبر إنستاباي قبل تأكيد الطلب. يتم تحويل العربون مباشرة من العميل إلى الطباخ عبر إنستاباي — FeedYum لا تحتفظ بأي أموال ولا تتحكم في عملية التحويل. في حالة إلغاء الطباخ للطلب بعد استلام العربون، يلتزم الطباخ بإعادة العربون كاملاً للعميل. عدم الالتزام بالاسترداد يؤدي إلى تسجيل مخالفة على حساب الطباخ. عند تراكم ٣ مخالفات، يتم تعليق حساب الطباخ لمدة ٧ أيام. FeedYum تعمل كوسيط تقني فقط ولا تتحمل مسؤولية أي عربون لم يتم استرداده.',
+        },
+        {
+            title: '٧. الإلغاء والاسترداد',
             text: 'تخضع عمليات الإلغاء والاسترداد لسياسة الاسترداد والإلغاء الخاصة بنا المنشورة على الموقع. يمكن إلغاء الطلب مجانًا قبل تأكيد المطعم. بعد التأكيد، قد لا يكون الإلغاء ممكنًا. يرجى مراجعة سياسة الاسترداد والإلغاء للتفاصيل الكاملة.',
         },
         {
-            title: '٧. مسؤولية المطاعم والطباخين',
+            title: '٨. مسؤولية المطاعم والطباخين',
             text: 'المطاعم والطباخون المسجلون على المنصة هم المسؤولون عن جودة وسلامة الطعام المقدم، والامتثال لجميع القوانين واللوائح المحلية المتعلقة بتحضير وبيع الطعام، ودقة المعلومات المعروضة في قوائمهم بما في ذلك المكونات والمواد المسببة للحساسية.',
         },
         {
-            title: '٨. حدود المسؤولية',
+            title: '٩. حدود المسؤولية',
             text: 'FeedYum تعمل كوسيط تقني فقط. لا نتحمل أي مسؤولية عن جودة الطعام أو سلامته، أو تأخر التوصيل أو عدم إتمامه، أو أي خسائر مباشرة أو غير مباشرة ناتجة عن استخدام التطبيق، أو أي نزاعات بين العملاء والمطاعم أو الطباخين. نحن نبذل قصارى جهدنا لتوفير منصة موثوقة ولكن لا نقدم أي ضمانات بخصوص توفر الخدمة بشكل مستمر دون انقطاع.',
         },
         {
-            title: '٩. الملكية الفكرية',
+            title: '١٠. الملكية الفكرية',
             text: 'جميع المحتويات المتاحة على التطبيق والموقع، بما في ذلك العلامات التجارية والشعارات والتصميمات والنصوص والرسومات، هي ملكية حصرية لـ FeedYum أو مرخصيها. لا يجوز لك نسخ أو تعديل أو توزيع أو استخدام أي من هذه المحتويات دون إذن كتابي مسبق.',
         },
         {
-            title: '١٠. السلوك المحظور',
+            title: '١١. السلوك المحظور',
             text: 'يُحظر عليك استخدام التطبيق لأي أغراض غير قانونية أو غير مصرح بها. يشمل ذلك على سبيل المثال لا الحصر: إساءة استخدام التطبيق أو التلاعب بالنظام، أو انتحال شخصية مستخدم آخر، أو إنشاء حسابات متعددة بقصد الاحتيال، أو مضايقة المطاعم أو الطباخين أو المستخدمين الآخرين.',
         },
         {
-            title: '١١. إنهاء الحساب',
+            title: '١٢. إنهاء الحساب',
             text: 'يحق لـ FeedYum إنهاء أو تعليق حسابك في أي وقت ودون إشعار مسبق إذا انتهكت أي من هذه الشروط أو إذا رأينا أن ذلك ضروري لحماية المنصة أو المستخدمين الآخرين. يمكنك أيضًا حذف حسابك في أي وقت من خلال التطبيق.',
         },
         {
-            title: '١٢. التعديلات على الشروط',
+            title: '١٣. التعديلات على الشروط',
             text: 'تحتفظ FeedYum بالحق في تعديل هذه الشروط والأحكام في أي وقت. سنقوم بإخطارك بأي تغييرات جوهرية عبر التطبيق أو البريد الإلكتروني. استمرارك في استخدام التطبيق بعد نشر التعديلات يعني موافقتك على الشروط المحدثة.',
         },
         {
-            title: '١٣. القانون الواجب التطبيق',
+            title: '١٤. القانون الواجب التطبيق',
             text: 'تخضع هذه الشروط والأحكام لقوانين جمهورية مصر العربية وتفسر وفقًا لها. أي نزاع ينشأ عن أو يتعلق بهذه الشروط يخضع للولاية القضائية الحصرية للمحاكم المصرية المختصة.',
         },
         {
-            title: '١٤. التواصل معنا',
+            title: '١٥. التواصل معنا',
             text: 'إذا كان لديك أي أسئلة أو استفسارات بخصوص هذه الشروط والأحكام، يرجى التواصل معنا عبر البريد الإلكتروني support@feedyum.com أو عبر صفحة "تواصل معنا" على الموقع.',
         },
     ],
@@ -84,11 +88,15 @@ const getTermsSections = (orderFee) => ({
             text: `FeedYum charges a fixed ${orderFee} EGP platform fee per confirmed order, automatically deducted from the restaurant's or chef's wallet. Additionally, a service fee is added to each order and paid by the customer in exchange for using the platform.`,
         },
         {
-            title: '6. Cancellation and Refunds',
+            title: '6. Deposits and Advance Payments',
+            text: 'Some chefs may require an advance deposit via InstaPay before confirming an order. The deposit is transferred directly from the customer to the chef via InstaPay — FeedYum does not hold or control any funds. If the chef cancels an order after receiving a deposit, the chef is obligated to refund the full deposit to the customer. Failure to refund results in a strike on the chef\'s account. After accumulating 3 strikes, the chef\'s account is suspended for 7 days. FeedYum acts as a technology intermediary only and is not liable for any unrefunded deposits.',
+        },
+        {
+            title: '7. Cancellation and Refunds',
             text: 'Cancellations and refunds are subject to our Refund & Cancellation Policy published on our website. Orders can be cancelled for free before restaurant confirmation. After confirmation, cancellation may not be possible. Please refer to our Refund & Cancellation Policy for full details.',
         },
         {
-            title: '7. Responsibility of Restaurants and Chefs',
+            title: '8. Responsibility of Restaurants and Chefs',
             text: 'Restaurants and chefs registered on the platform are responsible for the quality and safety of food provided, compliance with all local laws and regulations relating to food preparation and sale, and the accuracy of information displayed in their menus including ingredients and allergens.',
         },
         {

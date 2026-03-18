@@ -115,6 +115,11 @@ const updateUser = (req, res) => {
           }
         }
       }
+      if (req.body.depositAgreementAccepted === true) {
+        if (!user.chefSettings) user.chefSettings = {};
+        user.chefSettings.depositAgreementAccepted = true;
+        user.chefSettings.depositAgreementDate = new Date();
+      }
 
       // Save the updated user document
       user

@@ -48,6 +48,23 @@ const createOrder = async (req, res) => {
       });
     }
 
+    // Check if chef is suspended (strike system)
+    if (chef.chefSettings?.isSuspended) {
+      if (chef.chefSettings.suspendedUntil && new Date() > chef.chefSettings.suspendedUntil) {
+        // Suspension expired — auto-clear
+        chef.chefSettings.isSuspended = false;
+        chef.chefSettings.strikes = 0;
+        chef.chefSettings.suspendedUntil = undefined;
+        await chef.save();
+      } else {
+        return res.status(403).json({
+          message: 'This restaurant is temporarily suspended due to policy violations',
+          messageAr: 'هذا المطعم معلّق مؤقتاً بسبب مخالفة سياسات المنصة',
+          errorCode: 'CHEF_SUSPENDED',
+        });
+      }
+    }
+
     // Get customer details for notifications
     const customer = await User.findById(userId).select('fullName username avatar');
     if (!customer) {

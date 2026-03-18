@@ -63,6 +63,13 @@ const UserSchema = new Schema({
     instapayType: { type: String, enum: ['phone', 'handle'], default: 'phone' }, // Type of InstaPay identifier
     depositType: { type: String, enum: ['percentage', 'fixed'], default: 'percentage' }, // Deposit calculation method
     depositValue: { type: Number, default: 50 }, // Deposit amount (50% or 50 EGP depending on depositType)
+    // Strike & suspension system
+    strikes: { type: Number, default: 0 }, // Cancellation strikes (deposit orders)
+    isSuspended: { type: Boolean, default: false }, // Account suspended
+    suspendedUntil: { type: Date }, // Suspension expiry
+    // Deposit agreement
+    depositAgreementAccepted: { type: Boolean, default: false }, // Chef accepted deposit terms
+    depositAgreementDate: { type: Date }, // When agreement was accepted
   },
 
   // Enhanced location data (keeping for backward compatibility)

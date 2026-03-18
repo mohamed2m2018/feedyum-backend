@@ -125,6 +125,28 @@ const updateOrderStatus = async (req, res) => {
       }
     }
 
+    // Strike system: penalize chef for cancelling deposit orders
+    if (actualStatus === 'cancelled' && order.depositRequired && ['awaiting_confirmation', 'confirmed', 'preparing'].includes(previousStatus)) {
+      try {
+        const chefUser = await User.findById(chefId);
+        if (chefUser) {
+          const newStrikes = (chefUser.chefSettings?.strikes || 0) + 1;
+          chefUser.chefSettings.strikes = newStrikes;
+          console.log(`[STRIKE] Chef ${chefId} received strike #${newStrikes} for cancelling deposit order ${order._id}`);
+
+          // Suspend after 3 strikes
+          if (newStrikes >= 3) {
+            chefUser.chefSettings.isSuspended = true;
+            chefUser.chefSettings.suspendedUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+            console.log(`[STRIKE] Chef ${chefId} SUSPENDED until ${chefUser.chefSettings.suspendedUntil}`);
+          }
+          await chefUser.save();
+        }
+      } catch (strikeError) {
+        console.error('[STRIKE] Failed to apply strike:', strikeError);
+      }
+    }
+
     // Send notification to customer about status change
     try {
       const notificationData = {

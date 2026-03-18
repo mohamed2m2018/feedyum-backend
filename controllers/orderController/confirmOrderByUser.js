@@ -69,11 +69,17 @@ const confirmOrderByUser = async (req, res) => {
         // Auto-create deposit proof message in order chat
         if (depositProofImage) {
             try {
+                const proofLabel = `📷 إثبات دفع العربون - Deposit Payment Proof - ${order.depositAmount?.toFixed(2) || '0'} EGP`;
+                const proofContent = JSON.stringify({
+                    type: 'image_with_text',
+                    image: depositProofImage,
+                    text: proofLabel,
+                });
                 const proofMessage = new Message({
                     sender: userId,
                     receiver: order.chef._id,
                     order: order._id,
-                    content: depositProofImage,
+                    content: proofContent,
                     messageType: 'image',
                     timestamp: new Date(),
                 });

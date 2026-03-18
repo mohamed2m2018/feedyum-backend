@@ -57,11 +57,11 @@ async function ensureCategoriesSeeded() {
 
   const count = await Category.countDocuments();
   if (count > 0) {
-    // Update ALL existing categories with nameArabic and image if missing
+    // Update ALL existing categories with nameArabic, descriptionArabic and image if missing
     for (const cat of DEFAULT_CATEGORIES) {
       await Category.updateOne(
         { name: cat.name },
-        { $set: { nameArabic: cat.nameArabic, image: cat.image } }
+        { $set: { nameArabic: cat.nameArabic, descriptionArabic: cat.descriptionArabic, image: cat.image } }
       );
     }
 

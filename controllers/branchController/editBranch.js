@@ -76,7 +76,10 @@ const editBranch = async (req, res) => {
     if (req.body.deliveryRadius !== undefined) branch.deliveryRadius = req.body.deliveryRadius;
     if (req.body.deliveryFee !== undefined) branch.deliveryFee = req.body.deliveryFee;
     if (req.body.deliveryTiers !== undefined) {
-      branch.deliveryTiers = req.body.deliveryTiers;
+      branch.deliveryTiers = req.body.deliveryTiers.map(t => ({
+        ...t,
+        fee: Math.max(1, Number(t.fee) || 1),
+      }));
       branch.markModified('deliveryTiers');
     }
     if (req.body.minimumOrderAmount !== undefined) branch.minimumOrderAmount = req.body.minimumOrderAmount;

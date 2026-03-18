@@ -76,7 +76,10 @@ const addBranch = async (req, res) => {
       isPrimary: isPrimary,
       deliveryRadius: req.body.deliveryRadius || 10,
       deliveryFee: req.body.deliveryFee || 0,
-      deliveryTiers: req.body.deliveryTiers || [],
+      deliveryTiers: (req.body.deliveryTiers || []).map(t => ({
+        ...t,
+        fee: Math.max(1, Number(t.fee) || 1),
+      })),
       minimumOrderAmount: req.body.minimumOrderAmount || 0,
       excludedAreas: req.body.excludedAreas || [],
       operatingHours: req.body.operatingHours || [],

@@ -233,6 +233,32 @@ const notificationTranslations = {
     goingLiveMessage: {
         en: (name, title) => `${name} is now live: ${title}`,
         ar: (name, title) => `${name} يبث الآن: ${title}`
+    },
+
+    // Re-engagement
+    missYouTitle: {
+        en: 'We miss you! 🍕',
+        ar: 'وحشتنا! 🍕'
+    },
+    missYouMessage: {
+        en: 'Check out what\'s new on FeedYum — delicious meals are waiting!',
+        ar: 'شوف الجديد على FeedYum — وجبات لذيذة في انتظارك!'
+    },
+    newReelTitle: {
+        en: 'New Reel! 🎬',
+        ar: 'فيديو جديد! 🎬'
+    },
+    newReelMessage: {
+        en: (chefName) => `${chefName} posted a new reel!`,
+        ar: (chefName) => `${chefName} نشر فيديو جديد!`
+    },
+    weeklyTrendingTitle: {
+        en: 'Trending This Week 🔥',
+        ar: 'الأكثر رواجاً هذا الأسبوع 🔥'
+    },
+    weeklyTrendingMessage: {
+        en: 'Check out the most popular reels this week!',
+        ar: 'شوف أشهر الفيديوهات هذا الأسبوع!'
     }
 };
 

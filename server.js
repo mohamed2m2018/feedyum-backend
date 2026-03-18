@@ -113,6 +113,10 @@ app.use((req, res, next) => {
 app.use(passport.initialize());
 require("./config/passport")(passport);
 
+// Track user activity (updates lastActiveAt for re-engagement targeting)
+const trackActivity = require('./middleware/trackActivity');
+app.use(trackActivity);
+
 // Cross Origin Problem
 app.use(function (req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
@@ -207,8 +211,10 @@ async function startServer() {
     if (process.env.NODE_ENV === 'production') {
       const { startStaleOrderReminders } = require('./cron/staleOrderReminders');
       const { startOrderExpiry } = require('./cron/orderExpiry');
+      const { startReengagementNotifications } = require('./cron/reengagementNotifications');
       startStaleOrderReminders();
       startOrderExpiry();
+      startReengagementNotifications();
       console.log('⏰ Cron jobs started (production mode)');
     } else {
       console.log('⏰ Cron jobs SKIPPED (non-production mode)');

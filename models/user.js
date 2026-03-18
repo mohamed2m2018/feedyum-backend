@@ -81,6 +81,10 @@ const UserSchema = new Schema({
   // Password reset fields
   resetPasswordToken: { type: String, select: false },
   resetPasswordExpires: { type: Date, select: false },
+
+  // Re-engagement tracking
+  lastActiveAt: { type: Date, default: Date.now },
+  lastReengagementSentAt: { type: Date, default: null },
 });
 
 // Pre-save middleware to handle currency setting

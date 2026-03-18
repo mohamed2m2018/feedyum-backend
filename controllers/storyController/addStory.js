@@ -271,6 +271,39 @@ const addStory = async (req, res) => {
 
       // Cache invalidation removed - No caching used
 
+      // Notify followers about the new reel (background, non-blocking)
+      try {
+        const Follow = require('../../models/follow');
+        const NotifService = require('../../services/enhancedNotificationService');
+        const notifTrans = require('../../services/notificationTranslations');
+
+        const followers = await Follow.find({ following_id: req.user._id })
+          .select('follower_id')
+          .lean();
+
+        if (followers.length > 0) {
+          const followerIds = followers.map(f => f.follower_id.toString());
+          const authorName = user.fullName || user.username || '';
+
+          NotifService.sendNotification({
+            userIds: followerIds,
+            title: notifTrans.newReelTitle,
+            message: {
+              en: notifTrans.newReelMessage.en(authorName),
+              ar: notifTrans.newReelMessage.ar(authorName),
+            },
+            type: 'reel',
+            targetId: story._id.toString(),
+            additionalData: {
+              action: 'new_reel',
+              authorName,
+            },
+            largeIcon: user.avatar || null,
+          }).catch(err => console.error('[addStory] Follower notification failed:', err.message));
+        }
+      } catch (notifErr) {
+        console.error('[addStory] Follower notification error:', notifErr.message);
+      }
 
       return res.json({ story, success: true });
     })

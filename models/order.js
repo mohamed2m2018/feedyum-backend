@@ -63,6 +63,7 @@ const OrderSchema = new mongoose.Schema({
   depositInstapayType: { type: String, enum: ['phone', 'handle'], default: 'phone' }, // Type of InstaPay identifier
   depositConfirmedByChef: { type: Boolean, default: false },
   depositConfirmedAt: { type: Date, default: null },
+  depositProofImage: { type: String, default: '' }, // Customer's payment proof screenshot URL
 });
 
 // Add indexes for better query performance

@@ -9,7 +9,7 @@ const messageSchema = new mongoose.Schema({
   duration: Number, // Duration in seconds
   messageType: {
     type: String,
-    enum: ['text', 'audio'],
+    enum: ['text', 'audio', 'image'],
     default: 'text'
   },
   isRead: { type: Boolean, default: false }, // Track if message has been read

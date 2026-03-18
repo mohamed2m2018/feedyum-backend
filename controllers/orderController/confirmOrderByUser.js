@@ -1,4 +1,5 @@
 const Order = require('../../models/order');
+const Message = require('../../models/message');
 const ChefWallet = require('../../models/chefWallet');
 const EnhancedNotificationService = require('../../services/enhancedNotificationService');
 const { CHEF_ORDER_FEE, INITIAL_WELCOME_CREDIT } = require('../../config/feeConfig');
@@ -10,6 +11,7 @@ const { CHEF_ORDER_FEE, INITIAL_WELCOME_CREDIT } = require('../../config/feeConf
 const confirmOrderByUser = async (req, res) => {
     try {
         const { id: orderId } = req.params;
+        const { depositProofImage } = req.body;
         const userId = req.user._id;
 
         // Find the order
@@ -34,6 +36,19 @@ const confirmOrderByUser = async (req, res) => {
             });
         }
 
+        // Deposit proof is MANDATORY for deposit orders
+        if (order.depositRequired && !depositProofImage) {
+            return res.status(400).json({
+                message: 'Payment proof screenshot is required for deposit orders',
+                messageAr: 'صورة إثبات الدفع مطلوبة للطلبات التي تتطلب عربون',
+            });
+        }
+
+        // Save deposit proof on order
+        if (depositProofImage) {
+            order.depositProofImage = depositProofImage;
+        }
+
         // Update status to confirmed
         const previousStatus = order.status;
         order.status = 'confirmed';
@@ -46,10 +61,29 @@ const confirmOrderByUser = async (req, res) => {
             status: previousStatus,
             changedTo: 'confirmed',
             timestamp: new Date(),
-            notes: 'Confirmed by customer',
+            notes: depositProofImage ? 'Confirmed by customer with deposit proof' : 'Confirmed by customer',
         });
 
         await order.save();
+
+        // Auto-create deposit proof message in order chat
+        if (depositProofImage) {
+            try {
+                const proofMessage = new Message({
+                    sender: userId,
+                    receiver: order.chef._id,
+                    order: order._id,
+                    content: depositProofImage,
+                    messageType: 'image',
+                    timestamp: new Date(),
+                });
+                await proofMessage.save();
+                console.log(`[DEPOSIT PROOF] Chat message created for order ${orderId}`);
+            } catch (msgError) {
+                console.error(`[DEPOSIT PROOF] Failed to create chat message for order ${orderId}:`, msgError.message);
+                // Don't fail the confirmation if message creation fails
+            }
+        }
 
         // Deduct chef commission from wallet
         try {
@@ -108,6 +142,7 @@ const confirmOrderByUser = async (req, res) => {
                     orderId: order._id.toString(),
                     status: 'confirmed',
                     previousStatus: 'awaiting_confirmation',
+                    depositProofImage: order.depositProofImage || undefined,
                 });
 
                 // Notify customer (order tracking update)

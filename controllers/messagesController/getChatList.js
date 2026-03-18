@@ -1,5 +1,6 @@
 const Message = require('../../models/message');
 const User = require('../../models/user');
+const { isChatLocked } = require('../../utils/chatLockHelper');
 
 const getChatList = async (req, res) => {
   try {
@@ -53,6 +54,8 @@ const getChatList = async (req, res) => {
           return null;
         }
 
+        const locked = await isChatLocked(userId, otherUserId);
+
         return {
           _id: user._id,
           fullName: user.fullName,
@@ -60,6 +63,7 @@ const getChatList = async (req, res) => {
           avatar: user.avatar,
           type: user.type,
           bio: user.bio,
+          isLocked: locked,
           latestMessage: {
             content: conv.latestMessage.content,
             timestamp: conv.latestMessage.timestamp,

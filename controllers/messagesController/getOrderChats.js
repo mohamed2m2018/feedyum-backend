@@ -1,6 +1,7 @@
 const Message = require('../../models/message');
 const Order = require('../../models/order');
 const mongoose = require('mongoose');
+const { isChatLocked } = require('../../utils/chatLockHelper');
 
 /**
  * Get order-based chats for the current user with unread counts.
@@ -118,11 +119,14 @@ const getOrderChats = async (req, res) => {
 
                 console.log(`Order-chats: Order ${order._id} has message:`, !!latestMessage, 'unread:', unreadCount);
 
+                const locked = await isChatLocked(userId, chatPartner._id);
+
                 return {
                     orderId: order._id,
                     order: order,
                     chatPartner: chatPartner,  // Renamed from 'chef' to be correct for both user and chef
                     isCurrentUserChef: isCurrentUserChef,  // Added to help frontend identify context
+                    isLocked: locked,
                     latestMessage: latestMessage ? {
                         ...latestMessage,
                         isFromCurrentUser: latestMessage.sender?._id?.toString() === userId.toString()

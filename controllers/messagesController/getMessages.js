@@ -1,5 +1,6 @@
 const Message = require('../../models/message');
 const User = require('../../models/user');
+const { isChatLocked } = require('../../utils/chatLockHelper');
 
 const getMessages = async (req, res) => {
   try {
@@ -46,9 +47,12 @@ const getMessages = async (req, res) => {
       ]
     });
 
+    const locked = await isChatLocked(currentUserId, otherUserId);
+
     res.json({
       messages: orderedMessages,
       otherUser,
+      isLocked: locked,
       pagination: {
         currentPage: page,
         totalPages: Math.ceil(totalMessages / limit),

@@ -1,6 +1,7 @@
 const Message = require('../../models/message');
 const User = require('../../models/user');
 const EnhancedNotificationService = require('../../services/enhancedNotificationService');
+const { isChatLocked } = require('../../utils/chatLockHelper');
 
 const sendMessage = async (req, res) => {
   try {
@@ -38,6 +39,15 @@ const sendMessage = async (req, res) => {
     if (!sender) {
       return res.status(404).json({
         message: 'Sender not found'
+      });
+    }
+
+    // Check if chat is locked before sending
+    const locked = await isChatLocked(senderId, receiverId);
+    if (locked) {
+      return res.status(403).json({
+        message: 'Chat is locked. You can only chat during an active order or within 48 hours of a completed order.',
+        messageAr: 'المحادثة مغلقة. يمكنك المحادثة فقط خلال طلب نشط أو خلال 48 ساعة من اكتمال الطلب.'
       });
     }
 

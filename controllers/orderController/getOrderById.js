@@ -1,5 +1,6 @@
 const Order = require('../../models/order');
 const { CHEF_ORDER_FEE } = require('../../config/feeConfig');
+const { isOrderExpired } = require('../../utils/chatLockHelper');
 
 const getOrderById = async (req, res) => {
   try {
@@ -11,6 +12,11 @@ const getOrderById = async (req, res) => {
     if (!order) return res.status(404).json({ message: 'Order not found' });
 
     const orderObj = order.toObject();
+
+    if (isOrderExpired(orderObj)) {
+      if (orderObj.user && orderObj.user.phone) orderObj.user.phone = null;
+      if (orderObj.chef && orderObj.chef.phone) orderObj.chef.phone = null;
+    }
 
     // Add fee info for chef users (not visible to customers)
     const isChef = req.user._id.toString() === order.chef?._id?.toString();

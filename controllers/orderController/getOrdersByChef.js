@@ -1,4 +1,5 @@
 const Order = require('../../models/order');
+const { isOrderExpired } = require('../../utils/chatLockHelper');
 
 const getOrdersByChef = async (req, res) => {
   try {
@@ -26,6 +27,15 @@ const getOrdersByChef = async (req, res) => {
       .skip(skip)
       .limit(limit)
       .lean();
+
+    // Redact phone numbers for expired orders
+    orders.forEach(order => {
+      if (isOrderExpired(order)) {
+        if (order.user && order.user.phone) {
+          order.user.phone = null;
+        }
+      }
+    });
 
     const totalOrders = await Order.countDocuments({ chef: chefId });
     const totalPages = Math.ceil(totalOrders / limit);

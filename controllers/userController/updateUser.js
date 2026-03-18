@@ -72,13 +72,15 @@ const updateUser = (req, res) => {
           // Sync locations to ChefBranch if user is a chef
           if (updatedUser.type === 'chef' && locationData) {
             try {
-              // 1. Remove all existing branches for this chef (simplest sync strategy)
-              await ChefBranch.deleteMany({ chef: updatedUser._id });
+              // SAFEGUARD: Do not delete existing branches if the user manages them via Dashboard.
+              // Only auto-create basic branches if the chef has NO branches at all (e.g., initial onboarding).
+              const existingBranchesCount = await ChefBranch.countDocuments({ chef: updatedUser._id });
               
-              const branchesToCreate = [];
-              
-              // 2. Create new branches from locations
-              for (const loc of locationData) {
+              if (existingBranchesCount === 0 && Array.isArray(locationData) && locationData.length > 0) {
+                const branchesToCreate = [];
+                
+                // 2. Create new branches from locations
+                for (const loc of locationData) {
                 // Parse simple address string
                 // Format assumed: "Address, City, Country" or similar
                 const parts = loc.description.split(',').map(p => p.trim());
@@ -135,6 +137,8 @@ const updateUser = (req, res) => {
                   await ChefBranch.insertMany(branchesToCreate);
                   console.log(`Synced ${branchesToCreate.length} branches for chef ${updatedUser._id}`);
               }
+              
+              } // End of existingBranchesCount === 0 check
               
             } catch (err) {
               console.error('Error syncing chef branches:', err);

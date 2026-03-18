@@ -182,11 +182,11 @@ const addStory = async (req, res) => {
     dishName: req.body?.dishName,
   });
 
-  await User.findByIdAndUpdate(req.user._id, { $inc: { postsNo: 1 } });
-
   newStory
     .save()
     .then(async (story) => {
+      await User.findByIdAndUpdate(req.user._id, { $inc: { postsNo: 1 } });
+
       // Generate embedding for the new story
       try {
         const text = embeddingService.prepareTextForEmbedding(story, [
@@ -275,9 +275,10 @@ const addStory = async (req, res) => {
       return res.json({ story, success: true });
     })
     .catch((err) => {
-      console.log("err ", err);
-      errors.error = "Error saving user to database";
-      res.status(500).json({ ...errors, ...err });
+      console.log("err from newStory.save(): ", err);
+      // Give the exact validation error to the frontend
+      errors.error = err.message || "Error saving user to database";
+      return res.status(500).json({ ...errors, ...err });
     });
 };
 

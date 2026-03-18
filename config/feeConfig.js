@@ -22,14 +22,14 @@ const SERVICE_FEE_WAIVER_CODE = process.env.SERVICE_FEE_WAIVER_CODE || '';
 // Tiered service fee charged to the customer (added on top of subtotal)
 // Sorted ascending by maxSubtotal. fee is inclusive for subtotals <= maxSubtotal.
 const SERVICE_FEE_TIERS = [
-    { maxSubtotal: 150, fee: 5 },
+    { maxSubtotal: 200, fee: 5 },
     { maxSubtotal: 400, fee: 8 },
     { maxSubtotal: Infinity, fee: 12 },
 ];
 
 /**
  * Calculate customer service fee based on order subtotal.
- * Uses tiered brackets: <150 → 5, 150-400 → 8, >400 → 12.
+ * Uses tiered brackets: ≤200 → 5, 200-400 → 8, >400 → 12.
  *
  * @param {number} subtotal - Order subtotal (before fees/discounts)
  * @returns {number} Service fee amount in EGP

@@ -6,7 +6,7 @@ const EnhancedNotificationService = require('../../services/enhancedNotification
 const updateOrderStatus = async (req, res) => {
   try {
     const { id: orderId } = req.params;
-    const { status, estimatedTime, notes, deliveryFee } = req.body;
+    const { status, estimatedTime, notes, deliveryFee, depositOverride } = req.body;
     const chefId = req.user._id;
 
     // Validate status
@@ -67,6 +67,7 @@ const updateOrderStatus = async (req, res) => {
     // Track if delivery fee was overridden by the chef
     let deliveryFeeOverridden = false;
     const previousDeliveryFee = order.deliveryFee;
+    const previousStatus = order.status;
 
     // Update delivery fee if chef overrides it
     if (deliveryFee !== undefined) {
@@ -81,8 +82,27 @@ const updateOrderStatus = async (req, res) => {
       order.totalPrice = subtotal + parsedFee - discountAmount;
     }
 
+    // Apply deposit override (only on initial accept: pending → confirmed/awaiting_confirmation)
+    if (depositOverride && previousStatus === 'pending') {
+      if (!depositOverride.depositEnabled) {
+        // Chef disabled deposit for this order
+        order.depositRequired = false;
+        order.depositAmount = 0;
+        console.log(`[DEPOSIT] Chef ${chefId} disabled deposit for order ${orderId}`);
+      } else if (depositOverride.depositValue > 0) {
+        const subtotal = order.subtotal || 0;
+        if (depositOverride.depositType === 'percentage') {
+          const pct = Math.min(Math.max(depositOverride.depositValue, 1), 100);
+          order.depositAmount = Number(((subtotal * pct) / 100).toFixed(2));
+        } else {
+          order.depositAmount = Number(depositOverride.depositValue.toFixed(2));
+        }
+        order.depositRequired = true;
+        console.log(`[DEPOSIT] Chef ${chefId} overrode deposit for order ${orderId}: ${order.depositAmount}`);
+      }
+    }
+
     // Update order status
-    const previousStatus = order.status;
     order.status = actualStatus;
 
     if (estimatedTime) {

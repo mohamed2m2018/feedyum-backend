@@ -84,7 +84,7 @@ const createOrder = async (req, res) => {
         });
       }
 
-      const dish = await Dish.findById(item.dish).select('name price optionGroups');
+      const dish = await Dish.findById(item.dish).select('name nameArabic nameEnglish price optionGroups');
       if (!dish) {
         return res.status(404).json({
           message: `Dish with ID ${item.dish} not found`
@@ -329,7 +329,7 @@ const createOrder = async (req, res) => {
     // Populate order data for response
     await order.populate('user', 'fullName username avatar');
     await order.populate('chef', 'fullName username avatar');
-    await order.populate('items.dish', 'name price image description');
+    await order.populate('items.dish', 'name nameArabic nameEnglish price image description descriptionArabic descriptionEnglish');
 
     // Send notifications
     try {

@@ -82,7 +82,7 @@ const getDishesByCategory = async (req, res) => {
         };
 
     const dishes = await Dish.find(matchQuery)
-      .select('name image price category user_id visible created_at')
+      .select('name nameArabic nameEnglish image price category user_id visible created_at description descriptionArabic descriptionEnglish')
       .populate("user_id", "fullName avatar bio locations chefSettings")
       .sort({ created_at: -1 })
       .limit(50)

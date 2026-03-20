@@ -42,7 +42,7 @@ const createCateringOrder = async ({
   }
 
   // Verify dish exists
-  const dish = await Dish.findById(dishId).select('name price image');
+  const dish = await Dish.findById(dishId).select('name nameArabic nameEnglish price image');
   if (!dish) {
     throw new Error('Dish not found');
   }
@@ -131,7 +131,7 @@ const createCateringOrder = async ({
   // Populate for response
   await order.populate('user', 'fullName username avatar');
   await order.populate('chef', 'fullName username avatar');
-  await order.populate('items.dish', 'name price image description');
+  await order.populate('items.dish', 'name nameArabic nameEnglish price image description descriptionArabic descriptionEnglish');
 
   // Notify chef about new catering order
   try {

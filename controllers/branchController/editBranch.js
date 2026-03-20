@@ -82,6 +82,14 @@ const editBranch = async (req, res) => {
       }));
       branch.markModified('deliveryTiers');
     }
+    if (req.body.areaDeliveryFees !== undefined) {
+      branch.areaDeliveryFees = req.body.areaDeliveryFees.map(a => ({
+        name: a.name,
+        placeId: a.placeId,
+        fee: Math.max(1, Number(a.fee) || 1),
+      }));
+      branch.markModified('areaDeliveryFees');
+    }
     if (req.body.minimumOrderAmount !== undefined) branch.minimumOrderAmount = req.body.minimumOrderAmount;
     if (req.body.operatingHours) branch.operatingHours = req.body.operatingHours;
     if (req.body.timezone) branch.timezone = req.body.timezone;

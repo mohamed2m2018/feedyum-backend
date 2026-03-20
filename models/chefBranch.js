@@ -58,10 +58,17 @@ const ChefBranchSchema = new mongoose.Schema({
 
   // Delivery settings
   deliveryRadius: { type: Number, default: 10 }, // in kilometers
-  deliveryFee: { type: Number, default: 0 }, // Fallback flat fee if no tiers configured
-  deliveryTiers: [{
+  deliveryFee: { type: Number, default: 0 }, // Fallback flat fee if no area fee is configured
+  deliveryTiers: [{ // @deprecated — areaDeliveryFees takes precedence
     maxDistance: { type: Number, required: true }, // km
     fee: { type: Number, required: true },         // EGP
+  }],
+  // Area-specific delivery fees (replaces distance-based tiers)
+  areaDeliveryFees: [{
+    name: { type: String, required: true },       // Display name of the area
+    placeId: { type: String, required: true },    // Google place_id for reliable matching
+    fee: { type: Number, required: true },        // EGP configured by chef
+    _id: false,
   }],
   minimumOrderAmount: { type: Number, default: 0 },
 

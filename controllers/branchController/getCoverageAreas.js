@@ -79,37 +79,81 @@ const getCoverageAreas = async (req, res) => {
             });
         }
 
-        // Business-optimized: Balance accuracy vs API cost
-        // 2 rings (50% and 100%) with 8 points each + center = 17 API calls
-        // This provides good coverage without excessive cost
-        const ringDistances = [
-            radiusKm * 0.5,   // Middle ring - captures inner neighborhoods
-            radiusKm * 1.0,   // Outer ring - captures edge neighborhoods
-        ];
+        // Progressive Density Algorithm: Prevents "Swiss Cheese" blind spots at large radiuses
+        // The larger the ring, the MORE points it needs. We dynamically generate rings and points.
+        let allPoints = [{ lat: centerLat, lng: centerLng, direction: 'CENTER', distance: 0 }];
 
-        // Generate points for each ring with 8 compass directions
-        let allPoints = [
-            { lat: centerLat, lng: centerLng, direction: 'CENTER' }
-        ];
-
-        for (const ringRadius of ringDistances) {
-            const ringPoints = calculatePerimeterPoints(centerLat, centerLng, ringRadius, 8);
+        if (radiusKm <= 5) {
+            const ringPoints = calculatePerimeterPoints(centerLat, centerLng, radiusKm, 8);
+            ringPoints.forEach(p => p.distance = radiusKm);
             allPoints = allPoints.concat(ringPoints);
+        } else if (radiusKm <= 12) {
+            [0.5, 1.0].forEach(multiplier => {
+                const ringPoints = calculatePerimeterPoints(centerLat, centerLng, radiusKm * multiplier, 8);
+                ringPoints.forEach(p => p.distance = radiusKm * multiplier);
+                allPoints = allPoints.concat(ringPoints);
+            });
+        } else if (radiusKm <= 25) {
+            // Progressive density for medium radiuses (3 rings: 8, 12, 16 points)
+            const ringSpecs = [{m: 0.33, p: 8}, {m: 0.66, p: 12}, {m: 1.0, p: 16}];
+            ringSpecs.forEach(spec => {
+                const ringPoints = calculatePerimeterPoints(centerLat, centerLng, radiusKm * spec.m, spec.p);
+                ringPoints.forEach(p => p.distance = radiusKm * spec.m);
+                allPoints = allPoints.concat(ringPoints);
+            });
+        } else {
+            // Ultimate density for massive radiuses (5 rings: 8, 12, 16, 20, 24 = 81 total API requests)
+            const ringSpecs = [
+                {m: 0.2, p: 8}, 
+                {m: 0.4, p: 12}, 
+                {m: 0.6, p: 16}, 
+                {m: 0.8, p: 20}, 
+                {m: 1.0, p: 24}
+            ];
+            ringSpecs.forEach(spec => {
+                const ringPoints = calculatePerimeterPoints(centerLat, centerLng, radiusKm * spec.m, spec.p);
+                ringPoints.forEach(p => p.distance = radiusKm * spec.m);
+                allPoints = allPoints.concat(ringPoints);
+            });
         }
 
-        // Reverse geocode all points in parallel
-        const areaPromises = allPoints.map(point => reverseGeocodeArea(point.lat, point.lng));
-        const areaResults = await Promise.all(areaPromises);
+        // Batch Reverse Geocoding to strictly avoid Google API Rate Limits (50 QPS max)
+        const areaResults = [];
+        const batchSize = 10;
+        
+        for (let i = 0; i < allPoints.length; i += batchSize) {
+            const batch = allPoints.slice(i, i + batchSize);
+            const batchPromises = batch.map(point => reverseGeocodeArea(point.lat, point.lng));
+            const batchResults = await Promise.all(batchPromises);
+            areaResults.push(...batchResults);
+        }
 
         // Deduplicate by placeId (reliable) — keeps first occurrence's name
-        const seenPlaceIds = new Set();
-        const uniqueAreas = [];
-        for (const area of areaResults) {
-            if (area && area.placeId && !seenPlaceIds.has(area.placeId)) {
-                seenPlaceIds.add(area.placeId);
-                uniqueAreas.push({ name: area.name, placeId: area.placeId });
+        // Keep track of the minimum distance observed for each area
+        const seenPlaceIds = new Map();
+        for (let i = 0; i < areaResults.length; i++) {
+            const area = areaResults[i];
+            const dist = allPoints[i].distance;
+            
+            if (area && area.placeId) {
+                if (!seenPlaceIds.has(area.placeId)) {
+                    seenPlaceIds.set(area.placeId, { 
+                        name: area.name, 
+                        placeId: area.placeId,
+                        lat: area.lat,
+                        lng: area.lng,
+                        approxDistance: dist
+                    });
+                } else {
+                    const existing = seenPlaceIds.get(area.placeId);
+                    if (dist < existing.approxDistance) {
+                        existing.approxDistance = dist;
+                    }
+                }
             }
         }
+        
+        const uniqueAreas = Array.from(seenPlaceIds.values());
 
         // Sort alphabetically by name
         uniqueAreas.sort((a, b) => a.name.localeCompare(b.name, 'ar'));

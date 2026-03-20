@@ -240,10 +240,15 @@ const createOrder = async (req, res) => {
       // Use the full branch document to access deliveryTiers
       const ChefBranch = require('../../models/chefBranch');
       const fullBranch = await ChefBranch.findById(validationResult.nearestBranch.branchId);
-      if (fullBranch && fullBranch.deliveryTiers && fullBranch.deliveryTiers.length > 0) {
-        deliveryFee = calculateDeliveryFee(validationResult.nearestDistance, fullBranch.deliveryTiers, fullBranch.deliveryFee);
-      } else if (fullBranch) {
-        deliveryFee = fullBranch.deliveryFee || 0;
+      if (fullBranch) {
+        // ALWAYS use calculateDeliveryFee, it handles empty arrays and area fallbacks internally
+        deliveryFee = calculateDeliveryFee(
+          validationResult.nearestDistance,
+          fullBranch.deliveryTiers,
+          fullBranch.deliveryFee || 0,
+          fullBranch.areaDeliveryFees,
+          deliveryAddress.placeId || deliveryAddress.deliveryArea?.placeId
+        );
       }
     }
     let serviceFee = calculateServiceFee(totalAmount);

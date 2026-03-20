@@ -69,10 +69,14 @@ const createCateringOrder = async ({
       if (validationResult.canDeliver && validationResult.nearestBranch) {
         const ChefBranch = require('../../models/chefBranch');
         const fullBranch = await ChefBranch.findById(validationResult.nearestBranch.branchId);
-        if (fullBranch && fullBranch.deliveryTiers && fullBranch.deliveryTiers.length > 0) {
-          deliveryFee = calculateDeliveryFee(validationResult.nearestDistance, fullBranch.deliveryTiers, fullBranch.deliveryFee);
-        } else if (fullBranch) {
-          deliveryFee = fullBranch.deliveryFee || 0;
+        if (fullBranch) {
+          deliveryFee = calculateDeliveryFee(
+            validationResult.nearestDistance,
+            fullBranch.deliveryTiers,
+            fullBranch.deliveryFee || 0,
+            fullBranch.areaDeliveryFees,
+            deliveryAddress.placeId || deliveryAddress.deliveryArea?.placeId
+          );
         }
       }
     } catch (deliveryError) {

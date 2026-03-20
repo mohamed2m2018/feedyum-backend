@@ -61,16 +61,28 @@ const isServiceFeeWaiverCode = (code) => {
 const getChefOrderFee = () => CHEF_ORDER_FEE;
 
 /**
- * Calculate delivery fee based on distance and branch delivery tiers.
- * Finds the tier where distance <= maxDistance (tiers sorted ascending).
- * If no tier matches, returns the highest tier's fee or fallback.
+ * Calculate delivery fee based on customer's delivery area, distance, and branch config.
+ * Priority 1: Exact match on Area Address (placeId).
+ * Priority 2: Fallback to legacy distance-based tiers.
+ * Priority 3: Fallback flat fee.
  * 
  * @param {number} distance - Distance in km between branch and customer
- * @param {Array} tiers - Array of { maxDistance: Number, fee: Number }
+ * @param {Array} tiers - Array of { maxDistance: Number, fee: Number } (deprecated)
  * @param {number} fallbackFee - Fallback fee if no tiers configured (default 0)
+ * @param {Array} areaDeliveryFees - Array of { name, placeId, fee }
+ * @param {string} destinationPlaceId - The placeId of the customer's delivery area
  * @returns {number} Delivery fee amount
  */
-const calculateDeliveryFee = (distance, tiers, fallbackFee = 0) => {
+const calculateDeliveryFee = (distance, tiers, fallbackFee = 0, areaDeliveryFees = [], destinationPlaceId = null) => {
+    // 1. Try Area-Based Fee match first
+    if (destinationPlaceId && areaDeliveryFees && areaDeliveryFees.length > 0) {
+        const areaMatch = areaDeliveryFees.find(a => a.placeId === destinationPlaceId);
+        if (areaMatch) {
+            return areaMatch.fee;
+        }
+    }
+
+    // 2. Fallback to distance-based tiers (legacy configuration)
     if (!tiers || tiers.length === 0) {
         return fallbackFee;
     }

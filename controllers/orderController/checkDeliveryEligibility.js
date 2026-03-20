@@ -57,9 +57,15 @@ const checkDeliveryEligibility = async (req, res) => {
         const maxDistance = nearestBranch.deliveryRadius || DEFAULT_DELIVERY_DISTANCE_KM;
         const canDeliver = nearestDistance <= maxDistance;
 
-        // Calculate delivery fee from branch tiers
+        // Calculate delivery fee from branch area fees or distance tiers
         const deliveryFee = canDeliver
-            ? calculateDeliveryFee(nearestDistance, nearestBranch.deliveryTiers, nearestBranch.deliveryFee)
+            ? calculateDeliveryFee(
+                nearestDistance,
+                nearestBranch.deliveryTiers,
+                nearestBranch.deliveryFee,
+                nearestBranch.areaDeliveryFees,
+                req.query.placeId
+            )
             : 0;
 
         // Check branch order mode

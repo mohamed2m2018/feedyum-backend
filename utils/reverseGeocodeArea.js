@@ -37,11 +37,10 @@ const reverseGeocodeArea = async (lat, lng) => {
         for (const targetType of areaTypePriority) {
             const match = results.find(r => r.types && r.types.includes(targetType));
             if (match && match.place_id) {
-                // Use the first address_component's long_name for a clean area name
-                // (formatted_address is too long, e.g. "El Marg, Cairo Governorate, Egypt")
                 const areaComponent = match.address_components?.[0];
                 const name = areaComponent?.long_name || match.formatted_address?.split(',')[0] || '';
-                return { name, placeId: match.place_id };
+                const location = match.geometry?.location || { lat, lng };
+                return { name, placeId: match.place_id, lat: location.lat, lng: location.lng };
             }
         }
 
@@ -49,7 +48,8 @@ const reverseGeocodeArea = async (lat, lng) => {
         const first = results[0];
         if (first?.place_id) {
             const name = first.address_components?.[0]?.long_name || first.formatted_address?.split(',')[0] || '';
-            return { name, placeId: first.place_id };
+            const location = first.geometry?.location || { lat, lng };
+            return { name, placeId: first.place_id, lat: location.lat, lng: location.lng };
         }
 
         return null;

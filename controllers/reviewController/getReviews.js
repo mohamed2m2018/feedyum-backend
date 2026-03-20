@@ -21,7 +21,7 @@ const getReviews = async (req, res) => {
     const reviews = await Review.find(query)
       .populate('userId', 'fullName username avatar')
       .populate('chefId', 'fullName username avatar')
-      .populate('dishId', 'name image price')
+      .populate('dishId', 'name nameArabic nameEnglish image price')
       .populate('orderId', 'created_at status')
       .sort(sort)
       .skip(skip)

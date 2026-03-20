@@ -148,7 +148,7 @@ const getChefAnalytics = async (req, res) => {
         .sort({ created_at: -1 })
         .limit(10)
         .populate('user', 'fullName username avatar')
-        .populate('items.dish', 'name price image')
+        .populate('items.dish', 'name nameArabic nameEnglish price image')
         .lean()
     ]);
 

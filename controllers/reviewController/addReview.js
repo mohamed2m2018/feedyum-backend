@@ -128,7 +128,7 @@ const addReview = async (req, res) => {
     const populatedReview = await Review.findById(newReview._id)
       .populate('userId', 'fullName username avatar')
       .populate('chefId', 'fullName username avatar')
-      .populate('dishId', 'name image')
+      .populate('dishId', 'name nameArabic nameEnglish image')
       .populate('orderId', 'created_at status');
 
     res.status(201).json({

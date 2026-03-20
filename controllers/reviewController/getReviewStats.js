@@ -76,7 +76,7 @@ const getReviewStats = async (req, res) => {
     // Get recent reviews
     const recentReviews = await Review.find(query)
       .populate('userId', 'fullName username avatar')
-      .populate('dishId', 'name image')
+      .populate('dishId', 'name nameArabic nameEnglish image')
       .sort({ createdAt: -1 })
       .limit(5)
       .select('rating comment tags createdAt');

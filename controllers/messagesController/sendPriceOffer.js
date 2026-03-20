@@ -72,7 +72,7 @@ const sendPriceOffer = async (req, res) => {
     // Populate for response
     await message.populate('sender', 'fullName username avatar');
     await message.populate('receiver', 'fullName username avatar');
-    await message.populate('priceOffer.dishId', 'name image');
+    await message.populate('priceOffer.dishId', 'name nameArabic nameEnglish image');
 
     // Emit socket event
     try {

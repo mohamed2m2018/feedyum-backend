@@ -44,7 +44,7 @@ const updateReview = async (req, res) => {
       { new: true }
     ).populate('userId', 'fullName username avatar')
            .populate('chefId', 'fullName username avatar')
-     .populate('dishId', 'name image')
+     .populate('dishId', 'name nameArabic nameEnglish image')
      .populate('orderId', 'created_at status');
 
     res.json({

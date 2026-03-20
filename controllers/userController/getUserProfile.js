@@ -34,7 +34,7 @@ const getUserProfile = async (req, res) => {
             foreignField: '_id',
             as: 'sections',
             pipeline: [
-              { $project: { name: 1, description: 1, dishes: 1 } }
+              { $project: { name: 1, nameArabic: 1, nameEnglish: 1, description: 1, dishes: 1 } }
             ]
           }
         },

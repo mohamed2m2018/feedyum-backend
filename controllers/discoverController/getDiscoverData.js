@@ -74,20 +74,24 @@ const getDiscoverData = async (req, res) => {
     // Fetch blocked chef IDs once (wallet grace period expired)
     const blockedChefIds = await getBlockedChefIds();
 
-    // Batch fetch all data in parallel using Promise.all
-    // "All" has its own dedicated queries that don't depend on tags
-    const [usersData, dishesData, allChefs, allDishes] = await Promise.all([
-      // 1. Get users for tag-based categories in one aggregation
+    // 1. Fetch Users First (so we know who to guarantee dishes for)
+    const [usersData, allChefs] = await Promise.all([
       getUsersForAllCategories(categories, coordinates, blockedChefIds),
+      getAllChefs(coordinates, blockedChefIds)
+    ]);
 
-      // 2. Get dishes for tag-based categories in one aggregation  
-      getDishesForAllCategories(categories, coordinates, blockedChefIds),
+    // Extract all unique selected User IDs
+    const guaranteedChefIds = new Set();
+    allChefs.forEach(c => guaranteedChefIds.add(c._id.toString()));
+    Object.values(usersData).forEach(catUsers => {
+      catUsers.forEach(u => guaranteedChefIds.add(u._id.toString()));
+    });
+    const guaranteedChefIdsArray = Array.from(guaranteedChefIds).map(id => new mongoose.Types.ObjectId(id));
 
-      // 3. Get ALL chefs (no tag filter) — dedicated query for "All" tab
-      getAllChefs(coordinates, blockedChefIds),
-
-      // 4. Get ALL visible dishes (no category filter) — dedicated query for "All" tab
-      getAllDishes(coordinates, blockedChefIds)
+    // 2. Fetch Dishes Second, passing the guaranteed IDs to prevent frontend UI starvation
+    const [dishesData, allDishes] = await Promise.all([
+      getDishesForAllCategories(categories, coordinates, blockedChefIds, guaranteedChefIdsArray),
+      getAllDishes(coordinates, blockedChefIds, guaranteedChefIdsArray)
     ]);
 
     // Organize data by category
@@ -315,7 +319,7 @@ async function getUsersForAllCategories(categories, coordinates, blockedChefIds 
 }
 
 // Optimized aggregation to get dishes for tag-based categories at once
-async function getDishesForAllCategories(categories, coordinates, blockedChefIds = []) {
+async function getDishesForAllCategories(categories, coordinates, blockedChefIds = [], guaranteedChefIds = []) {
   try {
     const pipeline = [
       // Match dishes in our categories that are available
@@ -323,7 +327,10 @@ async function getDishesForAllCategories(categories, coordinates, blockedChefIds
         $match: {
           category: { $in: categories },
           visible: true,
-          created_at: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+          $or: [
+            { created_at: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
+            { user_id: { $in: guaranteedChefIds } } // Guarantee these chefs' dishes are pulled
+          ],
           ...(blockedChefIds.length > 0 && { user_id: { $nin: blockedChefIds } })
         }
       },
@@ -402,10 +409,10 @@ async function getDishesForAllCategories(categories, coordinates, blockedChefIds
         }
       },
 
-      // Limit to 20 dishes per category
+      // Limit to 60 dishes per category (increased to prevent truncating guaranteed chefs)
       {
         $addFields: {
-          dishes: { $slice: ['$dishes', 20] }
+          dishes: { $slice: ['$dishes', 60] }
         }
       }
     ];
@@ -567,14 +574,17 @@ async function getAllChefs(coordinates, blockedChefIds = []) {
   }
 }
 
-async function getAllDishes(coordinates, blockedChefIds = []) {
+async function getAllDishes(coordinates, blockedChefIds = [], guaranteedChefIds = []) {
   try {
     const pipeline = [
       // All visible dishes, no category filter
       {
         $match: {
           visible: true,
-          created_at: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+          $or: [
+            { created_at: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
+            { user_id: { $in: guaranteedChefIds } } // Guarantee these chefs' dishes are pulled
+          ],
           ...(blockedChefIds.length > 0 && { user_id: { $nin: blockedChefIds } })
         }
       },
@@ -596,8 +606,8 @@ async function getAllDishes(coordinates, blockedChefIds = []) {
       // No distance on dishes — distance comes from chef (user object)
       { $sort: { created_at: -1 } },
 
-      // Limit for batch response
-      { $limit: 30 },
+      // Limit for batch response (increased from 30 to 150 to make room for guaranteed dishes)
+      { $limit: 150 },
 
       // Project final shape
       {

@@ -38,7 +38,8 @@ const OrderSchema = new mongoose.Schema({
     default: Date.now,
   },
   status: { type: String, default: "pending" },
-  orderType: { type: String, enum: ['instant', 'scheduled'], default: 'instant' },
+  orderType: { type: String, enum: ['instant', 'scheduled', 'catering'], default: 'instant' },
+  priceOfferRef: { type: mongoose.Schema.Types.ObjectId, ref: 'message', default: null }, // Link to price offer message for catering orders
   scheduledFor: { type: Date, default: null }, // null = instant order
   scheduledSlotLabel: { type: String, default: null }, // e.g. "10:00 AM – 12:00 PM"
   cancelledBy: { type: String, enum: ['user', 'chef', null], default: null },

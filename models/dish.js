@@ -23,6 +23,7 @@ const DishSchema = new mongoose.Schema({
   menu_id: { type: Number, required: true }, // Numeric ID for the menu
   user_id: { type: mongoose.Schema.Types.ObjectId, ref: "user", required: true }, // User identifier
   visible: { type: Boolean, default: true }, // Visibility field
+  pricingType: { type: String, enum: ['fixed', 'upon_request'], default: 'fixed' }, // 'upon_request' for items like catering trays with no fixed price
   average_rating: { type: Number, default: 0, min: 0, max: 5 }, // Average rating for the dish (0 = no rating, 1-5 = rated)
   image: { type: String }, // URL for the dish image
 

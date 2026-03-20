@@ -9,8 +9,26 @@ const messageSchema = new mongoose.Schema({
   duration: Number, // Duration in seconds
   messageType: {
     type: String,
-    enum: ['text', 'audio', 'image'],
+    enum: ['text', 'audio', 'image', 'price_offer', 'quote_request'],
     default: 'text'
+  },
+  // Price offer fields (only used when messageType === 'price_offer')
+  priceOffer: {
+    dishId: { type: mongoose.Schema.Types.ObjectId, ref: 'dish' },
+    dishName: String,
+    offeredPrice: Number,
+    currency: { type: String, default: 'EGP' },
+    selectedOptions: [String],
+    note: String,
+    status: { type: String, enum: ['pending', 'accepted', 'declined', 'expired'], default: 'pending' },
+    respondedAt: Date,
+  },
+  // Quote request fields (only used when messageType === 'quote_request')
+  quoteRequest: {
+    dishId: { type: mongoose.Schema.Types.ObjectId, ref: 'dish' },
+    dishName: String,
+    selectedOptions: [String],
+    notes: String,
   },
   isRead: { type: Boolean, default: false }, // Track if message has been read
   readAt: { type: Date }, // When message was read

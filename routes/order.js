@@ -88,6 +88,14 @@ router.put('/:id/confirm-deposit',
   orderController.confirmDepositReceived
 );
 
+// @route  PUT api/orders/:id/quote-price
+// @desc   Chef updates the quote price on a catering order (before customer confirms)
+// @access Private
+router.put('/:id/quote-price',
+  passport.authenticate('jwt', { session: false }),
+  orderController.updateQuotePrice
+);
+
 // @route  GET api/orders/unseen/count
 // @desc   Get count of orders with unseen status changes
 // @access Private
@@ -116,6 +124,14 @@ router.get('/check-delivery/:chefId',
 router.get('/:id',
   passport.authenticate('jwt', { session: false }),
   orderController.getOrderById
+);
+
+// @route  PUT api/orders/mark-all-seen
+// @desc   Mark all orders as seen by current user (resets badge)
+// @access Private
+router.put('/mark-all-seen',
+  passport.authenticate('jwt', { session: false }),
+  orderController.markAllOrdersSeen
 );
 
 // @route  PUT api/orders/:orderId/seen

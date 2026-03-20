@@ -13,6 +13,8 @@ const markOrderSeen = require('./markOrderSeen');
 const checkDeliveryEligibility = require('./checkDeliveryEligibility');
 const getAvailableSlots = require('./getAvailableSlots');
 const confirmDepositReceived = require('./confirmDepositReceived');
+const updateQuotePrice = require('./updateQuotePrice');
+const markAllOrdersSeen = require('./markAllOrdersSeen');
 
 module.exports = {
   getOrderById,
@@ -30,4 +32,6 @@ module.exports = {
   checkDeliveryEligibility,
   getAvailableSlots,
   confirmDepositReceived,
+  updateQuotePrice,
+  markAllOrdersSeen,
 };

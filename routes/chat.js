@@ -22,6 +22,12 @@ router.put('/messages/:messageId/read',
     messagesController.markMessageAsRead
 );
 
+// Route to mark all messages from all senders as read
+router.put('/mark-all-read',
+    passport.authenticate('jwt', { session: false }),
+    messagesController.markAllChatsAsRead
+);
+
 // Route to mark all messages from a specific sender as read
 router.put('/chats/:senderId/read',
     passport.authenticate('jwt', { session: false }),
@@ -375,5 +381,25 @@ router.delete('/message/:messageId',
     });
 
 
+
+// ─── Price Offer Routes (Catering / Upon Request) ────────────────────────────
+
+// Route for chef to send a price offer
+router.post('/price-offer',
+    passport.authenticate('jwt', { session: false }),
+    messagesController.sendPriceOffer
+);
+
+// Route for customer to accept/decline a price offer
+router.put('/price-offer/:messageId/respond',
+    passport.authenticate('jwt', { session: false }),
+    messagesController.respondToPriceOffer
+);
+
+// Route for customer to send a structured quote request
+router.post('/quote-request',
+    passport.authenticate('jwt', { session: false }),
+    messagesController.sendQuoteRequest
+);
 
 module.exports = router;

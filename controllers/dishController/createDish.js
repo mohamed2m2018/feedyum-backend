@@ -29,6 +29,7 @@ const createDish = async (req, res) => {
       nameEnglish,
       descriptionArabic,
       descriptionEnglish,
+      pricingType,
     } = req.body;
     const menu = await Menu.findById(menuId);
 
@@ -187,6 +188,7 @@ const createDish = async (req, res) => {
       user_id: req.user._id,
       image: image || '',
       visible: true,
+      pricingType: pricingType || 'fixed',
       average_rating: 0,
       // Enhanced fields
       ingredients: processedIngredients,

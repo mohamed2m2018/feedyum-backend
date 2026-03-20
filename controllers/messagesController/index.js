@@ -9,6 +9,10 @@ const markMessageAsRead = require('./markMessageAsRead');
 const markChatAsRead = require('./markChatAsRead');
 const getUnreadCounts = require('./getUnreadCounts');
 const getOrderChats = require('./getOrderChats');
+const sendPriceOffer = require('./sendPriceOffer');
+const respondToPriceOffer = require('./respondToPriceOffer');
+const sendQuoteRequest = require('./sendQuoteRequest');
+const markAllChatsAsRead = require('./markAllChatsAsRead');
 
 module.exports = {
   getChatList,
@@ -21,5 +25,9 @@ module.exports = {
   markMessageAsRead,
   markChatAsRead,
   getUnreadCounts,
-  getOrderChats
+  getOrderChats,
+  sendPriceOffer,
+  respondToPriceOffer,
+  sendQuoteRequest,
+  markAllChatsAsRead,
 }; 

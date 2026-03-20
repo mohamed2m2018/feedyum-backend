@@ -2,11 +2,12 @@ const Order = require('../../models/order');
 const User = require('../../models/user');
 const ChefWallet = require('../../models/chefWallet');
 const EnhancedNotificationService = require('../../services/enhancedNotificationService');
+const sendQuotePriceMessage = require('../../utils/sendQuotePriceMessage');
 
 const updateOrderStatus = async (req, res) => {
   try {
     const { id: orderId } = req.params;
-    const { status, estimatedTime, notes, deliveryFee, depositOverride } = req.body;
+    const { status, estimatedTime, notes, deliveryFee, depositOverride, quotePrice } = req.body;
     const chefId = req.user._id;
 
     // Validate status
@@ -20,7 +21,8 @@ const updateOrderStatus = async (req, res) => {
     // Find the order and verify chef ownership
     const order = await Order.findById(orderId)
       .populate('user', 'fullName username avatar')
-      .populate('chef', 'fullName username avatar');
+      .populate('chef', 'fullName username avatar')
+      .populate('items.dish', 'name nameArabic nameEnglish');
 
     if (!order) {
       return res.status(404).json({
@@ -61,7 +63,8 @@ const updateOrderStatus = async (req, res) => {
     if (status === 'confirmed' && order.status === 'pending') {
       const chef = await User.findById(chefId).select('chefSettings').lean();
       const requireConfirmation = chef?.chefSettings?.requireCustomerConfirmation !== false;
-      actualStatus = requireConfirmation ? 'awaiting_confirmation' : 'confirmed';
+      const isCatering = order.orderType === 'catering'; // Catering always needs customer confirmation (price was negotiated)
+      actualStatus = (requireConfirmation || isCatering) ? 'awaiting_confirmation' : 'confirmed';
     }
 
     // Track if delivery fee was overridden by the chef
@@ -80,6 +83,23 @@ const updateOrderStatus = async (req, res) => {
       const subtotal = order.subtotal || 0;
       const discountAmount = order.promocode?.discountAmount || 0;
       order.totalPrice = subtotal + parsedFee - discountAmount;
+    }
+
+    // Apply quote price for catering orders (chef sets the price)
+    if (quotePrice !== undefined && order.orderType === 'catering') {
+      const parsedQuote = Number(quotePrice);
+      if (parsedQuote > 0) {
+        order.subtotal = parsedQuote;
+        // Update item unitPrice (catering orders typically have 1 item)
+        if (order.items && order.items.length > 0) {
+          order.items[0].unitPrice = parsedQuote;
+        }
+        // Recalculate totalPrice with the quoted subtotal
+        const fee = order.deliveryFee || 0;
+        const discountAmount = order.promocode?.discountAmount || 0;
+        order.totalPrice = parsedQuote + fee - discountAmount;
+        console.log(`[updateOrderStatus] Catering order ${orderId} priced at ${parsedQuote}, total: ${order.totalPrice}`);
+      }
     }
 
     // Apply deposit override (only on initial accept: pending → confirmed/awaiting_confirmation)
@@ -128,6 +148,25 @@ const updateOrderStatus = async (req, res) => {
     });
 
     await order.save();
+
+    // Send price offer message in chat for catering orders
+    if (quotePrice && order.orderType === 'catering' && previousStatus === 'pending') {
+      try {
+        const dishName = order.items?.[0]?.dish?.name || order.items?.[0]?.dishName || 'Catering Order';
+        const dishId = order.items?.[0]?.dish?._id || order.items?.[0]?.dish;
+        await sendQuotePriceMessage({
+          chefId: chefId.toString(),
+          customerId: order.user._id.toString(),
+          dishId,
+          dishName,
+          offeredPrice: Number(quotePrice),
+          deliveryFee: order.deliveryFee || 0,
+          orderId: order._id.toString(),
+        });
+      } catch (msgError) {
+        console.error('[CHAT] Failed to send quote price message:', msgError);
+      }
+    }
 
     // NOTE: Wallet deduction is now handled in confirmOrderByUser.js
     // when the customer confirms the order

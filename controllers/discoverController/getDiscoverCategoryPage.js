@@ -357,7 +357,9 @@ async function getDishesForCategory(category, isAll, coordinates, blockedChefIds
             { $limit: limit },
             {
               $project: {
-                _id: 1, name: 1, title: 1, description: 1, image: 1, price: 1,
+                _id: 1, name: 1, nameArabic: 1, nameEnglish: 1,
+                title: 1, description: 1, descriptionArabic: 1, descriptionEnglish: 1,
+                image: 1, price: 1,
                 category: 1, chef: 1, user_id: 1, created_at: 1,
                 visible: 1,
                 average_rating: { $ifNull: ['$average_rating', 0] }

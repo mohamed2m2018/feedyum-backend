@@ -79,7 +79,11 @@ const searchDishes = async (req, res) => {
                 $project: {
                   _id: { $toString: '$_id' },
                   name: 1,
+                  nameArabic: 1,
+                  nameEnglish: 1,
                   description: 1,
+                  descriptionArabic: 1,
+                  descriptionEnglish: 1,
                   price: 1,
                   image: 1,
                   images: 1,

@@ -39,7 +39,11 @@ const searchDishes = async (req, res) => {
       searchMatch = {
         $or: [
           { name: { $regex: searchString, $options: 'i' } },
+          { nameArabic: { $regex: searchString, $options: 'i' } },
+          { nameEnglish: { $regex: searchString, $options: 'i' } },
           { description: { $regex: searchString, $options: 'i' } },
+          { descriptionArabic: { $regex: searchString, $options: 'i' } },
+          { descriptionEnglish: { $regex: searchString, $options: 'i' } },
           { category: { $regex: searchString, $options: 'i' } },
           { tags: { $in: [new RegExp(searchString, 'i')] } },
           { 'dietaryInfo': { $in: [new RegExp(searchString, 'i')] } },

@@ -4,6 +4,13 @@ const fs = require("fs");
 const ffmpeg = require("fluent-ffmpeg");
 const { r2Client, R2_BUCKET, getPublicUrl } = require("../../utils/r2Client");
 
+// Auto-configure FFmpeg path for local macOS development (Homebrew)
+if (fs.existsSync('/opt/homebrew/bin/ffmpeg')) {
+  ffmpeg.setFfmpegPath('/opt/homebrew/bin/ffmpeg');
+} else if (fs.existsSync('/usr/local/bin/ffmpeg')) {
+  ffmpeg.setFfmpegPath('/usr/local/bin/ffmpeg');
+}
+
 
 // Configure multer for file upload
 const storage = multer.memoryStorage();

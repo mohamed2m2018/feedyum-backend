@@ -9,6 +9,9 @@ RUN npm run build
 # Stage 2: Backend
 FROM node:22.22.0
 
+# Install ffmpeg for audio processing
+RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
+
 # Set working directory
 WORKDIR /app
 

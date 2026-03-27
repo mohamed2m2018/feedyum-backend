@@ -50,7 +50,7 @@ class SemanticSearchService {
       // Get dishes that have embeddings
       const dishes = await Dish.find({
         visible: { $ne: false },
-        embedding: { $exists: true, $ne: null },
+        embedding: { $exists: true, $ne: null, $not: { $size: 0 } },
         ...filters
       })
         .select('+embedding')

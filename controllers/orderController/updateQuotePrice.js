@@ -80,10 +80,14 @@ const updateQuotePrice = async (req, res) => {
         }
 
         // Recalculate total
+        const { calculateServiceFee } = require('../../config/feeConfig');
         const subtotal = order.subtotal || 0;
         const fee = order.deliveryFee || 0;
+        const serviceFee = calculateServiceFee(subtotal);
         const discountAmount = order.promocode?.discountAmount || 0;
-        order.totalPrice = subtotal + fee - discountAmount;
+        
+        order.serviceFee = serviceFee;
+        order.totalPrice = subtotal + fee + serviceFee - discountAmount;
         order.lastUpdated = new Date();
 
         await order.save();

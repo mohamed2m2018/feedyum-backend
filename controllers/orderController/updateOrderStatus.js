@@ -72,6 +72,8 @@ const updateOrderStatus = async (req, res) => {
     const previousDeliveryFee = order.deliveryFee;
     const previousStatus = order.status;
 
+    const { calculateServiceFee } = require('../../config/feeConfig');
+
     // Update delivery fee if chef overrides it
     if (deliveryFee !== undefined) {
       const parsedFee = Number(deliveryFee);
@@ -79,10 +81,11 @@ const updateOrderStatus = async (req, res) => {
         deliveryFeeOverridden = true;
       }
       order.deliveryFee = parsedFee;
-      // Recalculate totalPrice: subtotal + deliveryFee (no service fee)
+      // Recalculate totalPrice: subtotal + deliveryFee + serviceFee
       const subtotal = order.subtotal || 0;
       const discountAmount = order.promocode?.discountAmount || 0;
-      order.totalPrice = subtotal + parsedFee - discountAmount;
+      const serviceFee = order.serviceFee || 0;
+      order.totalPrice = subtotal + parsedFee + serviceFee - discountAmount;
     }
 
     // Apply quote price for catering orders (chef sets the price)
@@ -94,10 +97,13 @@ const updateOrderStatus = async (req, res) => {
         if (order.items && order.items.length > 0) {
           order.items[0].unitPrice = parsedQuote;
         }
+        // Recalculate serviceFee based on new quote
+        const serviceFee = calculateServiceFee(parsedQuote);
+        order.serviceFee = serviceFee;
         // Recalculate totalPrice with the quoted subtotal
         const fee = order.deliveryFee || 0;
         const discountAmount = order.promocode?.discountAmount || 0;
-        order.totalPrice = parsedQuote + fee - discountAmount;
+        order.totalPrice = parsedQuote + fee + serviceFee - discountAmount;
         console.log(`[updateOrderStatus] Catering order ${orderId} priced at ${parsedQuote}, total: ${order.totalPrice}`);
       }
     }

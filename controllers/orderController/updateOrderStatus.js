@@ -182,8 +182,8 @@ const updateOrderStatus = async (req, res) => {
       try {
         const wallet = await ChefWallet.findOne({ chef: order.chef._id });
         if (wallet) {
-          await wallet.refundServiceFee(order._id, order.subtotal);
-          console.log(`[WALLET] Refunded service fee for chef-cancelled order ${order._id}`);
+          await wallet.refundServiceFee(order._id, order.serviceFee || 0);
+          console.log(`[WALLET] Refunded platform/service fees for chef-cancelled order ${order._id}`);
         }
       } catch (walletError) {
         console.error('[WALLET] Failed to refund service fee on chef cancellation:', walletError);

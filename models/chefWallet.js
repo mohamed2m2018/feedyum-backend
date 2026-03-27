@@ -97,19 +97,20 @@ ChefWalletSchema.methods.isOrderBlocked = function () {
   return now >= gracePeriodEnd;
 };
 
-// Method to deduct flat platform order fee from chef wallet
-ChefWalletSchema.methods.addServiceFee = function (orderId) {
-  const feeAmount = CHEF_ORDER_FEE; // Flat fee per order
+// Method to deduct platform order fee and customer service fee from chef wallet
+ChefWalletSchema.methods.addServiceFee = function (orderId, customerServiceFee = 0) {
+  const platformFee = CHEF_ORDER_FEE; 
+  const totalDeduction = platformFee + customerServiceFee;
 
   this.transactions.push({
     type: 'service_fee',
-    amount: -feeAmount, // Negative because it's deducted
+    amount: -totalDeduction, // Negative because it's deducted
     orderId: orderId,
-    description: `Platform order fee (${feeAmount} EGP) for order ${orderId}`,
+    description: `Platform fee (${platformFee} EGP) + Customer Service Fee (${customerServiceFee} EGP) for order ${orderId}`,
     timestamp: new Date()
   });
 
-  this.balance -= feeAmount;
+  this.balance -= totalDeduction;
   this._updatePaymentStatus();
 
   return this.save();
@@ -131,19 +132,20 @@ ChefWalletSchema.methods.processPayment = function (amount, description = 'Payme
   return this.save();
 };
 
-// Method to refund platform order fee when order is cancelled
-ChefWalletSchema.methods.refundServiceFee = function (orderId) {
-  const feeAmount = CHEF_ORDER_FEE; // Flat fee to refund
+// Method to refund platform order fee and customer service fee when order is cancelled
+ChefWalletSchema.methods.refundServiceFee = function (orderId, customerServiceFee = 0) {
+  const platformFee = CHEF_ORDER_FEE; 
+  const totalRefund = platformFee + customerServiceFee;
 
   this.transactions.push({
     type: 'refund',
-    amount: feeAmount, // Positive because it's being returned
+    amount: totalRefund, // Positive because it's being returned
     orderId: orderId,
-    description: `Platform fee refund (${feeAmount} EGP) for cancelled order ${orderId}`,
+    description: `Refund: Platform fee (${platformFee} EGP) + Customer Service Fee (${customerServiceFee} EGP) for cancelled order ${orderId}`,
     timestamp: new Date()
   });
 
-  this.balance += feeAmount;
+  this.balance += totalRefund;
   this._updatePaymentStatus();
 
   return this.save();

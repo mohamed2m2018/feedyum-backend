@@ -109,11 +109,11 @@ const confirmOrderByUser = async (req, res) => {
                 });
             }
 
-            // Deduct flat platform order fee
-            await wallet.addServiceFee(order._id);
-            console.log(`[WALLET] Deducted ${CHEF_ORDER_FEE} EGP platform fee for order ${order._id}`);
+            // Deduct flat platform order fee + customer service fee
+            await wallet.addServiceFee(order._id, order.serviceFee || 0);
+            console.log(`[WALLET] Deducted ${CHEF_ORDER_FEE} EGP platform fee + ${order.serviceFee || 0} EGP service fee for order ${order._id}`);
         } catch (walletError) {
-            console.error(`[WALLET] CRITICAL: Failed to collect ${CHEF_ORDER_FEE} EGP platform fee for order ${order._id}, chef ${chefId}:`, walletError.message);
+            console.error(`[WALLET] CRITICAL: Failed to collect fees for order ${order._id}, chef ${chefId}:`, walletError.message);
             // Don't fail the confirmation if wallet deduction fails
             // The fee can be collected manually or via a reconciliation job
         }

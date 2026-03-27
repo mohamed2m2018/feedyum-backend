@@ -160,16 +160,25 @@ class EnhancedNotificationService {
         ttl: 86400 // 24 hours
       };
 
-      // Add sound for Android/iOS if it's a chef order or critical
-      if (type === 'chefDashboard' || type === 'orderTracking') {
+      // Chef dashboard notifications: always use alarm channel + default to newOrder if no specific alarmType
+      if (type === 'chefDashboard') {
         notification.priority = 10;
         notification.existing_android_channel_id = 'order_alarm_channel';
         notification.ios_sound = 'default';
         notification.android_sound = 'alarm_ringtone';
-        // Data payload for background handler — only set alarmType if not already specified by caller
         if (!notification.data.alarmType) {
           notification.data.alarmType = 'newOrder';
         }
+      }
+
+      // Customer order tracking notifications: only use alarm channel if the caller explicitly
+      // set an alarmType (e.g. awaitingConfirmation).
+      // All other status updates (confirmed, preparing, ready, cancelled) use default sound — no alarm.
+      if (type === 'orderTracking' && notification.data.alarmType) {
+        notification.priority = 10;
+        notification.existing_android_channel_id = 'order_alarm_channel';
+        notification.ios_sound = 'default';
+        notification.android_sound = 'alarm_ringtone';
       }
 
       // Add media if provided

@@ -7,7 +7,8 @@ const validatePromocode = async (req, res) => {
     if (!code || !orderAmount) {
       return res.status(400).json({
         success: false,
-        message: 'Promocode and order amount are required'
+        message: 'Promocode and order amount are required',
+        messageAr: 'كود الخصم وقيمة الطلب مطلوبان'
       });
     }
 
@@ -20,7 +21,8 @@ const validatePromocode = async (req, res) => {
     if (!promocode) {
       return res.status(404).json({
         success: false,
-        message: 'Invalid promocode'
+        message: 'Invalid promocode',
+        messageAr: 'كود الخصم غير صحيح'
       });
     }
 
@@ -28,7 +30,8 @@ const validatePromocode = async (req, res) => {
     if (new Date() > promocode.validUntil) {
       return res.status(400).json({
         success: false,
-        message: 'Promocode has expired'
+        message: 'Promocode has expired',
+        messageAr: 'كود الخصم منتهي الصلاحية'
       });
     }
 
@@ -36,7 +39,8 @@ const validatePromocode = async (req, res) => {
     if (new Date() < promocode.validFrom) {
       return res.status(400).json({
         success: false,
-        message: 'Promocode is not yet valid'
+        message: 'Promocode is not yet valid',
+        messageAr: 'كود الخصم غير صالح للاستخدام بعد'
       });
     }
 
@@ -44,7 +48,8 @@ const validatePromocode = async (req, res) => {
     if (promocode.usageLimit && promocode.usedCount >= promocode.usageLimit) {
       return res.status(400).json({
         success: false,
-        message: 'Promocode usage limit exceeded'
+        message: 'Promocode usage limit exceeded',
+        messageAr: 'تم تجاوز الحد الأقصى لاستخدام كود الخصم'
       });
     }
 
@@ -52,7 +57,8 @@ const validatePromocode = async (req, res) => {
     if (orderAmount < promocode.minOrderAmount) {
       return res.status(400).json({
         success: false,
-        message: `Minimum order amount of £${promocode.minOrderAmount} required`
+        message: `Minimum order amount of ${promocode.minOrderAmount} EGP required`,
+        messageAr: `الحد الأدنى للطلب لاستخدام هذا الكود هو ${promocode.minOrderAmount} جنيه`
       });
     }
 
@@ -61,7 +67,8 @@ const validatePromocode = async (req, res) => {
       if (!promocode.applicableToChefs.includes(chefId)) {
         return res.status(400).json({
           success: false,
-          message: 'Promocode not applicable to this chef'
+          message: 'Promocode not applicable to this chef',
+          messageAr: 'كود الخصم غير متاح لهذا المطعم'
         });
       }
     }
@@ -87,7 +94,8 @@ const validatePromocode = async (req, res) => {
       valid: true,
       discountAmount: parseFloat(discountAmount.toFixed(2)),
       discountType: promocode.discountType,
-      message: `Promocode applied! You saved £${discountAmount.toFixed(2)}`
+      message: `Promocode applied! You saved ${discountAmount.toFixed(2)} EGP`,
+      messageAr: `تم تطبيق كود الخصم بنجاح! لقد وفرت ${discountAmount.toFixed(2)} جنيه`
     });
 
   } catch (error) {

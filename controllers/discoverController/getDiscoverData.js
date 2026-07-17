@@ -167,7 +167,6 @@ async function getUsersForAllCategories(categories, coordinates, blockedChefIds 
         $match: {
           tags: { $in: tagIds },
           type: 'chef',
-          date: { $gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) },
           ...(blockedChefIds.length > 0 && { _id: { $nin: blockedChefIds } })
         }
       },
@@ -327,10 +326,6 @@ async function getDishesForAllCategories(categories, coordinates, blockedChefIds
         $match: {
           category: { $in: categories },
           visible: true,
-          $or: [
-            { created_at: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
-            { user_id: { $in: guaranteedChefIds } } // Guarantee these chefs' dishes are pulled
-          ],
           ...(blockedChefIds.length > 0 && { user_id: { $nin: blockedChefIds } })
         }
       },
@@ -449,7 +444,6 @@ async function getAllChefs(coordinates, blockedChefIds = []) {
       {
         $match: {
           type: 'chef',
-          date: { $gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) },
           ...(blockedChefIds.length > 0 && { _id: { $nin: blockedChefIds } })
         }
       },
@@ -585,10 +579,6 @@ async function getAllDishes(coordinates, blockedChefIds = [], guaranteedChefIds 
       {
         $match: {
           visible: true,
-          $or: [
-            { created_at: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
-            { user_id: { $in: guaranteedChefIds } } // Guarantee these chefs' dishes are pulled
-          ],
           ...(blockedChefIds.length > 0 && { user_id: { $nin: blockedChefIds } })
         }
       },

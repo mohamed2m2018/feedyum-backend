@@ -120,7 +120,6 @@ async function getChefsForCategory(category, isAll, coordinates, blockedChefIds,
         {
           $match: {
             type: 'chef',
-            date: { $gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) },
             ...(blockedChefIds.length > 0 && { _id: { $nin: blockedChefIds } })
           }
         },
@@ -199,7 +198,6 @@ async function getChefsForCategory(category, isAll, coordinates, blockedChefIds,
       matchStage = {
         tags: tagDoc._id,
         type: 'chef',
-        date: { $gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) },
         ...(blockedChefIds.length > 0 && { _id: { $nin: blockedChefIds } })
       };
 
@@ -319,12 +317,10 @@ async function getDishesForCategory(category, isAll, coordinates, blockedChefIds
     const matchStage = isAll
       ? {
           visible: true,
-          created_at: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
           ...(blockedChefIds.length > 0 && { user_id: { $nin: blockedChefIds } })
         }
       : {
           visible: true,
-          created_at: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
           $or: [
             { category: { $regex: new RegExp(category, 'i') } },
             { categories: { $elemMatch: { $regex: new RegExp(category, 'i') } } }

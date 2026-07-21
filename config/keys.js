@@ -5,6 +5,7 @@ const keys = {
   secretOrKey: process.env.SECRET_OR_KEY,
   adminEmail: process.env.ADMIN_EMAIL,
   adminPassword: process.env.ADMIN_PASSWORD,
+  adminCookiePassword: process.env.ADMIN_COOKIE_PASSWORD,
 
   // Legacy AWS S3 credentials
   aws_access_key_id: process.env.AWS_ACCESS_KEY_ID,

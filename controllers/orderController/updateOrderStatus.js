@@ -3,6 +3,7 @@ const User = require('../../models/user');
 const ChefWallet = require('../../models/chefWallet');
 const EnhancedNotificationService = require('../../services/enhancedNotificationService');
 const sendQuotePriceMessage = require('../../utils/sendQuotePriceMessage');
+const { reverseCommission } = require('../../services/commissionService');
 
 const updateOrderStatus = async (req, res) => {
   try {
@@ -188,6 +189,13 @@ const updateOrderStatus = async (req, res) => {
       } catch (walletError) {
         console.error('[WALLET] Failed to refund service fee on chef cancellation:', walletError);
       }
+    }
+
+    // Reverse ambassador commission if order cancelled
+    if (actualStatus === 'cancelled' && order.attributionId) {
+      reverseCommission(order._id).catch(err => {
+        console.error('[COMMISSION] Failed to reverse:', err.message);
+      });
     }
 
     // Strike system: penalize chef for cancelling deposit orders

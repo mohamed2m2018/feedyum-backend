@@ -5,6 +5,7 @@ const ChefBranch = require('../../models/chefBranch');
 const PromoCode = require('../../models/promocode');
 const EnhancedNotificationService = require('../../services/enhancedNotificationService');
 const { validateDeliveryDistance } = require('../../utils/deliveryValidation');
+const { findAttribution, creditCommission } = require('../../services/commissionService');
 const { calculateDeliveryFee, calculateServiceFee, isServiceFeeWaiverCode } = require('../../config/feeConfig');
 
 const createOrder = async (req, res) => {
@@ -288,6 +289,14 @@ const createOrder = async (req, res) => {
       }
     }
 
+    // Check for mission attribution (last-touch)
+    let attribution = null;
+    try {
+      attribution = await findAttribution(userId, chefId);
+    } catch (attrErr) {
+      console.error('[ATTRIBUTION] Lookup failed:', attrErr.message);
+    }
+
     // Create the order
     const order = new Order({
       user: userId,
@@ -298,6 +307,14 @@ const createOrder = async (req, res) => {
       serviceFee: Number(serviceFee.toFixed(2)),
       deliveryFee: Number(deliveryFee.toFixed(2)),
       ...(appliedPromocode && { promocode: appliedPromocode }),
+      ...(attribution && {
+        sourceStoryId: attribution.storyId,
+        sourceAmbassadorId: attribution.ambassador,
+        sourceMissionId: attribution.missionId,
+        sourceParticipationId: attribution.participationId,
+        sourceReferralCode: attribution.referralCode,
+        attributionId: attribution._id,
+      }),
       deliveryAddress,
       specialInstructions: notes || '',
       paymentMethod: selectedPaymentMethod,
@@ -313,6 +330,13 @@ const createOrder = async (req, res) => {
     });
 
     await order.save();
+
+    // Credit ambassador commission (async, non-blocking)
+    if (attribution) {
+      creditCommission(order, attribution).catch(err => {
+        console.error('[COMMISSION] Failed to credit:', err.message);
+      });
+    }
 
     // Increment promocode usage count
     if (appliedPromocode) {

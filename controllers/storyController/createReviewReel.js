@@ -13,6 +13,7 @@ const Dish = mongoose.model("dish");
 const Menu = mongoose.model("menu");
 const Category = mongoose.model("category");
 const Review = require("../../models/review");
+const { submitMissionContent, MissionSubmissionError } = require('../../services/missionSubmissionService');
 
 // Utils
 
@@ -50,7 +51,7 @@ const createReviewReel = async (req, res) => {
       }
 
       try {
-        const { caption, rating, reviewType, dishId, menuId } = req.body;
+        const { caption, rating, reviewType, dishId, menuId, missionId, googlePlaceId, restaurantName, restaurantAddress, location } = req.body;
 
         console.log("Create review reel request:", {
           caption: caption ? caption.substring(0, 50) + "..." : "No caption",
@@ -148,6 +149,20 @@ const createReviewReel = async (req, res) => {
           }
           categoryIds = [defaultCategory._id];
           console.log(`Using default category for menu: ${defaultCategory.name} (${defaultCategory._id})`);
+        }
+
+        // Handle restaurant review type (scouting missions)
+        if (reviewType === "restaurant") {
+          // For restaurant/scouting reviews, no specific dish or menu is required
+          let defaultCategory = await Category.findOne({ name: "Food" });
+          if (!defaultCategory) {
+            defaultCategory = new Category({
+              name: "Food",
+              description: "Default food category",
+            });
+            await defaultCategory.save();
+          }
+          categoryIds = [defaultCategory._id];
         }
 
         // Prevent users from reviewing their own content
@@ -255,7 +270,7 @@ const createReviewReel = async (req, res) => {
           avatarUri: req.body.avatarUri,  // For images
           author: req.user._id,
           category: categoryIds,
-          title: `Review: ${reviewedItem.name}`,
+          title: reviewedItem ? `Review: ${reviewedItem.name}` : (missionId ? `Scout Review: ${restaurantName || "Restaurant"}` : `Review`),
           poster: posterUrl,
           reviewMode: true,
           reviewType: reviewType,
@@ -264,6 +279,8 @@ const createReviewReel = async (req, res) => {
           rating: parseInt(rating),
           dishes: reviewType === "dish" ? [dishId] : [],
           allowContact: true,
+          ...(missionId && { missionId: missionId }),
+          ...(googlePlaceId && { googlePlaceId: googlePlaceId }),
           views: 0,
           likes: 0,
           likesNo: 0,
@@ -328,6 +345,43 @@ const createReviewReel = async (req, res) => {
           } catch (reviewError) {
             console.error("Failed to create Review document:", reviewError.message);
             // Don't fail the request - the Story was saved successfully
+          }
+
+          // Mission linking is part of the request contract: never report a
+          // successful reel if the mission submission failed.
+          if (missionId) {
+            const session = await mongoose.startSession();
+            try {
+              await session.withTransaction(() => submitMissionContent({
+                missionId,
+                userId: req.user._id,
+                storyId: savedReviewReel._id,
+                idempotencyKey: req.get('Idempotency-Key') || req.body.idempotencyKey,
+                place: {
+                  placeId: googlePlaceId,
+                  name: restaurantName,
+                  address: restaurantAddress,
+                  location,
+                },
+                session,
+              }));
+            } catch (missionErr) {
+              console.error("Failed to auto-submit mission content:", missionErr.message);
+              await Promise.all([
+                Story.deleteOne({ _id: savedReviewReel._id }),
+                Review.deleteOne({ storyId: savedReviewReel._id }),
+                User.updateOne({ _id: req.user._id }, { $inc: { postsNo: -1 } }),
+              ]);
+              return res.status(missionErr.status || (missionErr.code === 11000 ? 409 : 500)).json({
+                success: false,
+                code: missionErr.code === 11000 ? 'DUPLICATE_SUBMISSION' : (missionErr.code || 'MISSION_SUBMISSION_FAILED'),
+                message: missionErr instanceof MissionSubmissionError
+                  ? missionErr.message
+                  : 'The reel could not be linked to the mission. Please try again.',
+              });
+            } finally {
+              await session.endSession();
+            }
           }
 
           res.json({

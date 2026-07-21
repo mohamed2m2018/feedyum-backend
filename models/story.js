@@ -107,6 +107,10 @@ const StorySchema = new Schema({
   isReview: { type: Boolean, default: false },
   reviewedChef: { type: mongoose.Schema.Types.ObjectId, ref: 'user' },
   googlePlaceId: String,
+  location: {
+    lat: { type: Number, default: null },
+    lng: { type: Number, default: null },
+  },
   restaurantName: String,
   restaurantAddress: String,
   dishName: String, // For manual dish entry (when not linked to a system dish)
@@ -119,6 +123,11 @@ const StorySchema = new Schema({
   avgCompletionRate: { type: Number, default: 0 },
   rewatchCount: { type: Number, default: 0 },
   shareCount: { type: Number, default: 0 },
+
+  // Mission fields
+  missionId: { type: mongoose.Schema.Types.ObjectId, ref: "mission" },
+  participationId: { type: mongoose.Schema.Types.ObjectId, ref: "missionParticipation" },
+  referralCode: String,
 });
 
 // Performance optimization indexes

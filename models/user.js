@@ -97,6 +97,17 @@ const UserSchema = new Schema({
   // Re-engagement tracking
   lastActiveAt: { type: Date, default: Date.now },
   lastReengagementSentAt: { type: Date, default: null },
+
+  // Missions / Ambassador
+  isUnclaimed: { type: Boolean, default: false },
+  claimedAt: Date,
+  scoutedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'user' },
+  googlePlaceId: String,
+  ambassadorLevel: {
+    type: String,
+    enum: ['none', 'bronze', 'silver', 'gold', 'platinum'],
+    default: 'none',
+  },
 });
 
 // Pre-save middleware to handle currency setting
@@ -173,6 +184,7 @@ UserSchema.methods.setChefCountry = function (country) {
 UserSchema.index({ tags: 1 }); // Index for tag-based user queries in discover
 UserSchema.index({ embedding: 1 }); // Index for semantic search
 UserSchema.index({ type: 1, embedding: 1 }); // Compound index for semantic search with user type
+UserSchema.index({ googlePlaceId: 1, isUnclaimed: 1 });
 
 const User = mongoose.models.user || mongoose.model('user', UserSchema);
 

@@ -21,6 +21,77 @@ AdminJS.registerAdapter(AdminJSMongoose);
 require("./models/loadModels");
 
 const app = express();
+const webhookTestEvents = [];
+const MAX_WEBHOOK_TEST_EVENTS = 100;
+
+async function runClaimAdminAction(action, request, context) {
+  const { reviewClaim } = require('./controllers/missionController/restaurantClaims');
+  let statusCode = 200;
+  let payload;
+  await reviewClaim(
+    {
+      params: { claimId: context.record.id() },
+      body: { action, reason: request.payload?.reason || (action === 'reject' ? 'Rejected by administrator' : undefined) },
+      user: { _id: undefined, email: context.currentAdmin?.email },
+    },
+    {
+      status(code) { statusCode = code; return this; },
+      json(body) { payload = body; return body; },
+    },
+  );
+  if (statusCode >= 400) {
+    return { record: context.record.toJSON(context.currentAdmin), notice: { message: payload?.message || 'Claim review failed', type: 'error' } };
+  }
+  const refreshed = await context.resource.findOne(context.record.id());
+  return {
+    record: refreshed.toJSON(context.currentAdmin),
+    notice: { message: action === 'approve' ? 'Claim approved and reward processed' : 'Claim rejected', type: 'success' },
+    redirectUrl: context.h.recordActionUrl({ resourceId: context.resource.id(), recordId: context.record.id(), actionName: 'show' }),
+  };
+}
+
+function adminResources() {
+  return Object.values(mongoose.models).map(resource => {
+    if (resource.modelName !== 'restaurantClaim') return { resource };
+    return {
+      resource,
+      options: {
+        navigation: { name: 'Scouting', icon: 'MapPin' },
+        properties: {
+          evidence: { isVisible: { list: false, filter: false, show: true, edit: false } },
+          idempotencyKey: { isVisible: false },
+          status: { isVisible: { list: true, filter: true, show: true, edit: false } },
+        },
+        actions: {
+          approve: {
+            actionType: 'record', component: false, icon: 'Check',
+            isAccessible: ({ record }) => record?.param('status') === 'pending',
+            handler: (request, response, context) => runClaimAdminAction('approve', request, context),
+          },
+          reject: {
+            actionType: 'record', component: false, icon: 'X',
+            isAccessible: ({ record }) => record?.param('status') === 'pending',
+            handler: (request, response, context) => runClaimAdminAction('reject', request, context),
+          },
+          viewEvidence: {
+            actionType: 'record', component: false, icon: 'Document',
+            handler: async (request, response, context) => {
+              const claim = await mongoose.model('restaurantClaim').findById(context.record.id()).select('evidence');
+              const evidence = claim?.evidence?.[0];
+              if (!evidence) return { record: context.record.toJSON(context.currentAdmin), notice: { message: 'No evidence attached', type: 'error' } };
+              const { r2Client, R2_BUCKET } = require('./utils/r2Client');
+              const redirectUrl = await r2Client.getSignedUrl('getObject', { Bucket: R2_BUCKET, Key: evidence.objectKey, Expires: 300 });
+              return { record: context.record.toJSON(context.currentAdmin), redirectUrl };
+            },
+          },
+          edit: { isAccessible: false },
+          delete: { isAccessible: false },
+          new: { isAccessible: false },
+        },
+      },
+    };
+  });
+}
 
 // Connect to MongoDB with proper await and error handling
 async function connectToDatabase() {
@@ -44,11 +115,17 @@ async function connectToDatabase() {
     // Initialize AdminJS after successful connection
     try {
       const adminJS = new AdminJS({
-        databases: [mongooseDb],
+        resources: adminResources(),
         rootPath: "/shoman-salah-not-expected",
         loginPath: "/shoman-salah-not-expected/login",
         logoutPath: "/shoman-salah-not-expected/logout",
       });
+
+      const isProduction = process.env.NODE_ENV === 'production';
+      const adminCookiePassword = keys.adminCookiePassword || (isProduction ? '' : 'development-only-admin-cookie-secret');
+      if (adminCookiePassword.length < 32) {
+        throw new Error('ADMIN_COOKIE_PASSWORD must contain at least 32 characters');
+      }
 
       const adminJSRouter = AdminJSExpress.buildAuthenticatedRouter(
         adminJS,
@@ -59,12 +136,19 @@ async function connectToDatabase() {
             }
             return null;
           },
-          cookiePassword: 'some-secret-password-used-to-secure-cookie',
+          cookieName: 'feedyum-admin',
+          cookiePassword: adminCookiePassword,
         },
         null,
         {
           resave: false,
           saveUninitialized: true,
+          cookie: {
+            httpOnly: true,
+            secure: isProduction,
+            sameSite: 'lax',
+            maxAge: 8 * 60 * 60 * 1000,
+          },
         }
       );
 
@@ -167,8 +251,42 @@ app.use("/api/paymob", require("./routes/paymob"));
 app.use("/api/favorites", require("./routes/favorites"));
 app.use("/api/translate", require("./routes/translate"));
 app.use("/api/menu-upload", require("./routes/menuUpload"));
+app.use("/api/missions", require("./routes/mission"));
+app.use("/api/ambassador-wallet", require("./routes/ambassadorWallet"));
 // Crisp webhook for support chat notifications (no auth - external webhook)
 app.use("/api/webhooks/crisp", require("./routes/crispWebhook"));
+app.post("/api/webhooks/test/capture", (req, res) => {
+  const event = {
+    id: `webhook-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`,
+    receivedAt: new Date().toISOString(),
+    method: req.method,
+    path: req.path,
+    query: req.query,
+    headers: req.headers,
+    body: req.body,
+  };
+
+  webhookTestEvents.unshift(event);
+  if (webhookTestEvents.length > MAX_WEBHOOK_TEST_EVENTS) {
+    webhookTestEvents.length = MAX_WEBHOOK_TEST_EVENTS;
+  }
+
+  console.log("[WebhookTest] received:", JSON.stringify(event));
+
+  res.status(200).json({
+    ok: true,
+    id: event.id,
+    message: "Webhook test endpoint received payload.",
+  });
+});
+
+app.get("/api/webhooks/test/capture", (_req, res) => {
+  res.status(200).json({
+    ok: true,
+    count: webhookTestEvents.length,
+    events: webhookTestEvents,
+  });
+});
 // Sharing routes for deep linking fallback (must be before static files)
 app.use("/", require("./routes/sharing"));
 
@@ -212,9 +330,15 @@ async function startServer() {
       const { startStaleOrderReminders } = require('./cron/staleOrderReminders');
       const { startOrderExpiry } = require('./cron/orderExpiry');
       const { startReengagementNotifications } = require('./cron/reengagementNotifications');
+      const { startConfirmPendingCommissions } = require('./cron/confirmPendingCommissions');
+      const { startUpdateMissionLeaderboards } = require('./cron/updateMissionLeaderboards');
+      const { startExpireMissions } = require('./cron/expireMissions');
       startStaleOrderReminders();
       startOrderExpiry();
       startReengagementNotifications();
+      startConfirmPendingCommissions();
+      startUpdateMissionLeaderboards();
+      startExpireMissions();
       console.log('⏰ Cron jobs started (production mode)');
     } else {
       console.log('⏰ Cron jobs SKIPPED (non-production mode)');

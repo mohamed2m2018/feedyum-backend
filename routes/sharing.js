@@ -1,8 +1,10 @@
 const express = require('express');
 const passport = require('passport');
+const mongoose = require('mongoose');
 const router = express.Router();
 
 const sharingController = require('../controllers/sharingController');
+const MissionParticipation = mongoose.model('missionParticipation');
 
 // @route  POST api/sharing/generate-link
 // @desc   Generate shareable links for content (reels, profiles, menus, etc.)
@@ -172,6 +174,29 @@ router.get('/order/:contentId/track', (req, res) => {
 router.get('/chat/:contentId?', (req, res) => {
   req.params.type = req.params.contentId ? 'chat' : 'chatList';
   sharingController.generateWebFallback(req, res);
+});
+
+// @route  GET /r/:referralCode
+// @desc   Referral deep link — redirects to story/app with attribution context
+// @access Public
+router.get('/r/:referralCode', async (req, res) => {
+  try {
+    const participation = await MissionParticipation.findOne({
+      referralCode: req.params.referralCode,
+    }).populate('mission', 'title type targetChefId');
+
+    if (!participation || !participation.storyId) {
+      return res.redirect(process.env.APP_STORE_URL || 'https://feedyum.app');
+    }
+
+    req.params.contentId = participation.storyId.toString();
+    req.params.type = 'reel';
+    req.query.ref = req.params.referralCode;
+    sharingController.generateWebFallback(req, res);
+  } catch (err) {
+    console.error('[REFERRAL] Error handling referral link:', err.message);
+    res.redirect(process.env.APP_STORE_URL || 'https://feedyum.app');
+  }
 });
 
 module.exports = router; 

@@ -36,8 +36,8 @@ const validateCreateReviewReel = (data) => {
     errors.reviewType = 'Review type is required';
   }
 
-  if (data.reviewType && !['dish', 'menu'].includes(data.reviewType)) {
-    errors.reviewType = 'Review type must be either "dish" or "menu"';
+  if (data.reviewType && !['dish', 'menu', 'restaurant'].includes(data.reviewType)) {
+    errors.reviewType = 'Review type must be "dish", "menu", or "restaurant"';
   }
 
   // Dish/Menu ID validation based on review type
@@ -54,6 +54,8 @@ const validateCreateReviewReel = (data) => {
       errors.menuId = 'Menu ID is required for menu reviews';
     }
   }
+
+  // Restaurant type (scouting missions) does not require dishId or menuId
 
   return {
     errors,

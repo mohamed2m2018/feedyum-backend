@@ -65,6 +65,14 @@ const OrderSchema = new mongoose.Schema({
   depositConfirmedByChef: { type: Boolean, default: false },
   depositConfirmedAt: { type: Date, default: null },
   depositProofImage: { type: String, default: '' }, // Customer's payment proof screenshot URL
+
+  // Mission attribution
+  sourceStoryId: { type: mongoose.Schema.Types.ObjectId, ref: "story" },
+  sourceAmbassadorId: { type: mongoose.Schema.Types.ObjectId, ref: "user" },
+  sourceMissionId: { type: mongoose.Schema.Types.ObjectId, ref: "mission" },
+  sourceParticipationId: { type: mongoose.Schema.Types.ObjectId, ref: "missionParticipation" },
+  sourceReferralCode: String,
+  attributionId: { type: mongoose.Schema.Types.ObjectId, ref: "missionAttribution" },
 });
 
 // Add indexes for better query performance

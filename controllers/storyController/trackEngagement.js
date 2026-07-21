@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 const View = mongoose.model("view");
 const Story = mongoose.model("story");
+const { createAttribution } = require('../../services/commissionService');
 
 /**
  * Track engagement signals for a story
@@ -35,6 +36,7 @@ const trackEngagement = async (req, res) => {
 
         // Find existing view or create new one
         let view = await View.findOne({ user_id: userId, story: id });
+        let isNewView = false;
 
         if (view) {
             // Update existing view
@@ -46,6 +48,7 @@ const trackEngagement = async (req, res) => {
             view.source = source;
             await view.save();
         } else {
+            isNewView = true;
             // Create new view
             view = await View.create({
                 user_id: userId,
@@ -61,6 +64,17 @@ const trackEngagement = async (req, res) => {
 
             // Increment story view count
             await Story.findByIdAndUpdate(id, { $inc: { views: 1 } });
+        }
+
+        // Track mission attribution on first view of mission content
+        if (isNewView && story.missionId && story.participationId) {
+            mongoose.model('missionParticipation').updateOne(
+                { _id: story.participationId },
+                { $inc: { 'metrics.totalViews': 1 } },
+            ).catch(err => console.error('[MISSION] Failed to increment participation views:', err.message));
+            createAttribution(userId, story, source === 'share' ? 'share_link' : 'in_app_view').catch(err => {
+                console.error('[ATTRIBUTION] Failed to create attribution:', err.message);
+            });
         }
 
         // Update story aggregated stats (async, non-blocking)

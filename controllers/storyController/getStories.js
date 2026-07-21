@@ -42,58 +42,20 @@ setInterval(() => {
 }, FEED_CACHE_CLEANUP_INTERVAL);
 
 /**
- * TIERED CANDIDATE FETCHING
- * Instead of fetching all 1000 at once, fetch in priority tiers
+ * CANDIDATE FETCHING
+ * Fetch all candidates without time cutoff
  */
 async function fetchCandidatesTiered(categoryQuery, limit, extraFilters = {}) {
-  const now = new Date();
   // Merge extra filters into the category query
   const baseQuery = { ...categoryQuery, ...extraFilters };
-  const results = [];
 
-  // TIER 1: Hot content (last 7 days) - most likely to be relevant
-  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const tier1 = await Story.find({ ...baseQuery, created_at: { $gte: sevenDaysAgo } })
+  // Fetch candidates sorted by created_at desc without time cutoff
+  const results = await Story.find(baseQuery)
     .select('created_at author likesNo views commentsNo caption dishes reviewMode poster category avgCompletionRate rewatchCount shareCount')
     .populate('author', 'locations type')
     .sort({ created_at: -1 })
-    .limit(Math.min(limit, TIER1_CANDIDATE_LIMIT))
+    .limit(limit)
     .lean();
-
-  results.push(...tier1);
-
-  // TIER 2: Extended content (7-30 days) - only if we need more
-  if (results.length < limit) {
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const tier2 = await Story.find({
-      ...baseQuery,
-      created_at: { $gte: thirtyDaysAgo, $lt: sevenDaysAgo }
-    })
-      .select('created_at author likesNo views commentsNo caption dishes reviewMode poster category avgCompletionRate rewatchCount shareCount')
-      .populate('author', 'locations type')
-      .sort({ likesNo: -1 }) // Sort by engagement for older content
-      .limit(Math.min(limit - results.length, TIER2_CANDIDATE_LIMIT))
-      .lean();
-
-    results.push(...tier2);
-  }
-
-  // TIER 3: Archive content (30-60 days) - only if needed
-  if (results.length < limit) {
-    const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const tier3 = await Story.find({
-      ...baseQuery,
-      created_at: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo }
-    })
-      .select('created_at author likesNo views commentsNo caption dishes reviewMode poster category avgCompletionRate rewatchCount shareCount')
-      .populate('author', 'locations type')
-      .sort({ views: -1 }) // Sort by views for archive
-      .limit(Math.min(limit - results.length, 200))
-      .lean();
-
-    results.push(...tier3);
-  }
 
   return results;
 }
@@ -489,19 +451,49 @@ const getStories = async (req, res) => {
       // Batch fetch branch distances for story authors
       const storyAuthorIds = [...new Set(orderedStories.map(s => s.author?._id?.toString()).filter(Boolean))];
       let storyBranchMap = new Map();
-      if (lat && long && storyAuthorIds.length > 0) {
-        storyBranchMap = await getNearestBranchBatch(storyAuthorIds, Number(lat), Number(long));
+      let branchesByAuthor = new Map();
+
+      if (storyAuthorIds.length > 0) {
+        if (lat && long) {
+          storyBranchMap = await getNearestBranchBatch(storyAuthorIds, Number(lat), Number(long));
+        }
+
+        // Fetch all active branches for these authors to populate the locations array for the UI
+        const ChefBranch = mongoose.model('chefBranch');
+        const allBranches = await ChefBranch.find({
+          chef: { $in: storyAuthorIds },
+          isActive: true
+        }).lean();
+
+        allBranches.forEach(branch => {
+          const authorIdStr = branch.chef.toString();
+          if (!branchesByAuthor.has(authorIdStr)) {
+            branchesByAuthor.set(authorIdStr, []);
+          }
+          branchesByAuthor.get(authorIdStr).push({
+            _id: branch._id,
+            description: branch.addressDetails?.formattedAddress || branch.branchName || 'Branch',
+            lat: branch.location?.lat,
+            long: branch.location?.long,
+            operatingHours: branch.operatingHours,
+            isActive: branch.isActive
+          });
+        });
       }
 
       orderedStories.forEach(s => {
         if (s.author) {
-          const r = ratingMap.get(s.author._id.toString());
+          const authorIdStr = s.author._id.toString();
+          const r = ratingMap.get(authorIdStr);
           s.author.averageDishRating = r ? parseFloat(r.avg.toFixed(1)) : 0;
           s.author.ratedDishesCount = r ? r.count : 0;
           if (!s.avatarUri && s.poster) s.avatarUri = s.poster;
 
-          const branchData = storyBranchMap.get(s.author._id.toString());
+          const branchData = storyBranchMap.get(authorIdStr);
           s.kmAway = branchData?.distance;
+          
+          // Populate locations for the distance button / locations sheet
+          s.author.locations = branchesByAuthor.get(authorIdStr) || [];
         }
       });
     }

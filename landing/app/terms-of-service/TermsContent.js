@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Nav, Footer } from '../components/SharedComponents';
+import FeeBreakdown from '../components/FeeBreakdown';
 
 const getTermsSections = (orderFee) => ({
     ar: [
@@ -22,8 +23,8 @@ const getTermsSections = (orderFee) => ({
             text: 'عند تقديم طلب عبر FeedYum، فإنك تدخل في اتفاقية مباشرة مع المطعم أو الطباخ. الأسعار المعروضة يتم تحديدها من قبل المطعم أو الطباخ وقد تتغير دون إشعار مسبق. يتم الدفع عند الاستلام (كاش) فقط. FeedYum غير مسؤولة عن أي أخطاء في الأسعار من قبل المطعم.',
         },
         {
-            title: '٥. رسوم المنصة',
-            text: `تحصّل FeedYum رسوم منصة ثابتة ${orderFee} ج.م من كل طلب مؤكد، ويتم خصمها تلقائياً من محفظة المطعم أو الطباخ. بالإضافة إلى ذلك، يتم إضافة رسوم خدمة على الطلب يتحملها العميل مقابل استخدام المنصة.`,
+            title: '٥. رسوم المنصة ورسوم الخدمة',
+            text: null, // replaced by FeeBreakdown component
         },
         {
             title: '٦. العربون والمدفوعات المسبقة',
@@ -84,12 +85,12 @@ const getTermsSections = (orderFee) => ({
             text: 'When placing an order through FeedYum, you enter into a direct agreement with the restaurant or chef. Prices displayed are set by the restaurant or chef and may change without prior notice. Payment is made upon delivery (cash on delivery) only. FeedYum is not responsible for any pricing errors by the restaurant.',
         },
         {
-            title: '5. Platform Fees',
-            text: `FeedYum charges a fixed ${orderFee} EGP platform fee per confirmed order, automatically deducted from the restaurant's or chef's wallet. Additionally, a service fee is added to each order and paid by the customer in exchange for using the platform.`,
+            title: '5. Platform & Service Fees',
+            text: null, // replaced by FeeBreakdown component
         },
         {
             title: '6. Deposits and Advance Payments',
-            text: 'Some chefs may require an advance deposit via InstaPay before confirming an order. The deposit is transferred directly from the customer to the chef via InstaPay — FeedYum does not hold or control any funds. If the chef cancels an order after receiving a deposit, the chef is obligated to refund the full deposit to the customer. Failure to refund results in a strike on the chef\'s account. After accumulating 3 strikes, the chef\'s account is suspended for 7 days. FeedYum acts as a technology intermediary only and is not liable for any unrefunded deposits.',
+            text: "Some chefs may require an advance deposit via InstaPay before confirming an order. The deposit is transferred directly from the customer to the chef via InstaPay — FeedYum does not hold or control any funds. If the chef cancels an order after receiving a deposit, the chef is obligated to refund the full deposit to the customer. Failure to refund results in a strike on the chef's account. After accumulating 3 strikes, the chef's account is suspended for 7 days. FeedYum acts as a technology intermediary only and is not liable for any unrefunded deposits.",
         },
         {
             title: '7. Cancellation and Refunds',
@@ -100,37 +101,40 @@ const getTermsSections = (orderFee) => ({
             text: 'Restaurants and chefs registered on the platform are responsible for the quality and safety of food provided, compliance with all local laws and regulations relating to food preparation and sale, and the accuracy of information displayed in their menus including ingredients and allergens.',
         },
         {
-            title: '8. Limitation of Liability',
+            title: '9. Limitation of Liability',
             text: 'FeedYum operates as a technology intermediary only. We are not liable for food quality or safety, delivery delays or non-completion, any direct or indirect losses resulting from the use of the app, or any disputes between customers and restaurants or chefs. We strive to provide a reliable platform but make no guarantees regarding continuous and uninterrupted service availability.',
         },
         {
-            title: '9. Intellectual Property',
+            title: '10. Intellectual Property',
             text: 'All content available on the app and website, including trademarks, logos, designs, text, and graphics, are the exclusive property of FeedYum or its licensors. You may not copy, modify, distribute, or use any of this content without prior written permission.',
         },
         {
-            title: '10. Prohibited Conduct',
+            title: '11. Prohibited Conduct',
             text: 'You are prohibited from using the app for any unlawful or unauthorized purposes. This includes, but is not limited to: misusing the app or manipulating the system, impersonating another user, creating multiple accounts with fraudulent intent, or harassing restaurants, chefs, or other users.',
         },
         {
-            title: '11. Account Termination',
+            title: '12. Account Termination',
             text: 'FeedYum reserves the right to terminate or suspend your account at any time without prior notice if you violate any of these terms or if we deem it necessary to protect the platform or other users. You may also delete your account at any time through the app.',
         },
         {
-            title: '12. Changes to Terms',
+            title: '13. Changes to Terms',
             text: 'FeedYum reserves the right to modify these Terms of Service at any time. We will notify you of any material changes through the app or email. Your continued use of the app after posting modifications constitutes your acceptance of the updated terms.',
         },
         {
-            title: '13. Governing Law',
+            title: '14. Governing Law',
             text: 'These Terms of Service are governed by and construed in accordance with the laws of the Arab Republic of Egypt. Any dispute arising out of or relating to these terms is subject to the exclusive jurisdiction of the competent Egyptian courts.',
         },
         {
-            title: '14. Contact Us',
+            title: '15. Contact Us',
             text: 'If you have any questions or inquiries regarding these Terms of Service, please contact us at support@feedyum.com or through the "Contact Us" page on our website.',
         },
     ],
 });
 
-export default function TermsOfServiceContent({ orderFee }) {
+// Section index where FeeBreakdown should appear (the "Platform & Service Fees" section)
+const FEE_SECTION_INDEX = 4;
+
+export default function TermsOfServiceContent({ orderFee, feeTiers = [] }) {
     const [lang, setLang] = useState('ar');
     const isAr = lang === 'ar';
     const termsSections = getTermsSections(orderFee);
@@ -149,9 +153,18 @@ export default function TermsOfServiceContent({ orderFee }) {
 
                     <div dir={isAr ? 'rtl' : 'ltr'} style={{ textAlign: isAr ? 'right' : 'left' }}>
                         {sections.map((s, i) => (
-                            <div className="privacy-section" key={i}>
-                                <h3>{s.title}</h3>
-                                <p>{s.text}</p>
+                            <div key={i}>
+                                <div className="privacy-section">
+                                    <h3>{s.title}</h3>
+                                    {s.text && <p>{s.text}</p>}
+                                </div>
+                                {i === FEE_SECTION_INDEX && (
+                                    <FeeBreakdown
+                                        lang={lang}
+                                        orderFee={orderFee}
+                                        feeTiers={feeTiers}
+                                    />
+                                )}
                             </div>
                         ))}
                     </div>

@@ -3,6 +3,11 @@ const mongoose = require("mongoose");
 // Models
 const ChefBranch = mongoose.model("chefBranch");
 const User = mongoose.model("user");
+const {
+  getSafePositiveDeliveryFee,
+  normalizeAreaDeliveryFees,
+  normalizeDeliveryTiers,
+} = require('../../config/feeConfig');
 
 const editBranch = async (req, res) => {
   const errors = {};
@@ -74,21 +79,30 @@ const editBranch = async (req, res) => {
 
     // Update operational details
     if (req.body.deliveryRadius !== undefined) branch.deliveryRadius = req.body.deliveryRadius;
-    if (req.body.deliveryFee !== undefined) branch.deliveryFee = req.body.deliveryFee;
+
+    let nextDeliveryTiers = branch.deliveryTiers || [];
+    let nextAreaDeliveryFees = branch.areaDeliveryFees || [];
+    let shouldRecalculateBaseDeliveryFee = req.body.deliveryFee !== undefined;
+
     if (req.body.deliveryTiers !== undefined) {
-      branch.deliveryTiers = req.body.deliveryTiers.map(t => ({
-        ...t,
-        fee: Math.max(1, Number(t.fee) || 1),
-      }));
+      nextDeliveryTiers = normalizeDeliveryTiers(req.body.deliveryTiers || []);
+      branch.deliveryTiers = nextDeliveryTiers;
       branch.markModified('deliveryTiers');
+      shouldRecalculateBaseDeliveryFee = true;
     }
     if (req.body.areaDeliveryFees !== undefined) {
-      branch.areaDeliveryFees = req.body.areaDeliveryFees.map(a => ({
-        name: a.name,
-        placeId: a.placeId,
-        fee: Math.max(1, Number(a.fee) || 1),
-      }));
+      nextAreaDeliveryFees = normalizeAreaDeliveryFees(req.body.areaDeliveryFees || []);
+      branch.areaDeliveryFees = nextAreaDeliveryFees;
       branch.markModified('areaDeliveryFees');
+      shouldRecalculateBaseDeliveryFee = true;
+    }
+
+    if (shouldRecalculateBaseDeliveryFee) {
+      branch.deliveryFee = getSafePositiveDeliveryFee({
+        fallbackFee: req.body.deliveryFee !== undefined ? req.body.deliveryFee : branch.deliveryFee,
+        areaDeliveryFees: nextAreaDeliveryFees,
+        tiers: nextDeliveryTiers,
+      });
     }
     if (req.body.minimumOrderAmount !== undefined) branch.minimumOrderAmount = req.body.minimumOrderAmount;
     if (req.body.operatingHours) branch.operatingHours = req.body.operatingHours;

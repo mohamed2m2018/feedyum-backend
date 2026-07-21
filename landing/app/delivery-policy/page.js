@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { Nav, Footer } from '../components/SharedComponents';
+import FeeBreakdown from '../components/FeeBreakdown';
+import feeConfig from '../../config/feeConfig';
 
 const deliverySections = {
     ar: [
@@ -14,23 +16,28 @@ const deliverySections = {
             text: 'رسوم التوصيل يتم تحديدها من قبل كل مطعم أو طباخ على حدة بناءً على المسافة بين الفرع وعنوان التوصيل. يتم عرض رسوم التوصيل بشكل واضح قبل تأكيد الطلب حتى يتمكن العميل من مراجعتها.',
         },
         {
-            title: '٣. نطاق التوصيل',
+            title: '٣. رسوم الخدمة',
+            text: 'بالإضافة إلى رسوم التوصيل، يتحمل العميل رسوم خدمة بسيطة لصالح المنصة، تُضاف إلى إجمالي الطلب وتُدفع كاش للطباخ مع قيمة الطلب — تفاصيلها في الجدول أدناه.',
+            isFeeSection: true,
+        },
+        {
+            title: '٤. نطاق التوصيل',
             text: 'لكل مطعم أو طباخ نطاق توصيل محدد (بالكيلومترات) يتم تحديده من قبلهم. يمكن للعميل رؤية المطاعم والطباخين المتاحين للتوصيل في منطقته فقط.',
         },
         {
-            title: '٤. وقت التوصيل المتوقع',
+            title: '٥. وقت التوصيل المتوقع',
             text: 'وقت التوصيل يعتمد على المطعم أو الطباخ وعلى المسافة. يتم تقدير وقت التوصيل عند تأكيد الطلب، لكنه قد يختلف حسب ظروف الطريق أو حجم الطلبات.',
         },
         {
-            title: '٥. طريقة الدفع',
-            text: 'الدفع يتم عند الاستلام (كاش) مباشرة للمطعم أو الطباخ. لا يوجد حالياً دفع إلكتروني للطلبات عبر المنصة.',
+            title: '٦. طريقة الدفع',
+            text: 'الدفع يتم عند الاستلام (كاش) مباشرة للمطعم أو الطباخ. المبلغ الإجمالي = قيمة الطلب + رسوم التوصيل + رسوم الخدمة. لا يوجد حالياً دفع إلكتروني للطلبات عبر المنصة.',
         },
         {
-            title: '٦. عنوان التوصيل',
+            title: '٧. عنوان التوصيل',
             text: 'العميل مسؤول عن تقديم عنوان توصيل صحيح ودقيق. في حالة تقديم عنوان خاطئ أو غير كامل، قد يتأخر التوصيل أو يتعذر إتمامه، وFeedYum غير مسؤولة عن أي تأخير ناتج عن ذلك.',
         },
         {
-            title: '٧. الحد الأدنى للطلب',
+            title: '٨. الحد الأدنى للطلب',
             text: 'بعض المطاعم والطباخين قد يضعون حداً أدنى لقيمة الطلب لخدمة التوصيل. يتم عرض الحد الأدنى (إن وجد) بوضوح عند تصفح قائمة الطعام.',
         },
     ],
@@ -44,23 +51,28 @@ const deliverySections = {
             text: 'Delivery fees are determined by each restaurant or chef individually based on the distance between their branch and the delivery address. Delivery fees are clearly displayed before order confirmation so the customer can review them.',
         },
         {
-            title: '3. Delivery Coverage',
+            title: '3. Service Fee',
+            text: 'In addition to the delivery fee, a small service fee is charged to the customer by the platform. It is added to the order total and paid in cash to the chef along with the order — details are in the breakdown below.',
+            isFeeSection: true,
+        },
+        {
+            title: '4. Delivery Coverage',
             text: 'Each restaurant or chef has a specific delivery radius (in kilometers) set by them. Customers can only see restaurants and chefs available for delivery in their area.',
         },
         {
-            title: '4. Estimated Delivery Time',
+            title: '5. Estimated Delivery Time',
             text: 'Delivery time depends on the restaurant or chef and the distance. Estimated delivery time is provided upon order confirmation, but may vary depending on traffic conditions or order volume.',
         },
         {
-            title: '5. Payment Method',
-            text: 'Payment is made upon delivery (cash on delivery) directly to the restaurant or chef. There is currently no online payment for orders through the platform.',
+            title: '6. Payment Method',
+            text: 'Payment is made upon delivery (cash on delivery) directly to the restaurant or chef. The total = order subtotal + delivery fee + service fee. There is currently no online payment for orders through the platform.',
         },
         {
-            title: '6. Delivery Address',
+            title: '7. Delivery Address',
             text: 'The customer is responsible for providing a correct and accurate delivery address. In case of an incorrect or incomplete address, delivery may be delayed or fail, and FeedYum is not responsible for any delays resulting from this.',
         },
         {
-            title: '7. Minimum Order Amount',
+            title: '8. Minimum Order Amount',
             text: 'Some restaurants and chefs may set a minimum order value for delivery service. The minimum amount (if applicable) is clearly displayed when browsing the food menu.',
         },
     ],
@@ -70,6 +82,8 @@ export default function DeliveryPolicyPage() {
     const [lang, setLang] = useState('ar');
     const isAr = lang === 'ar';
     const sections = isAr ? deliverySections.ar : deliverySections.en;
+    const orderFee = feeConfig.CHEF_ORDER_FEE;
+    const feeTiers = feeConfig.SERVICE_FEE_TIERS;
 
     return (
         <div className={isAr ? 'rtl' : ''} style={{ direction: isAr ? 'rtl' : 'ltr', overflowX: 'hidden', maxWidth: '100vw', width: '100%' }}>
@@ -84,9 +98,18 @@ export default function DeliveryPolicyPage() {
 
                     <div dir={isAr ? 'rtl' : 'ltr'} style={{ textAlign: isAr ? 'right' : 'left' }}>
                         {sections.map((s, i) => (
-                            <div className="privacy-section" key={i}>
-                                <h3>{s.title}</h3>
-                                <p>{s.text}</p>
+                            <div key={i}>
+                                <div className="privacy-section">
+                                    <h3>{s.title}</h3>
+                                    <p>{s.text}</p>
+                                </div>
+                                {s.isFeeSection && (
+                                    <FeeBreakdown
+                                        lang={lang}
+                                        orderFee={orderFee}
+                                        feeTiers={feeTiers}
+                                    />
+                                )}
                             </div>
                         ))}
                     </div>

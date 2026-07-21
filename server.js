@@ -212,8 +212,12 @@ app.use(function (req, res, next) {
   next();
 });
 
+// Support sessions may inspect user state but must never mutate it.
+app.use(require('./middleware/readOnlyImpersonation'));
+
 // App config (no auth - needed before login for force update check)
 app.use("/api/config", require("./routes/config"));
+app.use("/api/admin-impersonation", require("./routes/adminImpersonation"));
 
 // Optimized batch endpoint for Discover screen (HIGH PRIORITY)
 app.use("/api/discover", require("./routes/discover"));

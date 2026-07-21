@@ -4,6 +4,11 @@ const mongoose = require("mongoose");
 const ChefBranch = mongoose.model("chefBranch");
 const User = mongoose.model("user");
 const { getTimezoneFromCountry } = require('../../utils/countryTimezone');
+const {
+  getSafePositiveDeliveryFee,
+  normalizeAreaDeliveryFees,
+  normalizeDeliveryTiers,
+} = require('../../config/feeConfig');
 
 const addBranch = async (req, res) => {
   const errors = {};
@@ -51,6 +56,14 @@ const addBranch = async (req, res) => {
     // Create formatted address
     const formattedAddress = `${req.body.buildingNumber} ${req.body.streetName}, ${req.body.area}, ${req.body.city}, ${req.body.state} ${req.body.postalCode}, ${req.body.country}`;
 
+    const normalizedDeliveryTiers = normalizeDeliveryTiers(req.body.deliveryTiers || []);
+    const normalizedAreaDeliveryFees = normalizeAreaDeliveryFees(req.body.areaDeliveryFees || []);
+    const safeDeliveryFee = getSafePositiveDeliveryFee({
+      fallbackFee: req.body.deliveryFee,
+      areaDeliveryFees: normalizedAreaDeliveryFees,
+      tiers: normalizedDeliveryTiers,
+    });
+
     // Create the branch
     const branch = new ChefBranch({
       chef: req.user._id,
@@ -75,16 +88,9 @@ const addBranch = async (req, res) => {
       },
       isPrimary: isPrimary,
       deliveryRadius: req.body.deliveryRadius || 10,
-      deliveryFee: req.body.deliveryFee || 0,
-      deliveryTiers: (req.body.deliveryTiers || []).map(t => ({
-        ...t,
-        fee: Math.max(1, Number(t.fee) || 1),
-      })),
-      areaDeliveryFees: (req.body.areaDeliveryFees || []).map(a => ({
-        name: a.name,
-        placeId: a.placeId,
-        fee: Math.max(1, Number(a.fee) || 1),
-      })),
+      deliveryFee: safeDeliveryFee,
+      deliveryTiers: normalizedDeliveryTiers,
+      areaDeliveryFees: normalizedAreaDeliveryFees,
       minimumOrderAmount: req.body.minimumOrderAmount || 0,
       excludedAreas: req.body.excludedAreas || [],
       operatingHours: req.body.operatingHours || [],

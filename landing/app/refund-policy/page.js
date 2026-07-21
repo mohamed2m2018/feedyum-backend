@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { Nav, Footer } from '../components/SharedComponents';
+import FeeBreakdown from '../components/FeeBreakdown';
+import feeConfig from '../../config/feeConfig';
 
 const refundSections = {
     ar: [
@@ -30,11 +32,16 @@ const refundSections = {
             text: 'نحن نأخذ جودة الطعام على محمل الجد. إذا تكررت الشكاوى تجاه مطعم أو طباخ معين، تقوم FeedYum بمراجعة حسابه وقد تتخذ إجراءات مناسبة لضمان جودة الخدمة المقدمة على المنصة.',
         },
         {
-            title: '٧. استرداد رسوم المنصة',
+            title: '٧. استرداد رسوم الخدمة',
+            text: 'في حالة إلغاء الطلب قبل تأكيد الطباخ، يتم إلغاء الطلب كاملاً ولا يُحصَّل أي مبلغ من العميل لأن الدفع عند الاستلام. في حالة إلغاء الطلب بعد التأكيد وتم دفع أي مبلغ، يتم التفاوض مباشرة مع الطباخ لاسترداد رسوم الخدمة المدفوعة. تفاصيل رسوم الخدمة في الجدول أدناه.',
+            isFeeSection: true,
+        },
+        {
+            title: '٨. استرداد رسوم المنصة للطباخ',
             text: 'يحق للمطعم أو الطباخ طلب استرداد المبالغ المدفوعة كرسوم منصة (شحن المحفظة) خلال ١٤ يوماً من تاريخ الدفع، بشرط عدم استخدام الرصيد المشحون في أي معاملات على المنصة. في حالة الموافقة، يتم رد المبلغ بالكامل. لا يمكن استرداد أي رصيد تم استخدامه بالفعل حيث تكون الخدمة قد تم تقديمها. لطلب الاسترداد، يرجى التواصل معنا عبر البريد الإلكتروني support@feedyum.com مع ذكر بيانات الحساب ورقم المعاملة.',
         },
         {
-            title: '٨. التواصل معنا',
+            title: '٩. التواصل معنا',
             text: 'لأي استفسار أو شكوى بخصوص الاسترداد أو الإلغاء، يمكنك التواصل معنا عبر البريد الإلكتروني support@feedyum.com أو عبر صفحة "تواصل معنا" على الموقع.',
         },
     ],
@@ -64,11 +71,16 @@ const refundSections = {
             text: 'We take food quality seriously. If complaints against a specific restaurant or chef are repeated, FeedYum reviews their account and may take appropriate measures to ensure the quality of service provided on the platform.',
         },
         {
-            title: '7. Restaurant & Chef Platform Fee Refund',
+            title: '7. Service Fee Refund',
+            text: 'If the order is cancelled before chef confirmation, no amount is charged since payment is cash on delivery. If cancelled after confirmation and any amount was paid, the service fee refund is negotiated directly with the chef. See the service fee breakdown below.',
+            isFeeSection: true,
+        },
+        {
+            title: '8. Restaurant & Chef Platform Fee Refund',
             text: 'Restaurants and chefs have the right to request a refund of platform fees paid (wallet top-up) within 14 days of the payment date, provided the charged balance has not been used in any transactions on the platform. If the refund is approved, the full amount will be refunded. Any balance that has already been used cannot be refunded as the service has been rendered. To request a refund, please contact us at support@feedyum.com with your account details and transaction number.',
         },
         {
-            title: '8. Contact Us',
+            title: '9. Contact Us',
             text: 'For any inquiries or complaints regarding refunds or cancellations, you can reach us via email at support@feedyum.com or through the "Contact Us" page on our website.',
         },
     ],
@@ -78,6 +90,8 @@ export default function RefundPolicyPage() {
     const [lang, setLang] = useState('ar');
     const isAr = lang === 'ar';
     const sections = isAr ? refundSections.ar : refundSections.en;
+    const orderFee = feeConfig.CHEF_ORDER_FEE;
+    const feeTiers = feeConfig.SERVICE_FEE_TIERS;
 
     return (
         <div className={isAr ? 'rtl' : ''} style={{ direction: isAr ? 'rtl' : 'ltr', overflowX: 'hidden', maxWidth: '100vw', width: '100%' }}>
@@ -92,9 +106,18 @@ export default function RefundPolicyPage() {
 
                     <div dir={isAr ? 'rtl' : 'ltr'} style={{ textAlign: isAr ? 'right' : 'left' }}>
                         {sections.map((s, i) => (
-                            <div className="privacy-section" key={i}>
-                                <h3>{s.title}</h3>
-                                <p>{s.text}</p>
+                            <div key={i}>
+                                <div className="privacy-section">
+                                    <h3>{s.title}</h3>
+                                    <p>{s.text}</p>
+                                </div>
+                                {s.isFeeSection && (
+                                    <FeeBreakdown
+                                        lang={lang}
+                                        orderFee={orderFee}
+                                        feeTiers={feeTiers}
+                                    />
+                                )}
                             </div>
                         ))}
                     </div>

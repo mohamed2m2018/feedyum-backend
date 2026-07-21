@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Nav, Footer } from '../components/SharedComponents';
+import FeeBreakdown from '../components/FeeBreakdown';
 
 const getAboutContent = (orderFee) => ({
     ar: {
@@ -18,7 +19,7 @@ const getAboutContent = (orderFee) => ({
             },
             {
                 title: '⚙️ إزاي بنشتغل؟',
-                text: `FeedYum منصة وساطة - العميل بيتصفح الأطباق والمطاعم على التطبيق، بيختار اللي عايزه، وبيطلب مباشرة من المطعم أو الطباخ. الدفع بيتم عند الاستلام (كاش) مباشرة للمطعم. FeedYum بتحصّل رسوم منصة ثابتة ${orderFee} ج.م لكل طلب من المطاعم والطباخين، بالإضافة إلى رسوم خدمة يتحملها العميل.`,
+                text: `FeedYum منصة وساطة - العميل بيتصفح الأطباق والمطاعم على التطبيق، بيختار اللي عايزه، وبيطلب مباشرة من المطعم أو الطباخ. الدفع بيتم عند الاستلام (كاش) مباشرة للمطعم. FeedYum بتحصّل رسوم منصة ثابتة ${orderFee} ج.م لكل طلب من المطاعم والطباخين، بالإضافة إلى رسوم خدمة يتحملها العميل — التفاصيل في الجدول أدناه.`,
             },
             {
                 title: '📱 مميزات المنصة',
@@ -44,7 +45,7 @@ const getAboutContent = (orderFee) => ({
             },
             {
                 title: '⚙️ How It Works',
-                text: `FeedYum is an intermediary platform – customers browse dishes and restaurants on the app, choose what they want, and order directly from the restaurant or chef. Payment is made upon delivery (cash on delivery) directly to the restaurant. FeedYum charges a fixed ${orderFee} EGP platform fee per order from restaurants and chefs, plus a service fee paid by the customer.`,
+                text: `FeedYum is an intermediary platform – customers browse dishes and restaurants on the app, choose what they want, and order directly from the restaurant or chef. Payment is made upon delivery (cash on delivery) directly to the restaurant. FeedYum charges a fixed ${orderFee} EGP platform fee per order from restaurants and chefs, plus a service fee paid by the customer — see the breakdown below.`,
             },
             {
                 title: '📱 Platform Features',
@@ -58,7 +59,10 @@ const getAboutContent = (orderFee) => ({
     },
 });
 
-export default function AboutContent({ orderFee }) {
+// Index of the "How It Works" section — fee breakdown is injected right after it
+const FEE_SECTION_INDEX = 2;
+
+export default function AboutContent({ orderFee, feeTiers = [] }) {
     const [lang, setLang] = useState('ar');
     const isAr = lang === 'ar';
     const aboutContent = getAboutContent(orderFee);
@@ -78,9 +82,18 @@ export default function AboutContent({ orderFee }) {
 
                     <div dir={isAr ? 'rtl' : 'ltr'} style={{ textAlign: isAr ? 'right' : 'left' }}>
                         {content.sections.map((s, i) => (
-                            <div className="privacy-section" key={i}>
-                                <h3>{s.title}</h3>
-                                <p>{s.text}</p>
+                            <div key={i}>
+                                <div className="privacy-section">
+                                    <h3>{s.title}</h3>
+                                    <p>{s.text}</p>
+                                </div>
+                                {i === FEE_SECTION_INDEX && (
+                                    <FeeBreakdown
+                                        lang={lang}
+                                        orderFee={orderFee}
+                                        feeTiers={feeTiers}
+                                    />
+                                )}
                             </div>
                         ))}
                     </div>

@@ -132,6 +132,14 @@ const updateOrderStatus = async (req, res) => {
     // Update order status
     order.status = actualStatus;
 
+    // This endpoint is authenticated and restricted to the order's chef.
+    // Persist the actor and reason so chef cancellations are distinguishable
+    // from cancellations made through cancelOrderByUser.
+    if (actualStatus === 'cancelled') {
+      order.cancelledBy = 'chef';
+      order.cancellationReason = notes || 'Cancelled by chef';
+    }
+
     if (estimatedTime) {
       order.estimatedDeliveryTime = estimatedTime;
     }
@@ -292,6 +300,8 @@ const updateOrderStatus = async (req, res) => {
         deliveryFeeOverridden,
         estimatedDeliveryTime: order.estimatedDeliveryTime,
         statusNotes: order.statusNotes,
+        cancelledBy: order.cancelledBy,
+        cancellationReason: order.cancellationReason,
         lastUpdated: order.lastUpdated,
         statusHistory: order.statusHistory
       },
@@ -308,4 +318,3 @@ const updateOrderStatus = async (req, res) => {
 };
 
 module.exports = updateOrderStatus;
-

@@ -70,12 +70,19 @@ const createCateringOrder = async ({
         const ChefBranch = require('../../models/chefBranch');
         const fullBranch = await ChefBranch.findById(validationResult.nearestBranch.branchId);
         if (fullBranch) {
+          const destinationPlaceName =
+            deliveryAddress.deliveryArea?.nameAr ||
+            deliveryAddress.deliveryAreaName ||
+            deliveryAddress.deliveryArea?.name ||
+            deliveryAddress.deliveryArea?.nameEn ||
+            '';
           deliveryFee = calculateDeliveryFee(
             validationResult.nearestDistance,
             fullBranch.deliveryTiers,
             fullBranch.deliveryFee || 0,
             fullBranch.areaDeliveryFees,
-            deliveryAddress.placeId || deliveryAddress.deliveryArea?.placeId
+            deliveryAddress.placeId || deliveryAddress.deliveryArea?.placeId,
+            destinationPlaceName
           );
         }
       }

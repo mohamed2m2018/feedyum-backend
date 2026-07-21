@@ -1,5 +1,6 @@
 const { findNearestBranch, DEFAULT_DELIVERY_DISTANCE_KM } = require('../../utils/deliveryValidation');
 const { calculateDeliveryFee, calculateServiceFee } = require('../../config/feeConfig');
+const { reverseGeocodeArea } = require('../../utils/reverseGeocodeArea');
 const User = require('../../models/user');
 
 /**
@@ -12,6 +13,7 @@ const checkDeliveryEligibility = async (req, res) => {
     try {
         const { chefId } = req.params;
         const { lat, long, subtotal } = req.query;
+        let destinationPlaceName = req.query.placeName || req.query.deliveryAreaName || req.query.areaName;
 
         // Validate required parameters
         if (!chefId) {
@@ -58,13 +60,32 @@ const checkDeliveryEligibility = async (req, res) => {
         const canDeliver = nearestDistance <= maxDistance;
 
         // Calculate delivery fee from branch area fees or distance tiers
+        let destinationPlaceId = req.query.placeId || req.query.deliveryAreaPlaceId;
+
+        if (!destinationPlaceId && nearestBranch?.areaDeliveryFees?.length > 0) {
+            try {
+                const areaInfo = await reverseGeocodeArea(userLat, userLong);
+                if (areaInfo?.placeId) {
+                    destinationPlaceId = areaInfo.placeId;
+                }
+                if (areaInfo?.name) {
+                    destinationPlaceName = destinationPlaceName || areaInfo.name;
+                }
+            } catch (error) {
+                console.warn('checkDeliveryEligibility reverse-geocode fallback failed:', error.message);
+            }
+        }
+
+        const destinationName = typeof destinationPlaceName === 'string' ? destinationPlaceName.trim() : '';
+
         const deliveryFee = canDeliver
             ? calculateDeliveryFee(
                 nearestDistance,
                 nearestBranch.deliveryTiers,
                 nearestBranch.deliveryFee,
                 nearestBranch.areaDeliveryFees,
-                req.query.placeId
+                destinationPlaceId,
+                destinationName
             )
             : 0;
 
@@ -96,4 +117,3 @@ const checkDeliveryEligibility = async (req, res) => {
 };
 
 module.exports = checkDeliveryEligibility;
-

@@ -7,7 +7,7 @@ const content = {
   ar: {
     heroBadge: '🎉 متاح الآن على جوجل بلاي!',
     heroTitle: 'اكتشف. اطلب. شارك رحلتك مع الأكل.',
-    heroSubtitle: 'FeedYum هي المنصة المثالية لعشاق الأكل! شاهد فيديوهات شهية، اطلب مباشرة من الشيفات والمطاعم، وشارك تقييماتك الصادقة.',
+    heroSubtitle: 'FeedYum سوق أكل بالفيديو مدعوم بالذكاء الاصطناعي: اتفرج على ريلز من شيفات ومطاعم قريبة منك، اوصف الأكلة اللي نفسك فيها والذكاء الاصطناعي يلاقيهالك، واطلب من الفيديو على طول.',
     heroBtn: 'حمل من جوجل بلاي',
     heroSecondary: 'اعرف أكتر',
     sectionTitle: 'ليه FeedYum؟',
@@ -71,12 +71,20 @@ const content = {
       },
     ],
 
-    aiTitle: 'بحث ذكي بالذكاء الاصطناعي',
-    aiDesc: 'دوّر بالطريقة اللي بتتكلم بيها. البحث الذكي في FeedYum بيفهم العربي والإنجليزي، فلو كتبت "حاجة حراقة بالجبنة" أو "spicy koshary" هيلاقيلك الأطباق والفيديوهات المناسبة، ومترتبة حسب اللي يقدر يوصلك فعلاً.',
+    aiTitle: 'الذكاء الاصطناعي في قلب FeedYum',
+    aiDesc: 'FeedYum شغال ببحث ذكي بيفهم المعنى مش الكلمات بس. اوصف الأكلة اللي نفسك فيها بالعربي أو الإنجليزي، زي "حاجة حراقة بالجبنة" أو "spicy koshary"، وهو يلاقيلك الأطباق والريلز والمطابخ المناسبة، ومترتبة حسب اللي يقدر يوصلك فعلاً.',
     aiPoints: [
-      { icon: '🗣️', title: 'عربي وإنجليزي', desc: 'بيفهم طلبك بأي لغة' },
-      { icon: '🧠', title: 'بالمعنى مش بالكلمات', desc: 'بيلاقي الأطباق والفيديوهات اللي تقصدها حتى لو الكلمات مختلفة' },
-      { icon: '📍', title: 'قريب منك', desc: 'بيرتب النتايج حسب التوصيل لمكانك' },
+      { icon: '🧠', title: 'بحث بالمعنى', desc: 'بحث بالذكاء الاصطناعي في الأطباق والريلز والمطابخ بيفهم قصدك مش الكلمات بس' },
+      { icon: '⚡', title: 'فهرسة فورية بالذكاء الاصطناعي', desc: 'أي طبق أو ريل أو مطبخ جديد بيتفهرس بالذكاء الاصطناعي أول ما يتنشر، فيبان في البحث على طول' },
+      { icon: '🗣️', title: 'عربي وإنجليزي', desc: 'نماذج ذكاء اصطناعي متعددة اللغات بتفهم طلبك باللغتين، والمنيو بيتترجم أوتوماتيك' },
+      { icon: '📍', title: 'ترتيب حسب التوصيل', desc: 'النتايج مترتبة حسب اللي يقدر يوصل لمكانك' },
+    ],
+    roadmapTitle: 'الجاي',
+    roadmapSubtitle: 'اللي بنبنيه فوق أساس الذكاء الاصطناعي بتاعنا',
+    roadmap: [
+      { icon: '🎬', title: 'من الريل للمنيو', desc: 'تحويل فيديو الشيف لطبق جاهز في المنيو: الاسم والمكونات وسعر مقترح' },
+      { icon: '🛡️', title: 'مراجعة المحتوى بالعربي', desc: 'حماية الفيديوهات والتقييمات بالعامية المصرية والإنجليزي' },
+      { icon: '💬', title: 'مساعد الطلبات', desc: 'اتكلم بالعامية تلاقي طبقك، تملا السلة وتتابع طلبك' },
     ],
 
     foundersTitle: 'تعرف على المؤسسين',
@@ -88,13 +96,14 @@ const content = {
       { q: 'الدفع بيتم إزاي؟', a: 'الدفع كاش عند الاستلام مباشرة للشيف أو المطعم. فيه رسوم خدمة بسيطة على كل طلب، والتفاصيل كاملة في صفحة "نبذة عنا".' },
       { q: 'الشيفات والمطاعم بيدفعوا كام؟', a: 'مفيش اشتراك ولا أي تكلفة مقدماً. FeedYum بياخد رسوم منصة ثابتة ٤ ج.م لكل طلب مؤكد.' },
       { q: 'أنزل التطبيق منين؟', a: 'FeedYum متاح دلوقتي على جوجل بلاي، ونسخة الآيفون قريباً.' },
+      { q: 'FeedYum بيستخدم الذكاء الاصطناعي إزاي؟', a: 'كل طبق وريل ومطبخ على FeedYum بيتفهرس بالذكاء الاصطناعي أول ما يتنشر، فالبحث بيفهم قصدك بالعربي أو الإنجليزي بدل ما يدور على نفس الكلمات بالظبط. والمنيو بيتترجم أوتوماتيك، والنتايج مترتبة حسب التوصيل لمكانك.' },
       { q: 'مين ورا FeedYum؟', a: 'FeedYum منتج من Innovita Tech Ltd، شركة تكنولوجيا مسجلة سنة ٢٠٢٣ في القاهرة، مصر. أسسه محمد صلاح الدين ومحمد شومان.' },
     ],
   },
   en: {
     heroBadge: '🎉 Now available on Google Play!',
     heroTitle: 'Discover. Order. Share your food journey.',
-    heroSubtitle: 'FeedYum is the ultimate platform for food lovers! Watch mouthwatering videos, order directly from chefs and restaurants, and share your honest reviews.',
+    heroSubtitle: 'FeedYum is an AI-powered food video marketplace: watch reels from local chefs and restaurants, describe what you crave and let AI find it, then order straight from the video.',
     heroBtn: 'Download on Google Play',
     heroSecondary: 'Learn More',
     sectionTitle: 'Why FeedYum?',
@@ -158,12 +167,20 @@ const content = {
       },
     ],
 
-    aiTitle: 'AI-powered food search',
-    aiDesc: 'Search the way you talk. FeedYum\'s AI search understands Arabic and English, so "something spicy with cheese" or "كشري حار" finds matching dishes and food videos, ranked by what can actually be delivered to you.',
+    aiTitle: 'AI at the heart of FeedYum',
+    aiDesc: 'FeedYum runs on AI search that understands meaning, not just keywords. Describe a craving in Arabic or English, like "something spicy with cheese" or "كشري حار", and it finds the right dishes, reels and kitchens, ranked by what can actually be delivered to you.',
     aiPoints: [
-      { icon: '🗣️', title: 'Arabic & English', desc: 'Understands your request in either language' },
-      { icon: '🧠', title: 'Meaning, not keywords', desc: 'Finds the dishes and videos you mean, even when the words differ' },
-      { icon: '📍', title: 'Near you', desc: 'Ranks results by delivery to your location' },
+      { icon: '🧠', title: 'Semantic search', desc: 'AI search across dishes, food reels and kitchens that matches meaning, not just keywords' },
+      { icon: '⚡', title: 'Instant AI indexing', desc: 'Every new dish, reel and kitchen profile is embedded by AI the moment it is posted, so it is discoverable right away' },
+      { icon: '🗣️', title: 'Arabic & English', desc: 'Multilingual AI models understand requests in both languages, and menus are translated automatically' },
+      { icon: '📍', title: 'Delivery-aware ranking', desc: 'Results are ranked by what can actually reach your location' },
+    ],
+    roadmapTitle: 'Coming next',
+    roadmapSubtitle: 'What we are building on top of our AI foundation',
+    roadmap: [
+      { icon: '🎬', title: 'Reel-to-menu', desc: 'Turn a chef\'s cooking video into a ready menu item: dish, ingredients and suggested price' },
+      { icon: '🛡️', title: 'Arabic content moderation', desc: 'Keep videos and reviews safe and on-topic, in Egyptian Arabic and English' },
+      { icon: '💬', title: 'Ordering assistant', desc: 'Chat in Egyptian Arabic to find a dish, build your cart and track your order' },
     ],
 
     foundersTitle: 'Meet the founders',
@@ -175,6 +192,7 @@ const content = {
       { q: 'How do I pay?', a: 'Payment is cash on delivery, made directly to the chef or restaurant. A small service fee applies to each order; the full breakdown is on our About page.' },
       { q: 'What does it cost chefs and restaurants?', a: 'No subscription and no upfront cost. FeedYum charges a flat 4 EGP platform fee per confirmed order.' },
       { q: 'Where can I get the app?', a: 'FeedYum is available now on Google Play. The iOS version is coming soon.' },
+      { q: 'How does FeedYum use AI?', a: 'Every dish, reel and kitchen on FeedYum is indexed by AI when it is posted, so search understands what you mean in Arabic or English instead of matching exact words. Menus are translated automatically, and results are ranked by delivery to your location.' },
       { q: 'Who is behind FeedYum?', a: 'FeedYum is a product of Innovita Tech Ltd, a technology company registered in 2023 in Cairo, Egypt. FeedYum was co-founded by Mohamed Salaheldin and Mohamed Shoman.' },
     ],
   },
@@ -292,6 +310,25 @@ export default function Home() {
                 <div className="feature-icon">{p.icon}</div>
                 <h3 className="feature-title">{p.title}</h3>
                 <p className="feature-description">{p.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Roadmap */}
+      <section className="features" id="roadmap">
+        <div className="container">
+          <div className="section-header">
+            <h2 className="section-title">{t.roadmapTitle}</h2>
+            <p className="section-subtitle">{t.roadmapSubtitle}</p>
+          </div>
+          <div className="features-grid">
+            {t.roadmap.map((r, i) => (
+              <div className="feature-card roadmap-card" key={i}>
+                <div className="feature-icon">{r.icon}</div>
+                <h3 className="feature-title">{r.title}</h3>
+                <p className="feature-description">{r.desc}</p>
               </div>
             ))}
           </div>

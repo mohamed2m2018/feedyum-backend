@@ -14,7 +14,7 @@ const companyAddress = {
 
 export const metadata = {
   title: 'FeedYum - Food Reels & Ordering in Egypt | فيد يم',
-  description: 'FeedYum is a food-video marketplace in Egypt: watch short videos from local chefs and restaurants, order straight from the video, and share reviews. A product of Innovita Tech Ltd, Cairo.',
+  description: 'FeedYum is an AI-powered food-video marketplace in Egypt: AI search across dishes, reels and kitchens in Arabic and English, and ordering straight from the video. A product of Innovita Tech Ltd, Cairo.',
   authors: [{ name: 'FeedYum' }],
   keywords: 'FeedYum,food app,food videos,order food,home chefs,restaurants,food reviews,Egypt,Cairo,TikTok for food,تطبيق أكل,فيديوهات أكل,طلب أكل,مطاعم,شيفات,فود يم,فيد يم',
   creator: 'FeedYum',

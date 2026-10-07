@@ -7,7 +7,7 @@ const content = {
   ar: {
     heroBadge: '🎉 متاح الآن على جوجل بلاي!',
     heroTitle: 'اكتشف. اطلب. شارك رحلتك مع الأكل.',
-    heroSubtitle: 'FeedYum سوق أكل بالفيديو مدعوم بالذكاء الاصطناعي: اتفرج على ريلز من شيفات ومطاعم قريبة منك، اوصف الأكلة اللي نفسك فيها والذكاء الاصطناعي يلاقيهالك، واطلب من الفيديو على طول.',
+    heroSubtitle: 'FeedYum سوق أكل قائم على الذكاء الاصطناعي للشرق الأوسط: اتفرج على ريلز من شيفات ومطاعم قريبة منك، اوصف الأكلة اللي نفسك فيها والذكاء الاصطناعي يلاقيهالك، واطلب من الفيديو على طول.',
     heroBtn: 'حمل من جوجل بلاي',
     heroSecondary: 'اعرف أكتر',
     sectionTitle: 'ليه FeedYum؟',
@@ -79,11 +79,19 @@ const content = {
       { icon: '🗣️', title: 'عربي وإنجليزي', desc: 'نماذج ذكاء اصطناعي متعددة اللغات بتفهم طلبك باللغتين، والمنيو بيتترجم أوتوماتيك' },
       { icon: '📍', title: 'ترتيب حسب التوصيل', desc: 'النتايج مترتبة حسب اللي يقدر يوصل لمكانك' },
     ],
+    agentBadge: 'جاري التطوير',
+    agentTitle: 'صوّر فيديو واحد. خُد متجر جاهز في ٦٠ ثانية.',
+    agentDesc: 'الشيفات البيتيين في مصر بيبيعوا على واتساب وفيسبوك ومعندهمش وقت يكتبوا منيو. وكيل الذكاء الاصطناعي بتاعنا المبني على Claude بيتفرج على فيديو الطبخ ويعمل متجر جاهز للطلب أوتوماتيك.',
+    agentPoints: [
+      { icon: '👁️', title: 'التعرف على الطبق بالذكاء الاصطناعي', desc: 'بيعرف الطبق من الفيديو وصوت الشيف' },
+      { icon: '✍️', title: 'وصف بالعربي والإنجليزي', desc: 'بيكتب وصف شهي للمنيو بالعامية المصرية والإنجليزي' },
+      { icon: '🥗', title: 'المكونات ومسببات الحساسية', desc: 'بيكتب مكونات الطبق وينبه على مسببات الحساسية المعروفة' },
+      { icon: '💰', title: 'تسعير بالذكاء الاصطناعي', desc: 'بيقترح سعر على أساس أطباق مشابهة في المنطقة' },
+    ],
     roadmapTitle: 'الجاي',
     roadmapSubtitle: 'اللي بنبنيه فوق أساس الذكاء الاصطناعي بتاعنا',
     roadmap: [
       { icon: '🤖', title: 'مساعد أكل كامل بالذكاء الاصطناعي', desc: 'مساعد بتكلمه بالعامية أو الإنجليزي: قوله نفسك في إيه وميزانيتك ومكانك، يرشحلك أطباق حقيقية، يملالك السلة ويتابع طلبك' },
-      { icon: '🎬', title: 'من الريل للمنيو', desc: 'تحويل فيديو الشيف لطبق جاهز في المنيو: الاسم والمكونات وسعر مقترح' },
       { icon: '🛡️', title: 'مراجعة المحتوى بالعربي', desc: 'حماية الفيديوهات والتقييمات بالعامية المصرية والإنجليزي' },
     ],
 
@@ -103,7 +111,7 @@ const content = {
   en: {
     heroBadge: '🎉 Now available on Google Play!',
     heroTitle: 'Discover. Order. Share your food journey.',
-    heroSubtitle: 'FeedYum is an AI-powered food video marketplace: watch reels from local chefs and restaurants, describe what you crave and let AI find it, then order straight from the video.',
+    heroSubtitle: 'FeedYum is an AI-native food marketplace for the Middle East: watch reels from local chefs and restaurants, describe what you crave and let AI find it, then order straight from the video.',
     heroBtn: 'Download on Google Play',
     heroSecondary: 'Learn More',
     sectionTitle: 'Why FeedYum?',
@@ -175,11 +183,19 @@ const content = {
       { icon: '🗣️', title: 'Arabic & English', desc: 'Multilingual AI models understand requests in both languages, and menus are translated automatically' },
       { icon: '📍', title: 'Delivery-aware ranking', desc: 'Results are ranked by what can actually reach your location' },
     ],
+    agentBadge: 'In development',
+    agentTitle: 'Film one video. Get a live storefront in 60 seconds.',
+    agentDesc: 'Egypt\'s home cooks sell on WhatsApp and Facebook but don\'t have time to write menus. Our Claude-powered AI agent watches a chef\'s cooking video and builds a ready-to-order storefront automatically.',
+    agentPoints: [
+      { icon: '👁️', title: 'AI dish recognition', desc: 'Identifies the dish from the video frames and the chef\'s voice' },
+      { icon: '✍️', title: 'Arabic & English descriptions', desc: 'Writes appetizing menu copy in Egyptian Arabic and English' },
+      { icon: '🥗', title: 'Ingredients & allergens', desc: 'Lists what goes into the dish and flags common allergens' },
+      { icon: '💰', title: 'AI pricing', desc: 'Suggests a price based on similar dishes in the area' },
+    ],
     roadmapTitle: 'Coming next',
     roadmapSubtitle: 'What we are building on top of our AI foundation',
     roadmap: [
       { icon: '🤖', title: 'Full AI food assistant', desc: 'A conversational assistant in Egyptian Arabic and English: tell it what you crave, your budget and location, and it recommends real dishes, builds your cart and tracks your order' },
-      { icon: '🎬', title: 'Reel-to-menu', desc: 'Turn a chef\'s cooking video into a ready menu item: dish, ingredients and suggested price' },
       { icon: '🛡️', title: 'Arabic content moderation', desc: 'Keep videos and reviews safe and on-topic, in Egyptian Arabic and English' },
     ],
 
@@ -310,6 +326,26 @@ export default function Home() {
                 <div className="feature-icon">{p.icon}</div>
                 <h3 className="feature-title">{p.title}</h3>
                 <p className="feature-description">{p.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* AI storefront agent */}
+      <section className="creators" id="ai-agent">
+        <div className="container">
+          <div className="section-header">
+            <div className="hero-badge"><span>🤖 {t.agentBadge}</span></div>
+            <h2 className="section-title">{t.agentTitle}</h2>
+            <p className="section-subtitle">{t.agentDesc}</p>
+          </div>
+          <div className="features-grid">
+            {t.agentPoints.map((a, i) => (
+              <div className="feature-card" key={i}>
+                <div className="feature-icon">{a.icon}</div>
+                <h3 className="feature-title">{a.title}</h3>
+                <p className="feature-description">{a.desc}</p>
               </div>
             ))}
           </div>

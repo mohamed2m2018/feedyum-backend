@@ -79,15 +79,8 @@ const content = {
       { icon: '🗣️', title: 'عربي وإنجليزي', desc: 'نماذج ذكاء اصطناعي متعددة اللغات بتفهم طلبك باللغتين، والمنيو بيتترجم أوتوماتيك' },
       { icon: '📍', title: 'ترتيب حسب التوصيل', desc: 'النتايج مترتبة حسب اللي يقدر يوصل لمكانك' },
     ],
-    agentBadge: 'جاري التطوير',
-    agentTitle: 'صوّر فيديو واحد. خُد متجر جاهز في ٦٠ ثانية.',
-    agentDesc: 'الشيفات البيتيين في مصر بيبيعوا على واتساب وفيسبوك ومعندهمش وقت يكتبوا منيو. وكيل الذكاء الاصطناعي بتاعنا المبني على Claude بيتفرج على فيديو الطبخ ويعمل متجر جاهز للطلب أوتوماتيك.',
-    agentPoints: [
-      { icon: '👁️', title: 'التعرف على الطبق بالذكاء الاصطناعي', desc: 'بيعرف الطبق من الفيديو وصوت الشيف' },
-      { icon: '✍️', title: 'وصف بالعربي والإنجليزي', desc: 'بيكتب وصف شهي للمنيو بالعامية المصرية والإنجليزي' },
-      { icon: '🥗', title: 'المكونات ومسببات الحساسية', desc: 'بيكتب مكونات الطبق وينبه على مسببات الحساسية المعروفة' },
-      { icon: '💰', title: 'تسعير بالذكاء الاصطناعي', desc: 'بيقترح سعر على أساس أطباق مشابهة في المنطقة' },
-    ],
+    visionTitle: 'سوق أكل قائم على الذكاء الاصطناعي',
+    visionText: 'FeedYum سوق أكل قائم على الذكاء الاصطناعي للشرق الأوسط. الشيفات البيتيين في مصر بيبيعوا على واتساب ومعندهمش وقت يكتبوا منيو. بنبني وكيل ذكاء اصطناعي مبني على Claude بيحوّل وصف بسيط من الشيف لأكله لمتجر جاهز في ٦٠ ثانية، بوصف بالعربي والإنجليزي ومكونات ومسببات حساسية وأسعار مقترحة بالذكاء الاصطناعي. FeedYum شغال دلوقتي على جوجل بلاي بشيفات وطلبات حقيقية، والبحث الذكي بالذكاء الاصطناعي شغال فعلاً.',
     roadmapTitle: 'الجاي',
     roadmapSubtitle: 'اللي بنبنيه فوق أساس الذكاء الاصطناعي بتاعنا',
     roadmap: [
@@ -183,15 +176,8 @@ const content = {
       { icon: '🗣️', title: 'Arabic & English', desc: 'Multilingual AI models understand requests in both languages, and menus are translated automatically' },
       { icon: '📍', title: 'Delivery-aware ranking', desc: 'Results are ranked by what can actually reach your location' },
     ],
-    agentBadge: 'In development',
-    agentTitle: 'Film one video. Get a live storefront in 60 seconds.',
-    agentDesc: 'Egypt\'s home cooks sell on WhatsApp and Facebook but don\'t have time to write menus. Our Claude-powered AI agent watches a chef\'s cooking video and builds a ready-to-order storefront automatically.',
-    agentPoints: [
-      { icon: '👁️', title: 'AI dish recognition', desc: 'Identifies the dish from the video frames and the chef\'s voice' },
-      { icon: '✍️', title: 'Arabic & English descriptions', desc: 'Writes appetizing menu copy in Egyptian Arabic and English' },
-      { icon: '🥗', title: 'Ingredients & allergens', desc: 'Lists what goes into the dish and flags common allergens' },
-      { icon: '💰', title: 'AI pricing', desc: 'Suggests a price based on similar dishes in the area' },
-    ],
+    visionTitle: 'An AI-native food marketplace',
+    visionText: 'FeedYum is an AI-native food marketplace for the Middle East. Egypt\'s home cooks sell on WhatsApp but don\'t have time to write menus. We\'re building a Claude-powered AI agent that turns a chef\'s simple description of their food into a live storefront in 60 seconds, with Arabic and English descriptions, ingredients, allergens and AI-suggested prices. FeedYum is already live on Google Play with real chefs and orders, and our AI semantic search is in production.',
     roadmapTitle: 'Coming next',
     roadmapSubtitle: 'What we are building on top of our AI foundation',
     roadmap: [
@@ -332,22 +318,12 @@ export default function Home() {
         </div>
       </section>
 
-      {/* AI storefront agent */}
-      <section className="creators" id="ai-agent">
+      {/* AI vision */}
+      <section className="features" id="ai-vision">
         <div className="container">
-          <div className="section-header">
-            <div className="hero-badge"><span>🤖 {t.agentBadge}</span></div>
-            <h2 className="section-title">{t.agentTitle}</h2>
-            <p className="section-subtitle">{t.agentDesc}</p>
-          </div>
-          <div className="features-grid">
-            {t.agentPoints.map((a, i) => (
-              <div className="feature-card" key={i}>
-                <div className="feature-icon">{a.icon}</div>
-                <h3 className="feature-title">{a.title}</h3>
-                <p className="feature-description">{a.desc}</p>
-              </div>
-            ))}
+          <div className="section-header vision-text">
+            <h2 className="section-title">{t.visionTitle}</h2>
+            <p className="section-subtitle">{t.visionText}</p>
           </div>
         </div>
       </section>

@@ -82,9 +82,9 @@ const content = {
     roadmapTitle: 'الجاي',
     roadmapSubtitle: 'اللي بنبنيه فوق أساس الذكاء الاصطناعي بتاعنا',
     roadmap: [
+      { icon: '🤖', title: 'مساعد أكل كامل بالذكاء الاصطناعي', desc: 'مساعد بتكلمه بالعامية أو الإنجليزي: قوله نفسك في إيه وميزانيتك ومكانك، يرشحلك أطباق حقيقية، يملالك السلة ويتابع طلبك' },
       { icon: '🎬', title: 'من الريل للمنيو', desc: 'تحويل فيديو الشيف لطبق جاهز في المنيو: الاسم والمكونات وسعر مقترح' },
       { icon: '🛡️', title: 'مراجعة المحتوى بالعربي', desc: 'حماية الفيديوهات والتقييمات بالعامية المصرية والإنجليزي' },
-      { icon: '💬', title: 'مساعد الطلبات', desc: 'اتكلم بالعامية تلاقي طبقك، تملا السلة وتتابع طلبك' },
     ],
 
     foundersTitle: 'تعرف على المؤسسين',
@@ -178,9 +178,9 @@ const content = {
     roadmapTitle: 'Coming next',
     roadmapSubtitle: 'What we are building on top of our AI foundation',
     roadmap: [
+      { icon: '🤖', title: 'Full AI food assistant', desc: 'A conversational assistant in Egyptian Arabic and English: tell it what you crave, your budget and location, and it recommends real dishes, builds your cart and tracks your order' },
       { icon: '🎬', title: 'Reel-to-menu', desc: 'Turn a chef\'s cooking video into a ready menu item: dish, ingredients and suggested price' },
       { icon: '🛡️', title: 'Arabic content moderation', desc: 'Keep videos and reviews safe and on-topic, in Egyptian Arabic and English' },
-      { icon: '💬', title: 'Ordering assistant', desc: 'Chat in Egyptian Arabic to find a dish, build your cart and track your order' },
     ],
 
     foundersTitle: 'Meet the founders',

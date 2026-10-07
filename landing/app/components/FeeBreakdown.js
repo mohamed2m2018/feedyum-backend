@@ -9,7 +9,7 @@
  *   feeTiers    — SERVICE_FEE_TIERS array from feeConfig
  *   variant     — 'card' (default, used inside policy pages) | 'highlight' (used on home/about hero)
  */
-export default function FeeBreakdown({ lang = 'ar', orderFee = 4, feeTiers = [], variant = 'card' }) {
+export default function FeeBreakdown({ lang = 'en', orderFee = 4, feeTiers = [], variant = 'card' }) {
     const isAr = lang === 'ar';
 
     const copy = {

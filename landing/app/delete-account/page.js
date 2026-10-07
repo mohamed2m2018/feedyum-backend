@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { useLang } from '../components/useLang';
 import { Nav, Footer } from '../components/SharedComponents';
 
 export default function DeleteAccount() {
-    const [lang, setLang] = useState('ar');
+    const [lang, setLang] = useLang();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [status, setStatus] = useState(null);

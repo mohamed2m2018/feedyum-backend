@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Nav, Footer } from '../components/SharedComponents';
+import { useLang } from '../components/useLang';
+import { Nav, Footer, COMPANY } from '../components/SharedComponents';
 
 const contactContent = {
     ar: {
@@ -14,11 +14,15 @@ const contactContent = {
         },
         email: {
             label: '📧 البريد الإلكتروني',
-            value: 'support@feedyum.com',
+            value: 'mohamed.salah@feedyum.com',
         },
         address: {
             label: '📍 عنوان العمل',
-            value: 'ش محمد توفيق دياب، المنطقة السادسة، مدينة نصر، القاهرة، مصر',
+            value: '٦ ش محمد توفيق دياب، المنطقة السادسة، مدينة نصر، القاهرة، مصر',
+        },
+        company: {
+            label: '🏢 الشركة',
+            value: 'FeedYum منتج من Innovita Tech Ltd، مسجلة سنة ٢٠٢٣',
         },
         social: {
             label: '🌐 تابعنا على',
@@ -39,11 +43,15 @@ const contactContent = {
         },
         email: {
             label: '📧 Email',
-            value: 'support@feedyum.com',
+            value: 'mohamed.salah@feedyum.com',
         },
         address: {
             label: '📍 Business Address',
-            value: 'Mohamed Tawfik Diab St., 6th District, Nasr City, Cairo, Egypt',
+            value: '6 Mohamed Tawfik Diab St., 6th District, Nasr City, Cairo, Egypt',
+        },
+        company: {
+            label: '🏢 Company',
+            value: 'FeedYum is a product of Innovita Tech Ltd, registered 2023',
         },
         social: {
             label: '🌐 Follow Us',
@@ -57,7 +65,7 @@ const contactContent = {
 };
 
 export default function ContactPage() {
-    const [lang, setLang] = useState('ar');
+    const [lang, setLang] = useLang();
     const isAr = lang === 'ar';
     const content = isAr ? contactContent.ar : contactContent.en;
 
@@ -96,6 +104,12 @@ export default function ContactPage() {
                             <p className="contact-value">{content.address.value}</p>
                         </div>
 
+                        {/* Company */}
+                        <div className="contact-card">
+                            <h3>{content.company.label}</h3>
+                            <p className="contact-value">{content.company.value}</p>
+                        </div>
+
                         {/* Working Hours */}
                         <div className="contact-card">
                             <h3>{content.hours.label}</h3>
@@ -111,6 +125,9 @@ export default function ContactPage() {
                                 </a>
                                 <a href="https://instagram.com/feedyum.app" target="_blank" rel="noopener noreferrer" className="contact-social-btn">
                                     Instagram
+                                </a>
+                                <a href={COMPANY.linkedin} target="_blank" rel="noopener noreferrer" className="contact-social-btn">
+                                    LinkedIn
                                 </a>
                             </div>
                         </div>

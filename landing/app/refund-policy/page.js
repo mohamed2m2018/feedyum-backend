@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useLang } from '../components/useLang';
 import { Nav, Footer } from '../components/SharedComponents';
 import FeeBreakdown from '../components/FeeBreakdown';
 import feeConfig from '../../config/feeConfig';
@@ -38,11 +38,11 @@ const refundSections = {
         },
         {
             title: '٨. استرداد رسوم المنصة للطباخ',
-            text: 'يحق للمطعم أو الطباخ طلب استرداد المبالغ المدفوعة كرسوم منصة (شحن المحفظة) خلال ١٤ يوماً من تاريخ الدفع، بشرط عدم استخدام الرصيد المشحون في أي معاملات على المنصة. في حالة الموافقة، يتم رد المبلغ بالكامل. لا يمكن استرداد أي رصيد تم استخدامه بالفعل حيث تكون الخدمة قد تم تقديمها. لطلب الاسترداد، يرجى التواصل معنا عبر البريد الإلكتروني support@feedyum.com مع ذكر بيانات الحساب ورقم المعاملة.',
+            text: 'يحق للمطعم أو الطباخ طلب استرداد المبالغ المدفوعة كرسوم منصة (شحن المحفظة) خلال ١٤ يوماً من تاريخ الدفع، بشرط عدم استخدام الرصيد المشحون في أي معاملات على المنصة. في حالة الموافقة، يتم رد المبلغ بالكامل. لا يمكن استرداد أي رصيد تم استخدامه بالفعل حيث تكون الخدمة قد تم تقديمها. لطلب الاسترداد، يرجى التواصل معنا عبر البريد الإلكتروني mohamed.salah@feedyum.com مع ذكر بيانات الحساب ورقم المعاملة.',
         },
         {
             title: '٩. التواصل معنا',
-            text: 'لأي استفسار أو شكوى بخصوص الاسترداد أو الإلغاء، يمكنك التواصل معنا عبر البريد الإلكتروني support@feedyum.com أو عبر صفحة "تواصل معنا" على الموقع.',
+            text: 'لأي استفسار أو شكوى بخصوص الاسترداد أو الإلغاء، يمكنك التواصل معنا عبر البريد الإلكتروني mohamed.salah@feedyum.com أو عبر صفحة "تواصل معنا" على الموقع.',
         },
     ],
     en: [
@@ -77,17 +77,17 @@ const refundSections = {
         },
         {
             title: '8. Restaurant & Chef Platform Fee Refund',
-            text: 'Restaurants and chefs have the right to request a refund of platform fees paid (wallet top-up) within 14 days of the payment date, provided the charged balance has not been used in any transactions on the platform. If the refund is approved, the full amount will be refunded. Any balance that has already been used cannot be refunded as the service has been rendered. To request a refund, please contact us at support@feedyum.com with your account details and transaction number.',
+            text: 'Restaurants and chefs have the right to request a refund of platform fees paid (wallet top-up) within 14 days of the payment date, provided the charged balance has not been used in any transactions on the platform. If the refund is approved, the full amount will be refunded. Any balance that has already been used cannot be refunded as the service has been rendered. To request a refund, please contact us at mohamed.salah@feedyum.com with your account details and transaction number.',
         },
         {
             title: '9. Contact Us',
-            text: 'For any inquiries or complaints regarding refunds or cancellations, you can reach us via email at support@feedyum.com or through the "Contact Us" page on our website.',
+            text: 'For any inquiries or complaints regarding refunds or cancellations, you can reach us via email at mohamed.salah@feedyum.com or through the "Contact Us" page on our website.',
         },
     ],
 };
 
 export default function RefundPolicyPage() {
-    const [lang, setLang] = useState('ar');
+    const [lang, setLang] = useLang();
     const isAr = lang === 'ar';
     const sections = isAr ? refundSections.ar : refundSections.en;
     const orderFee = feeConfig.CHEF_ORDER_FEE;
@@ -124,7 +124,7 @@ export default function RefundPolicyPage() {
 
                     <div style={{ textAlign: 'center', marginTop: '40px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.1)', color: 'var(--light-muted)', fontSize: '0.85rem' }}>
                         <p>{isAr ? 'آخر تحديث: مارس ٢٠٢٦' : 'Last updated: March 2026'}</p>
-                        <p>{isAr ? 'تواصل معنا: ' : 'Contact us: '}<a href="mailto:support@feedyum.com" style={{ color: 'var(--primary)' }}>support@feedyum.com</a></p>
+                        <p>{isAr ? 'تواصل معنا: ' : 'Contact us: '}<a href="mailto:mohamed.salah@feedyum.com" style={{ color: 'var(--primary)' }}>mohamed.salah@feedyum.com</a></p>
                     </div>
                 </div>
             </section>

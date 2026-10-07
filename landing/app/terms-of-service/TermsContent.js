@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useLang } from '../components/useLang';
 import { Nav, Footer } from '../components/SharedComponents';
 import FeeBreakdown from '../components/FeeBreakdown';
 
@@ -64,7 +64,7 @@ const getTermsSections = (orderFee) => ({
         },
         {
             title: '١٥. التواصل معنا',
-            text: 'إذا كان لديك أي أسئلة أو استفسارات بخصوص هذه الشروط والأحكام، يرجى التواصل معنا عبر البريد الإلكتروني support@feedyum.com أو عبر صفحة "تواصل معنا" على الموقع.',
+            text: 'إذا كان لديك أي أسئلة أو استفسارات بخصوص هذه الشروط والأحكام، يرجى التواصل معنا عبر البريد الإلكتروني mohamed.salah@feedyum.com أو عبر صفحة "تواصل معنا" على الموقع.',
         },
     ],
     en: [
@@ -126,7 +126,7 @@ const getTermsSections = (orderFee) => ({
         },
         {
             title: '15. Contact Us',
-            text: 'If you have any questions or inquiries regarding these Terms of Service, please contact us at support@feedyum.com or through the "Contact Us" page on our website.',
+            text: 'If you have any questions or inquiries regarding these Terms of Service, please contact us at mohamed.salah@feedyum.com or through the "Contact Us" page on our website.',
         },
     ],
 });
@@ -135,7 +135,7 @@ const getTermsSections = (orderFee) => ({
 const FEE_SECTION_INDEX = 4;
 
 export default function TermsOfServiceContent({ orderFee, feeTiers = [] }) {
-    const [lang, setLang] = useState('ar');
+    const [lang, setLang] = useLang();
     const isAr = lang === 'ar';
     const termsSections = getTermsSections(orderFee);
     const sections = isAr ? termsSections.ar : termsSections.en;
@@ -171,7 +171,7 @@ export default function TermsOfServiceContent({ orderFee, feeTiers = [] }) {
 
                     <div style={{ textAlign: 'center', marginTop: '40px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.1)', color: 'var(--light-muted)', fontSize: '0.85rem' }}>
                         <p>{isAr ? 'آخر تحديث: مارس ٢٠٢٦' : 'Last updated: March 2026'}</p>
-                        <p>{isAr ? 'تواصل معنا: ' : 'Contact us: '}<a href="mailto:support@feedyum.com" style={{ color: 'var(--primary)' }}>support@feedyum.com</a></p>
+                        <p>{isAr ? 'تواصل معنا: ' : 'Contact us: '}<a href="mailto:mohamed.salah@feedyum.com" style={{ color: 'var(--primary)' }}>mohamed.salah@feedyum.com</a></p>
                     </div>
                 </div>
             </section>

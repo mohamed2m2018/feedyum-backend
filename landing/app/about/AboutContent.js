@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { Nav, Footer } from '../components/SharedComponents';
+import { useLang } from '../components/useLang';
+import { Nav, Footer, COMPANY } from '../components/SharedComponents';
 import FeeBreakdown from '../components/FeeBreakdown';
+import { Founders } from '../components/Founders';
 
 const getAboutContent = (orderFee) => ({
     ar: {
@@ -29,7 +30,27 @@ const getAboutContent = (orderFee) => ({
                 title: '🤝 للمطاعم والطباخين',
                 text: 'FeedYum بتوفر للمطاعم والطباخين منصة لعرض أطباقهم وبناء قاعدة عملاء. كل مطعم أو طباخ يقدر ينشئ بروفايل خاص، يرفع قائمة الطعام، ينشر فيديوهات وقصص، ويستقبل طلبات مباشرة من العملاء.',
             },
+            {
+                title: '🤖 اكتشاف بالذكاء الاصطناعي',
+                text: 'البحث في FeedYum بيستخدم الذكاء الاصطناعي عشان يفهم قصدك بالعربي أو الإنجليزي. اوصف الأكلة اللي نفسك فيها، وهو يلاقيلك الأطباق والفيديوهات المناسبة، مترتبة حسب اللي يقدر يوصلك.',
+            },
+            {
+                title: '🏢 الشركة',
+                text: 'FeedYum منتج من Innovita Tech Ltd، شركة تكنولوجيا مسجلة سنة ٢٠٢٣ ومقرها ٦ ش محمد توفيق دياب، مدينة نصر، القاهرة، مصر. FeedYum اتطلق سنة ٢٠٢٦ ومتاح على جوجل بلاي.',
+            },
         ],
+        team: {
+            title: '👥 الفريق',
+        },
+        stats: {
+            title: '📈 FeedYum بالأرقام',
+            items: [
+                { value: '+100', label: 'مستخدم' },
+                { value: '+100', label: 'طلب' },
+                { value: '5', label: 'شيفات' },
+            ],
+        },
+        contactTitle: '📬 تواصل معنا',
     },
     en: {
         title: 'About Us',
@@ -55,7 +76,27 @@ const getAboutContent = (orderFee) => ({
                 title: '🤝 For Restaurants & Chefs',
                 text: 'FeedYum provides restaurants and chefs with a platform to showcase their dishes and build a customer base. Each restaurant or chef can create a dedicated profile, upload their food menu, post videos and stories, and receive orders directly from customers.',
             },
+            {
+                title: '🤖 AI-Powered Discovery',
+                text: 'FeedYum\'s search uses AI to understand what you mean in Arabic or English. Describe a craving and it finds matching dishes and food videos, ranked by what can be delivered to you.',
+            },
+            {
+                title: '🏢 Our Company',
+                text: 'FeedYum is a product of Innovita Tech Ltd, a technology company registered in 2023 and based at 6 Mohamed Tawfik Diab St., Nasr City, Cairo, Egypt. FeedYum launched in 2026 and is available on Google Play.',
+            },
         ],
+        team: {
+            title: '👥 Team',
+        },
+        stats: {
+            title: '📈 FeedYum in Numbers',
+            items: [
+                { value: '100+', label: 'Users' },
+                { value: '100+', label: 'Orders' },
+                { value: '5', label: 'Chefs' },
+            ],
+        },
+        contactTitle: '📬 Contact',
     },
 });
 
@@ -63,7 +104,7 @@ const getAboutContent = (orderFee) => ({
 const FEE_SECTION_INDEX = 2;
 
 export default function AboutContent({ orderFee, feeTiers = [] }) {
-    const [lang, setLang] = useState('ar');
+    const [lang, setLang] = useLang();
     const isAr = lang === 'ar';
     const aboutContent = getAboutContent(orderFee);
     const content = isAr ? aboutContent.ar : aboutContent.en;
@@ -96,6 +137,34 @@ export default function AboutContent({ orderFee, feeTiers = [] }) {
                                 )}
                             </div>
                         ))}
+
+                        <div className="privacy-section">
+                            <h3>{content.team.title}</h3>
+                            <Founders lang={lang} />
+                        </div>
+
+                        <div className="privacy-section">
+                            <h3>{content.stats.title}</h3>
+                            <div className="stats-grid">
+                                {content.stats.items.map((s) => (
+                                    <div className="stat-card" key={s.label}>
+                                        <div className="stat-value">{s.value}</div>
+                                        <div className="stat-label">{s.label}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="privacy-section">
+                            <h3>{content.contactTitle}</h3>
+                            <p className="about-contact">
+                                <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a>
+                                {' · '}
+                                <a href={COMPANY.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a>
+                                {' · '}
+                                {isAr ? COMPANY.addressAr : COMPANY.addressEn}
+                            </p>
+                        </div>
                     </div>
                 </div>
             </section>

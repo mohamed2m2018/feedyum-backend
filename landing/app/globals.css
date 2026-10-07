@@ -388,3 +388,29 @@ a { color: inherit; text-decoration: none; }
   .phone-screen span { font-size: 2.5rem !important; }
   .creators-visual { grid-template-columns: 1fr; }
 }
+
+/* How it works, FAQ, team and stats */
+.how-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
+.how-steps { margin-top: 12px; padding-inline-start: 20px; display: flex; flex-direction: column; gap: 10px; color: var(--light-muted); font-size: 0.95rem; }
+.faq-list { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+.faq-item { background: var(--dark-secondary); border: 1px solid var(--dark-tertiary); border-radius: 16px; padding: 18px 22px; }
+.faq-item summary { cursor: pointer; font-weight: 600; color: var(--light); }
+.faq-item p { margin-top: 10px; color: var(--light-muted); line-height: 1.8; }
+.team-list { list-style: none; display: flex; flex-direction: column; gap: 8px; color: var(--light-muted); }
+.team-list strong { color: var(--light); }
+.team-list a, .about-contact a, .footer-company a { color: var(--primary); text-decoration: none; }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; margin-top: 8px; }
+.stat-card { background: var(--dark-secondary); border: 1px solid var(--dark-tertiary); border-radius: 16px; padding: 18px; text-align: center; }
+.stat-value { font-size: 1.8rem; font-weight: 800; background: var(--gradient-primary); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.stat-label { color: var(--light-muted); font-size: 0.9rem; }
+.footer-company { margin-top: 8px; font-size: 0.85rem; opacity: 0.8; }
+
+/* Founders */
+.founders-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; max-width: 800px; margin: 0 auto; }
+.founder-card { background: var(--dark-secondary); border: 1px solid var(--dark-tertiary); border-radius: 20px; padding: 28px; text-align: center; }
+.founder-avatar { width: 72px; height: 72px; margin: 0 auto 14px; border-radius: 50%; background: var(--gradient-primary); color: var(--light); font-weight: 800; font-size: 1.4rem; display: flex; align-items: center; justify-content: center; }
+.founder-name { font-size: 1.15rem; color: var(--light); }
+.founder-role { color: var(--primary); font-weight: 600; font-size: 0.9rem; margin-top: 2px; }
+.founder-bio { color: var(--light-muted); font-size: 0.92rem; line-height: 1.7; margin-top: 10px; }
+.founder-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; margin-top: 12px; font-size: 0.9rem; }
+.founder-links a { color: var(--primary); text-decoration: none; }

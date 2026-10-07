@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useLang } from '../components/useLang';
 import { Nav, Footer } from '../components/SharedComponents';
 import FeeBreakdown from '../components/FeeBreakdown';
 import feeConfig from '../../config/feeConfig';
@@ -79,7 +79,7 @@ const deliverySections = {
 };
 
 export default function DeliveryPolicyPage() {
-    const [lang, setLang] = useState('ar');
+    const [lang, setLang] = useLang();
     const isAr = lang === 'ar';
     const sections = isAr ? deliverySections.ar : deliverySections.en;
     const orderFee = feeConfig.CHEF_ORDER_FEE;
@@ -116,7 +116,7 @@ export default function DeliveryPolicyPage() {
 
                     <div style={{ textAlign: 'center', marginTop: '40px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.1)', color: 'var(--light-muted)', fontSize: '0.85rem' }}>
                         <p>{isAr ? 'آخر تحديث: مارس ٢٠٢٦' : 'Last updated: March 2026'}</p>
-                        <p>{isAr ? 'تواصل معنا: ' : 'Contact us: '}<a href="mailto:support@feedyum.com" style={{ color: 'var(--primary)' }}>support@feedyum.com</a></p>
+                        <p>{isAr ? 'تواصل معنا: ' : 'Contact us: '}<a href="mailto:mohamed.salah@feedyum.com" style={{ color: 'var(--primary)' }}>mohamed.salah@feedyum.com</a></p>
                     </div>
                 </div>
             </section>

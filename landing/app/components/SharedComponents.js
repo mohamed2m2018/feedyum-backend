@@ -33,7 +33,7 @@ const LinkedInIcon = () => (
 export const COMPANY = {
     legalName: 'Innovita Tech Ltd',
     email: 'mohamed.salah@feedyum.com',
-    linkedin: 'https://www.linkedin.com/company/143976085/',
+    linkedin: 'https://www.linkedin.com/company/feedyum',
     addressEn: '6 Mohamed Tawfik Diab St., Nasr City, Cairo, Egypt',
     addressAr: '٦ ش محمد توفيق دياب، مدينة نصر، القاهرة، مصر',
 };

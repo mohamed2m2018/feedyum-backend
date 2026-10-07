@@ -2,7 +2,7 @@ import './globals.css';
 
 const SITE_URL = 'https://feedyum.com';
 const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.feedyum';
-const LINKEDIN_URL = 'https://www.linkedin.com/company/143976085/';
+const LINKEDIN_URL = 'https://www.linkedin.com/company/feedyum';
 
 const companyAddress = {
   '@type': 'PostalAddress',
@@ -79,7 +79,6 @@ const structuredData = {
       url: SITE_URL,
       logo: { '@type': 'ImageObject', url: `${SITE_URL}/images/logo.png` },
       description: 'FeedYum is a food-video marketplace in Egypt where people watch short videos from local chefs and restaurants and order directly from the video.',
-      foundingDate: '2026',
       email: 'mohamed.salah@feedyum.com',
       telephone: '+20 109 253 2376',
       address: companyAddress,

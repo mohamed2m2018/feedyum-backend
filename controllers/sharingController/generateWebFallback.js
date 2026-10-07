@@ -12,7 +12,7 @@ const generateWebFallback = async (req, res) => {
         const deepLink = EnhancedNotificationService.generateDeepLink(type, contentId, req.query);
 
         // App Store URLs - Using your actual Play Store URL
-        const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.foodtok';
+        const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.feedyum';
         const appStoreUrl = 'https://apps.apple.com/app/foodtok/idYOUR_APP_ID'; // Optional: Add when iOS app is ready
 
         // Try to open the app first (for users who have it installed)
@@ -414,7 +414,7 @@ const generateWebFallback = async (req, res) => {
       <body style="font-family: Arial; text-align: center; padding: 50px;">
         <h1>FeedYum</h1>
         <p>Download FeedYum from the Play Store to see this content!</p>
-        <a href="https://play.google.com/store/apps/details?id=com.foodtok" 
+        <a href="https://play.google.com/store/apps/details?id=com.feedyum" 
            style="background: #01875f; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px;">
           Download Now
         </a>

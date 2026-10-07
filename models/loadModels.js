@@ -27,4 +27,5 @@ require('../models/ambassadorWallet');
 require('../models/missionAttribution');
 require('../models/scoutedRestaurant');
 require('../models/restaurantClaim');
+require('../models/chefApplication');
 require('../models/adminImpersonationGrant');

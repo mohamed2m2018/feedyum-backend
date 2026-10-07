@@ -250,6 +250,7 @@ app.use("/api/cart", require("./routes/cart"));
 app.use("/api/orders", require("./routes/order"));
 app.use("/api/promocode", require("./routes/promocode"));
 app.use("/api/chef-wallet", require("./routes/chefWallet"));
+app.use("/api/chef-applications", require("./routes/chefApplications"));
 app.use("/api/reviews", require("./routes/review"));
 app.use("/api/paymob", require("./routes/paymob"));
 app.use("/api/favorites", require("./routes/favorites"));

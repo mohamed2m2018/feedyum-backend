@@ -53,7 +53,8 @@ export function Nav({ lang = 'en', onLangChange }) {
                 <div className="nav-right">
                     <ul className="nav-links">
                         <li><a href="/#features">{isAr ? 'المميزات' : 'Features'}</a></li>
-                        <li><a href="/#creators">{isAr ? 'للشيفات' : 'For Chefs'}</a></li>
+                        <li><Link href="/explore/">{isAr ? 'استكشف' : 'Explore'}</Link></li>
+                        <li><Link href="/join/">{isAr ? 'للشيفات' : 'For Chefs'}</Link></li>
                         <li><Link href="/about">{isAr ? 'عنّا' : 'About'}</Link></li>
                         <li><Link href="/contact">{isAr ? 'تواصل معنا' : 'Contact'}</Link></li>
                     </ul>
@@ -83,6 +84,8 @@ export function Footer({ lang = 'en' }) {
                     </Link>
                     <div className="footer-links">
                         <Link href="/about">{isAr ? 'نبذة عنا' : 'About Us'}</Link>
+                        <Link href="/explore/">{isAr ? 'استكشف المطابخ' : 'Explore Kitchens'}</Link>
+                        <Link href="/join/">{isAr ? 'انضم كشيف' : 'Join as a Chef'}</Link>
                         <Link href="/delivery-policy">{isAr ? 'سياسة التوصيل' : 'Delivery Policy'}</Link>
                         <Link href="/refund-policy">{isAr ? 'سياسة الاسترداد' : 'Refund Policy'}</Link>
                         <Link href="/privacy-policy">{isAr ? 'سياسة الخصوصية' : 'Privacy Policy'}</Link>

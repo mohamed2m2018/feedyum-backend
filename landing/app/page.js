@@ -23,7 +23,7 @@ const content = {
     creatorsTitle: 'أنت شيف أو مطعم؟',
     creatorsDesc: 'انضم لـ FeedYum واعرض إبداعاتك لآلاف العشاق. رسوم منصة بسيطة ٤ ج.م لكل طلب مؤكد فقط — بدون رسوم اشتراك شهرية!',
     creatorsBenefits: ['ترويج مجاني لأطباقك على التطبيق', 'طلبات مباشرة من الفيديوهات', 'ابني براندك في الأكل', 'تواصل مع زباين محليين', 'تحليلات وإحصائيات', 'رسوم منصة ٤ ج.م فقط لكل طلب — ومفيش اشتراك شهري'],
-    creatorsBtn: 'تواصل معنا',
+    creatorsBtn: 'انضم كشيف',
     creatorsHighlights: [
       { icon: '🎥', title: 'فيديوهات قصيرة', desc: 'اعرض أطباقك بفيديوهات جذابة' },
       { icon: '📦', title: 'طلبات مباشرة', desc: 'استقبل طلبات من الفيديو' },
@@ -37,6 +37,16 @@ const content = {
     storeName: 'جوجل بلاي',
     storeSoon: 'قريباً',
     storeApple: 'آب ستور',
+
+    heroScreenAlt: 'تطبيق FeedYum: فيديوهات أكل مع زرار "شوف المنيو"',
+    screensTitle: 'جوه التطبيق',
+    screensSubtitle: 'لقطات حقيقية من FeedYum على أندرويد',
+    screens: [
+      { src: '/images/screens/feed.webp', caption: 'فيديوهات الأكل', alt: 'تطبيق FeedYum: صفحة فيديوهات الأكل' },
+      { src: '/images/screens/dish.webp', caption: 'اطلب من صفحة الطبق', alt: 'تطبيق FeedYum: صفحة الطبق مع زرار الإضافة للسلة' },
+      { src: '/images/screens/search.webp', caption: 'دوّر على أطباق ومطابخ وريلز', alt: 'تطبيق FeedYum: البحث في الأطباق والمطابخ والريلز' },
+      { src: '/images/screens/kitchen.webp', caption: 'لوحة تحكم المطبخ للشيفات', alt: 'تطبيق FeedYum: لوحة تحكم المطبخ للشيفات' },
+    ],
 
     howTitle: 'إزاي FeedYum بيشتغل؟',
     howSubtitle: 'من نفسك في أكلة لحد باب بيتك في ٣ خطوات',
@@ -100,7 +110,7 @@ const content = {
     creatorsTitle: 'Are you a chef or restaurant?',
     creatorsDesc: 'Join FeedYum and showcase your creations to thousands of food lovers. Just 4 EGP per confirmed order — no monthly subscription!',
     creatorsBenefits: ['Free promotion for your dishes on the app', 'Direct orders from videos', 'Build your food brand', 'Connect with local customers', 'Analytics & insights', 'Only 4 EGP per order — zero monthly fees'],
-    creatorsBtn: 'Contact Us',
+    creatorsBtn: 'Join as a chef',
     creatorsHighlights: [
       { icon: '🎥', title: 'Short Videos', desc: 'Showcase your dishes with engaging videos' },
       { icon: '📦', title: 'Direct Orders', desc: 'Receive orders from your videos' },
@@ -114,6 +124,16 @@ const content = {
     storeName: 'Google Play',
     storeSoon: 'Coming Soon',
     storeApple: 'App Store',
+
+    heroScreenAlt: 'FeedYum app: food reels feed with a Visit Menu button',
+    screensTitle: 'Inside the app',
+    screensSubtitle: 'Real screens from FeedYum on Android',
+    screens: [
+      { src: '/images/screens/feed.webp', caption: 'Food reels feed', alt: 'FeedYum app: food reels feed' },
+      { src: '/images/screens/dish.webp', caption: 'Order from the dish page', alt: 'FeedYum app: dish page with Add to Cart' },
+      { src: '/images/screens/search.webp', caption: 'Search dishes, kitchens & reels', alt: 'FeedYum app: search across dishes, kitchens and reels' },
+      { src: '/images/screens/kitchen.webp', caption: 'Kitchen dashboard for chefs', alt: 'FeedYum app: kitchen dashboard for chefs' },
+    ],
 
     howTitle: 'How FeedYum works',
     howSubtitle: 'From a craving to your door in three steps',
@@ -191,10 +211,28 @@ export default function Home() {
             <div className="hero-visual">
               <div className="phone-mockup">
                 <div className="phone-screen">
-                  <span style={{ fontSize: '4rem' }}>🍽️</span>
+                  <img className="phone-screen-img" src="/images/screens/feed.webp" alt={t.heroScreenAlt} />
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* App screens */}
+      <section className="features" id="app-screens">
+        <div className="container">
+          <div className="section-header">
+            <h2 className="section-title">{t.screensTitle}</h2>
+            <p className="section-subtitle">{t.screensSubtitle}</p>
+          </div>
+          <div className="screens-row">
+            {t.screens.map((s) => (
+              <figure className="screen-card" key={s.src}>
+                <img src={s.src} alt={s.alt} loading="lazy" />
+                <figcaption>{s.caption}</figcaption>
+              </figure>
+            ))}
           </div>
         </div>
       </section>
@@ -273,7 +311,7 @@ export default function Home() {
                 ))}
               </ul>
               <div style={{ marginTop: '32px' }}>
-                <a href="https://www.facebook.com/FeedYum" className="btn btn-primary" target="_blank" rel="noopener noreferrer">
+                <a href="/join/" className="btn btn-primary">
                   {t.creatorsBtn}
                 </a>
               </div>

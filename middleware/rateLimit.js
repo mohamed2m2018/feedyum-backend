@@ -151,6 +151,26 @@ const orderLimiter = rateLimit({
     },
 });
 
+/**
+ * Public Form Limiter
+ * For unauthenticated public forms (e.g. "Join as a chef")
+ * 5 submissions per hour per IP
+ */
+const publicFormLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 5,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => ipKeyGenerator(req),
+    handler: (req, res) => {
+        res.status(429).json({
+            success: false,
+            error: 'Too many submissions',
+            message: 'Please try again later.',
+        });
+    },
+});
+
 module.exports = {
     globalLimiter,
     authLimiter,
@@ -158,4 +178,5 @@ module.exports = {
     searchLimiter,
     uploadLimiter,
     orderLimiter,
+    publicFormLimiter,
 };

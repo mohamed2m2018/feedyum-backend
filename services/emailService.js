@@ -1,5 +1,12 @@
 const nodemailer = require('nodemailer');
 
+const escapeHtml = (value) => String(value)
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;');
+
 // Email Service for FeedYum - Password Reset Flow
 // Last updated: 2026-01-18
 class EmailService {
@@ -217,6 +224,42 @@ ${resetLink}
       console.error('[EmailService] Email transporter connection failed:', error);
       return false;
     }
+  }
+
+  /**
+   * Notify the team about a new "Join as a chef" application from the website
+   * @param {object} application - Saved chefApplication document
+   */
+  async sendChefApplicationNotification(application) {
+    const to = process.env.CHEF_APPLICATIONS_EMAIL || 'mohamed.salah@feedyum.com';
+    const rows = [
+      ['Name', application.name],
+      ['Business name', application.businessName],
+      ['Type', application.businessType === 'restaurant' ? 'Restaurant' : 'Home chef'],
+      ['Phone / WhatsApp', application.phone],
+      ['Email', application.email],
+      ['Area', application.area],
+      ['Cuisine / dishes', application.cuisine],
+      ['Instagram / Facebook', application.socialLink],
+      ['Notes', application.notes],
+      ['Form language', application.language],
+    ];
+
+    const text = rows.map(([label, value]) => `${label}: ${value || '-'}`).join('\n');
+    const html = `<h2>New chef application</h2><table cellpadding="6">${rows
+      .map(([label, value]) => `<tr><td><b>${escapeHtml(label)}</b></td><td>${escapeHtml(value || '-')}</td></tr>`)
+      .join('')}</table>`;
+
+    const result = await this.transporter.sendMail({
+      from: process.env.EMAIL_FROM || 'FeedYum <info@feedyum.com>',
+      to,
+      replyTo: application.email || undefined,
+      subject: `New chef application: ${application.businessName || application.name}`,
+      text,
+      html,
+    });
+    console.log('[EmailService] Chef application notification sent to:', to);
+    return { success: true, messageId: result.messageId };
   }
 }
 
